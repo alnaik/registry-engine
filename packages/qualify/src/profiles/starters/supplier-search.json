@@ -1,0 +1,14 @@
+{
+  "id": "supplier-search-v1",
+  "name": "Local Supplier Search",
+  "direction": "find_suppliers",
+  "description": "Manufacturers, distributors, and wholesalers that supply goods to retail businesses in Colorado.",
+  "mustHave": ["manufacturing", "distribution", "wholesale", "supply", "fabrication", "production"],
+  "niceToHave": ["local", "colorado", "regional", "custom", "bulk"],
+  "exclude": ["retail", "consumer", "personal", "residential"],
+  "feedback": {
+    "approvedTraits": [],
+    "rejectedTraits": []
+  },
+  "version": "1"
+}

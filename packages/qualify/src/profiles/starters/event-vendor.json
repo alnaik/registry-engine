@@ -1,0 +1,14 @@
+{
+  "id": "event-vendor-v1",
+  "name": "Event Vendor Prospects",
+  "direction": "find_customers",
+  "description": "Event planners, caterers, florists, and venue operators that purchase supplies and services for corporate and private events.",
+  "mustHave": ["event", "catering", "floral", "venue", "wedding", "party", "banquet", "celebration"],
+  "niceToHave": ["corporate", "private", "luxury", "boutique", "planning"],
+  "exclude": ["funeral", "memorial", "cemetery"],
+  "feedback": {
+    "approvedTraits": [],
+    "rejectedTraits": []
+  },
+  "version": "1"
+}
