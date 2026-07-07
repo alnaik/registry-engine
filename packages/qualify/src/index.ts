@@ -1,2 +1,21 @@
-// Phase 2 will populate this package.
-export {};
+export type { LlmBackend, LlmRequest, LlmResponse, LlmUsage, LlmTool, LlmMessage } from "./llm/LlmBackend.js";
+export { ArtifactBackend } from "./llm/artifactBackend.js";
+export { OpenAICompatibleBackend } from "./llm/openaiCompatibleBackend.js";
+export type { OpenAICompatibleConfig } from "./llm/openaiCompatibleBackend.js";
+export { OllamaBackend } from "./llm/ollamaBackend.js";
+export type { OllamaConfig } from "./llm/ollamaBackend.js";
+export { TokenBudgeter, BudgetExceededError } from "./llm/budgeter.js";
+export type { BudgetConfig } from "./llm/budgeter.js";
+export type { QualificationProfile } from "./profiles/schema.js";
+export { validateProfile, profileCacheKey } from "./profiles/schema.js";
+export { applyFeedback, feedbackLine } from "./profiles/feedback.js";
+export type { FeedbackEntry, Verdict } from "./profiles/feedback.js";
+export type { QualifiedLead } from "./pipeline/qualifyLead.js";
+export type { Dossier } from "./pipeline/dossier.js";
+export { assembleDossier, draftOutreach } from "./pipeline/dossier.js";
+export type { ProgressEvent, ProgressCallback, RunOptions } from "./pipeline/run.js";
+export { runFunnel } from "./pipeline/run.js";
+export { applyPatterns, fetchPatterns } from "./pipeline/prefilter.js";
+export type { PrefilterPatterns, PrefilterResult } from "./pipeline/prefilter.js";
+export { buildClassifyBatch, parseClassifyResponse } from "./pipeline/classify.js";
+export type { ClassifyVerdict, ClassifyInput } from "./pipeline/classify.js";
