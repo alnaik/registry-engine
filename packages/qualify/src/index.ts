@@ -10,7 +10,7 @@ export type { QualificationProfile } from "./profiles/schema.js";
 export { validateProfile, profileCacheKey } from "./profiles/schema.js";
 export { applyFeedback, feedbackLine } from "./profiles/feedback.js";
 export type { FeedbackEntry, Verdict } from "./profiles/feedback.js";
-export type { QualifiedLead } from "./pipeline/qualifyLead.js";
+export type { QualifiedLead, UccRelationship } from "./pipeline/qualifyLead.js";
 export type { Dossier } from "./pipeline/dossier.js";
 export { assembleDossier, draftOutreach } from "./pipeline/dossier.js";
 export type { ProgressEvent, ProgressCallback, RunOptions } from "./pipeline/run.js";

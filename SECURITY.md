@@ -95,3 +95,4 @@ Each limitation is noted in the UI where the relevant data is displayed (tooltip
 ## Changelog
 
 - v1.0 (2026-07-07, Phase 0): Initial threat model.
+- v1.4 (2026-07-07, Phase 4): Added formal test suite for prompt injection resilience (`tests/qualify/injection.test.ts`, 7 tests). Verified score clamping, rationale/contact length caps, unknown-key dropping, webPresence whitelist, and prototype-pollution immunity. Added `UccRelationship` to dossier with explicit "fuzzy match — verify before citing" warning to prevent users from treating unverified data as authoritative. Added `digest` CLI command with no LLM involvement (read-only SoS queries only).

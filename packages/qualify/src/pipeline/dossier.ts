@@ -1,4 +1,4 @@
-import type { QualifiedLead } from "./qualifyLead.js";
+import type { QualifiedLead, UccRelationship } from "./qualifyLead.js";
 import type { TokenBudgeter } from "../llm/budgeter.js";
 import { OUTREACH_SYSTEM } from "../prompts/index.js";
 
@@ -31,9 +31,18 @@ ${lead.sells ? `Sells: ${lead.sells}` : ""}${lead.buys ? `\nBuys: ${lead.buys}` 
 
 Timing signals:
 ${signalLines}
+${buildUccSection(lead.uccRelationships)}
 `.trim();
 
   return { entityId: e.id, entityName: e.name, brief, outreachDraft: null };
+}
+
+function buildUccSection(relationships: UccRelationship[] | undefined): string {
+  if (!relationships || relationships.length === 0) return "";
+  const lines = relationships.flatMap(r =>
+    r.securedParties.map(sp => `  • ${sp} (secured party on file ${r.fileId})`)
+  );
+  return `\nUCC Financing Relationships (fuzzy match — verify before citing):\n${lines.join("\n")}`;
 }
 
 export async function draftOutreach(

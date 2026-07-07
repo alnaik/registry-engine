@@ -103,6 +103,47 @@ async function cmdVitality(flags: Record<string, string>): Promise<void> {
   }
 }
 
+async function cmdDigest(flags: Record<string, string>): Promise<void> {
+  const zips = flags["zips"] !== undefined ? flags["zips"].split(",").map(z => z.trim()) : [];
+  const days = flags["days"] !== undefined ? parseInt(flags["days"], 10) : 30;
+
+  if (zips.length === 0) {
+    console.error("Error: --zips is required for digest command");
+    process.exit(1);
+  }
+
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
+
+  const source = new ColoradoRegistrySource();
+  const query: LocationQuery = { mode: "zip", zips };
+  const filters: EntityFilters = { status: "Good Standing", formDateAfter: sinceStr };
+
+  const entities: Array<{ name: string; zipCode: string; city: string; formDate: string }> = [];
+  for await (const entity of source.fetchEntities(query, filters)) {
+    entities.push({ name: entity.name, zipCode: entity.zipCode, city: entity.city, formDate: entity.formDate });
+  }
+
+  const dateLabel = since.toISOString().slice(0, 10);
+  console.log(`# Registry Engine Digest`);
+  console.log(`Generated: ${new Date().toISOString().slice(0, 10)}`);
+  console.log(`Period: last ${days} days (since ${dateLabel})`);
+  console.log(`Zips: ${zips.join(", ")}`);
+  console.log(`\n## New Registrations (${entities.length})\n`);
+
+  if (entities.length === 0) {
+    console.log("No new registrations in this period.");
+  } else {
+    for (const e of entities) {
+      console.log(`- **${e.name}** — ${e.city}, CO ${e.zipCode} (formed ${e.formDate.slice(0, 10)})`);
+    }
+  }
+
+  console.log(`\n---`);
+  console.log(`Note: scheduled email delivery requires a hosted backend. This CLI output is the same digest the future backend will send.`);
+}
+
 function printHelp(): void {
   console.log(`Registry Engine CLI
 
@@ -111,6 +152,7 @@ Usage:
   node src/index.ts entities --lat=39.7392 --lng=-104.9903 --radius=8000
   node src/index.ts triggers --zips=80202,80203 [--days=90]
   node src/index.ts vitality --zips=80202,80203 --keywords=jeweler,jewelry
+  node src/index.ts digest --zips=80202,80203 [--days=30]
 `);
 }
 
@@ -127,6 +169,9 @@ async function main(): Promise<void> {
         break;
       case "vitality":
         await cmdVitality(flags);
+        break;
+      case "digest":
+        await cmdDigest(flags);
         break;
       default:
         printHelp();
