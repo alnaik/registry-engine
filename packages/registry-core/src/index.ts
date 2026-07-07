@@ -1,3 +1,10 @@
-// Phase 1 will populate this package.
-// Phase 0 export exists so TypeScript resolves the workspace reference.
-export {};
+export type { NormalizedEntity, TradeName, Signal, SourceMeta, LocationQuery, EntityFilters, VitalityRow, GapRow } from "./types.js";
+export type { RegistrySource } from "./sources/RegistrySource.js";
+export { ColoradoRegistrySource } from "./sources/colorado/index.js";
+export { MemoryCache } from "./util/cache.js";
+export type { KVCache } from "./util/cache.js";
+export { fetchVitality } from "./signals/vitality.js";
+export { fetchGaps } from "./signals/gaps.js";
+export { fetchUccSignals } from "./signals/ucc.js";
+export { zipsWithinRadius } from "./location/geometry.js";
+export { resolveAddress } from "./location/resolve.js";
