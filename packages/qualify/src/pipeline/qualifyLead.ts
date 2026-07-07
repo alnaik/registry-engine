@@ -4,6 +4,12 @@ import type { TokenBudgeter } from "../llm/budgeter.js";
 import { QUALIFY_SYSTEM } from "../prompts/index.js";
 import { feedbackLine } from "../profiles/feedback.js";
 
+export interface UccRelationship {
+  entityName: string;
+  fileId: string;
+  securedParties: string[];
+}
+
 export interface QualifiedLead {
   entity: NormalizedEntity;
   score: number;
@@ -14,6 +20,7 @@ export interface QualifiedLead {
   buys: string;
   signals: Signal[];
   profileId: string;
+  uccRelationships?: UccRelationship[] | undefined;
 }
 
 const WEB_SEARCH_TOOL = {
