@@ -3,6 +3,7 @@ export type { RegistrySource } from "./sources/RegistrySource.js";
 export { ColoradoRegistrySource } from "./sources/colorado/index.js";
 export { MemoryCache } from "./util/cache.js";
 export type { KVCache } from "./util/cache.js";
+export { Limiter } from "./util/http.js";
 export { fetchVitality } from "./signals/vitality.js";
 export { fetchGaps } from "./signals/gaps.js";
 export { fetchUccSignals } from "./signals/ucc.js";
