@@ -1,0 +1,20 @@
+{
+  "name": "@registry-engine/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "registry-engine": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "node --loader ts-node/esm src/index.ts"
+  },
+  "dependencies": {
+    "@registry-engine/registry-core": "*",
+    "@registry-engine/qualify": "*",
+    "@registry-engine/shared": "*"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  }
+}
