@@ -1,14 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { buildClassifyBatch, parseClassifyResponse } from "../../packages/qualify/src/pipeline/classify.js";
 import type { ClassifyInput } from "../../packages/qualify/src/pipeline/classify.js";
-import type { QualificationProfile } from "../../packages/qualify/src/profiles/schema.js";
+import type { SearchIntent } from "../../packages/qualify/src/pipeline/intent.js";
 
-const mockProfile: QualificationProfile = {
-  id: "test", name: "Test", direction: "find_customers",
-  description: "Independent jewelers",
-  mustHave: ["jewel"], niceToHave: [], exclude: ["pawn"],
-  feedback: { approvedTraits: [], rejectedTraits: [] },
-  version: "1",
+const mockIntent: SearchIntent = {
+  query: "independent jewelers that use princess cut diamonds",
+  keywords: ["jewel", "gem", "diamond"],
+  exclusions: ["pawn"],
+  requirement: "sells or works with princess cut diamonds",
 };
 
 function makeItems(n: number): ClassifyInput[] {
@@ -22,18 +21,23 @@ function makeItems(n: number): ClassifyInput[] {
 describe("buildClassifyBatch", () => {
   it("batch of 30 fits within 15k token budget (chars/4 heuristic)", () => {
     const items = makeItems(30);
-    const { system, user } = buildClassifyBatch(items, mockProfile);
+    const { system, user } = buildClassifyBatch(items, mockIntent);
     const totalChars = system.length + user.length;
     const estimatedTokens = Math.ceil(totalChars / 4);
     expect(estimatedTokens).toBeLessThan(15000);
     console.log(`Classify batch (30): ~${estimatedTokens} tokens estimated`);
   });
 
+  it("includes the raw query as the classification criterion", () => {
+    const { system } = buildClassifyBatch(makeItems(1), mockIntent);
+    expect(system).toContain(mockIntent.query);
+  });
+
   it("tradeDesc is truncated to 120 chars per entity", () => {
     const items: ClassifyInput[] = [{
       id: "x", name: "Test LLC", tradeDesc: "a".repeat(300),
     }];
-    const { user } = buildClassifyBatch(items, mockProfile);
+    const { user } = buildClassifyBatch(items, mockIntent);
     const parts = user.split("\t");
     expect((parts[2] ?? "").length).toBeLessThanOrEqual(120);
   });

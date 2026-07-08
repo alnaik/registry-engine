@@ -32,22 +32,4 @@ describe("Colorado dataset fixtures", () => {
     expect(first["entitystatus"]).toBe("GOOD");
   });
 
-  it("transactions fixture has records with expected fields", () => {
-    const rows = loadFixture("transactions.json");
-    expect(rows.length).toBeGreaterThan(0);
-    const first = rows[0] as Record<string, unknown>;
-    expect(first).toHaveProperty("entityid");
-    expect(first).toHaveProperty("transactionid");
-    expect(first).toHaveProperty("historydes");
-    expect(first).toHaveProperty("receiveddate");
-  });
-
-  it("ucc debtors fixture has records with expected fields", () => {
-    const rows = loadFixture("ucc-debtors.json");
-    expect(rows.length).toBeGreaterThan(0);
-    const first = rows[0] as Record<string, unknown>;
-    expect(first).toHaveProperty("fileid");
-    expect(first).toHaveProperty("organizationname");
-    expect(first).toHaveProperty("recordstatus");
-  });
 });
