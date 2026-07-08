@@ -1,9 +1,8 @@
 import type { NormalizedEntity } from "@registry-engine/registry-core";
 import { Limiter } from "@registry-engine/registry-core";
-import type { QualificationProfile } from "../profiles/schema.js";
+import type { SearchIntent } from "./intent.js";
 import type { TokenBudgeter } from "../llm/budgeter.js";
 import { CLASSIFY_SYSTEM } from "../prompts/index.js";
-import { feedbackLine } from "../profiles/feedback.js";
 
 const BATCH_SIZE = 30;
 const CLASSIFY_CONCURRENCY = 2;
@@ -17,17 +16,16 @@ export interface ClassifyInput {
   tradeDesc: string;
 }
 
-export function buildClassifyBatch(items: ClassifyInput[], profile: QualificationProfile): { system: string; user: string } {
-  const fb = feedbackLine(profile);
-  const systemWithFeedback = `${CLASSIFY_SYSTEM}
+export function buildClassifyBatch(items: ClassifyInput[], intent: SearchIntent): { system: string; user: string } {
+  const system = `${CLASSIFY_SYSTEM}
 
-Profile: ${profile.description}${fb ? `\n${fb}` : ""}`;
+Request: ${intent.query}`;
 
   const tsvLines = items
     .map((item, i) => `${i}\t${item.name}\t${item.tradeDesc.slice(0, TRADE_DESC_MAX_CHARS)}`)
     .join("\n");
 
-  return { system: systemWithFeedback, user: tsvLines };
+  return { system, user: tsvLines };
 }
 
 export function parseClassifyResponse(content: string, items: ClassifyInput[]): Map<string, ClassifyVerdict> {
@@ -57,7 +55,7 @@ export function parseClassifyResponse(content: string, items: ClassifyInput[]): 
 
 export async function runClassify(
   entities: NormalizedEntity[],
-  profile: QualificationProfile,
+  intent: SearchIntent,
   budgeter: TokenBudgeter
 ): Promise<Map<string, ClassifyVerdict>> {
   const limiter = new Limiter(CLASSIFY_CONCURRENCY);
@@ -76,7 +74,7 @@ export async function runClassify(
         tradeDesc: e.tradeNames[0]?.description ?? "",
       }));
 
-      const { system, user } = buildClassifyBatch(items, profile);
+      const { system, user } = buildClassifyBatch(items, intent);
       const response = await budgeter.call({
         system,
         messages: [{ role: "user", content: user }],

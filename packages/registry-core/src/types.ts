@@ -29,14 +29,6 @@ export interface TradeName {
   effectiveDate: string;
 }
 
-export interface Signal {
-  type: "NEW_FILING" | "STATUS_CHANGE" | "NEW_TRADE_NAME";
-  entityId: string;
-  entityName: string;
-  date: string;
-  summary: string;   // plain-English one-liner
-}
-
 export interface SourceMeta {
   provider: string;
   datasetId: string;
@@ -55,21 +47,4 @@ export interface EntityFilters {
   status?: string | undefined;    // default: "Good Standing"
   formDateAfter?: string | undefined;  // ISO date
   formDateBefore?: string | undefined;
-}
-
-export interface VitalityRow {
-  zipCode: string;
-  keyword: string;
-  formations90d: number;
-  dissolutions90d: number;
-  formations365d: number;
-  dissolutions365d: number;
-}
-
-export interface GapRow {
-  zipCode: string;
-  keyword: string;
-  entityCount: number;
-  population: number;
-  density: number;  // entities per 1000 residents
 }

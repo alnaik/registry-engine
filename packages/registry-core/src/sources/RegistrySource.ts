@@ -1,14 +1,25 @@
-import type { NormalizedEntity, Signal, LocationQuery, EntityFilters } from "../types.js";
+import type { NormalizedEntity, LocationQuery, EntityFilters } from "../types.js";
 
+// The one abstraction that makes this scale to other states: implement this
+// interface + a field-constants file + a script-generated zip-centroid table,
+// and everything downstream (triage, verify, brief, UI) works unchanged.
 export interface RegistrySource {
   readonly id: string;
   readonly state: string;
-  readonly capabilities: {
-    readonly tradeNames: boolean;
-    readonly transactions: boolean;
-    readonly ucc: boolean;
-    readonly geoQuery: boolean;
-  };
-  fetchEntities(query: LocationQuery, filters?: EntityFilters): AsyncIterable<NormalizedEntity>;
-  fetchSignals(entityIds: string[], windowDays: number): Promise<Signal[]>;
+
+  // Stream every entity in the area (no keyword filter). Used by the CLI
+  // `entities` command; expensive over large areas.
+  fetchEntities(
+    query: LocationQuery,
+    filters?: EntityFilters
+  ): AsyncIterable<NormalizedEntity>;
+
+  // Server-side keyword search over entity names + trade-name descriptions.
+  // This is the product's primary entry point: only candidate rows ever
+  // leave the registry API.
+  searchEntities(
+    query: LocationQuery,
+    keywords: string[],
+    filters?: EntityFilters
+  ): AsyncIterable<NormalizedEntity>;
 }
