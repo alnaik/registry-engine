@@ -1,4 +1,4 @@
-import { CO_ZIP_CENTROIDS } from "./zipCentroids.js";
+import { ZIP_CENTROIDS } from "./zipCentroids.js";
 
 const EARTH_RADIUS_M = 6371000;
 
@@ -19,7 +19,7 @@ export function haversineDistance(
 }
 
 export function zipsWithinRadius(lat: number, lng: number, radiusMeters: number): string[] {
-  return Object.entries(CO_ZIP_CENTROIDS)
-    .filter(([, c]) => haversineDistance(lat, lng, c.lat, c.lng) <= radiusMeters)
+  return Object.entries(ZIP_CENTROIDS)
+    .filter(([, [zipLat, zipLng]]) => haversineDistance(lat, lng, zipLat, zipLng) <= radiusMeters)
     .map(([zip]) => zip);
 }
