@@ -1,312 +1,262 @@
-import { useState, useCallback, useRef } from "react";
-import { ColoradoRegistrySource, MemoryCache, fetchVitality, fetchGaps } from "@registry-engine/registry-core";
-import { ArtifactBackend, TokenBudgeter, runPrefilter, runClassify, qualifyLead, assembleDossier, draftOutreach, applyFeedback, validateProfile } from "@registry-engine/qualify";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { ColoradoRegistrySource, resolveAddress } from "@registry-engine/registry-core";
+import { ArtifactBackend, TokenBudgeter, runSearch, assembleBrief, draftOutreach } from "@registry-engine/qualify";
 import { WindowStorageCache } from "./storage.js";
-import { T } from "./theme.js";
-import { SearchSetup } from "./components/SearchSetup.jsx";
-import { FunnelProgress } from "./components/FunnelProgress.jsx";
-import { ResultsTable } from "./components/ResultsTable.jsx";
-import { DossierDrawer } from "./components/DossierDrawer.jsx";
-import { ProfileEditor } from "./components/ProfileEditor.jsx";
-import { VitalityView } from "./components/VitalityView.jsx";
-import { GapView } from "./components/GapView.jsx";
-import { DigestModal } from "./components/DigestModal.jsx";
 
-import diamondProfile from "../../../packages/qualify/src/profiles/starters/diamond-prospect.json";
-import supplierProfile from "../../../packages/qualify/src/profiles/starters/supplier-search.json";
-import eventProfile from "../../../packages/qualify/src/profiles/starters/event-vendor.json";
+const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 
-const STARTER_PROFILES = [diamondProfile, supplierProfile, eventProfile].map(p => validateProfile(p));
-const CLASSIFY_BUDGET = 15000;
-const QUALIFY_BUDGET_PER_LEAD = 8000;
+function loadLeaflet() {
+  return new Promise((resolve, reject) => {
+    if (window.L) return resolve(window.L);
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = LEAFLET_CSS;
+    document.head.appendChild(css);
+    const s = document.createElement("script");
+    s.src = LEAFLET_JS;
+    s.onload = () => resolve(window.L);
+    s.onerror = () => reject(new Error("leaflet failed to load"));
+    document.body.appendChild(s);
+  });
+}
 
 export default function App() {
-  const [screen, setScreen] = useState("setup");
-  const [profiles, setProfiles] = useState(STARTER_PROFILES);
-  const [selectedProfile, setSelectedProfile] = useState(STARTER_PROFILES[0]);
-  const [editingProfile, setEditingProfile] = useState(null);
+  const [city, setCity] = useState("Denver");
+  const [center, setCenter] = useState(null);          // {lat, lng}
+  const [radiusKm, setRadiusKm] = useState(8);
+  const [query, setQuery] = useState("");
+  const [phase, setPhase] = useState("idle");          // idle | locating | searching | done
   const [leads, setLeads] = useState([]);
-  const [funnelCounts, setFunnelCounts] = useState({});
-  const [currentStage, setCurrentStage] = useState("");
-  const [tokenTotals, setTokenTotals] = useState({ input: 0, output: 0 });
-  const [selectedDossier, setSelectedDossier] = useState(null);
-  const [draftingOutreach, setDraftingOutreach] = useState(false);
-  const [feedbackMap, setFeedbackMap] = useState({});
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [activeTab, setActiveTab] = useState("results");
-  const [vitalityRows, setVitalityRows] = useState([]);
-  const [gapRows, setGapRows] = useState([]);
-  const [showDigest, setShowDigest] = useState(false);
+  const [candidates, setCandidates] = useState(0);
+  const [tokens, setTokens] = useState(null);
   const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null);      // {lead, brief}
+  const [opener, setOpener] = useState(null);          // null | "loading" | text
+  const [mapOk, setMapOk] = useState(true);
 
+  const mapRef = useRef(null);
+  const circleRef = useRef(null);
   const cacheRef = useRef(new WindowStorageCache());
-  const abortRef = useRef(false);
+  const budgeterRef = useRef(null);
 
-  const handleRun = useCallback(async (locationQuery, filters) => {
-    if (!selectedProfile) return;
-    setScreen("running");
-    setLeads([]);
-    setFunnelCounts({});
-    setTokenTotals({ input: 0, output: 0 });
+  const locate = useCallback(async () => {
+    if (!city.trim()) return;
+    setPhase("locating");
     setError(null);
-    abortRef.current = false;
+    const coords = await resolveAddress(`${city.trim()}, CO`);
+    setPhase("idle");
+    if (!coords) { setError(`Could not find "${city}" — try another city name.`); return; }
+    setCenter(coords);
+  }, [city]);
 
+  // Map lifecycle: create once a center exists, keep circle in sync.
+  useEffect(() => {
+    if (!center || !mapOk) return;
+    let cancelled = false;
+    loadLeaflet().then(L => {
+      if (cancelled) return;
+      if (!mapRef.current) {
+        const map = L.map("geofence-map").setView([center.lat, center.lng], 11);
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+        }).addTo(map);
+        const circle = L.circle([center.lat, center.lng], { radius: radiusKm * 1000, color: "#2563eb" }).addTo(map);
+        map.on("click", e => {
+          circle.setLatLng(e.latlng);
+          setCenter({ lat: e.latlng.lat, lng: e.latlng.lng });
+        });
+        mapRef.current = map;
+        circleRef.current = circle;
+      } else {
+        mapRef.current.setView([center.lat, center.lng]);
+        circleRef.current.setLatLng([center.lat, center.lng]);
+      }
+    }).catch(() => setMapOk(false));
+    return () => { cancelled = true; };
+  }, [center, mapOk]);
+
+  useEffect(() => {
+    if (circleRef.current) circleRef.current.setRadius(radiusKm * 1000);
+  }, [radiusKm]);
+
+  const upsertLead = useCallback(lead => {
+    const copy = { ...lead };
+    setLeads(prev => {
+      const i = prev.findIndex(l => l.entity.id === copy.entity.id);
+      const next = i >= 0 ? prev.map((l, j) => (j === i ? copy : l)) : [...prev, copy];
+      return next.slice().sort((a, b) =>
+        (b.verified ? b.score : -1) - (a.verified ? a.score : -1));
+    });
+  }, []);
+
+  const search = useCallback(async () => {
+    if (!center || !query.trim()) return;
+    setPhase("searching");
+    setLeads([]);
+    setCandidates(0);
+    setSelected(null);
+    setError(null);
+    const budgeter = new TokenBudgeter(new ArtifactBackend(), { maxInputTokensPerRun: 150000 });
+    budgeterRef.current = budgeter;
     try {
-      const source = new ColoradoRegistrySource();
-      const backend = new ArtifactBackend();
-      const budgeter = new TokenBudgeter(backend, { maxInputTokensPerRun: CLASSIFY_BUDGET });
-
-      // Collect all entities from registry
-      setCurrentStage("discover");
-      const entities = [];
-      for await (const entity of source.fetchEntities(locationQuery, filters)) {
-        if (abortRef.current) break;
-        entities.push(entity);
-        setFunnelCounts(c => ({ ...c, discover: entities.length }));
-      }
-
-      if (abortRef.current) return;
-
-      // Build signals map
-      const signalsByEntityId = new Map();
-      if (entities.length > 0) {
-        const entityIds = entities.map(e => e.id);
-        const signals = await source.fetchSignals(entityIds, 90);
-        for (const s of signals) {
-          const arr = signalsByEntityId.get(s.entityId) ?? [];
-          arr.push(s);
-          signalsByEntityId.set(s.entityId, arr);
-        }
-      }
-
-      // Prefilter
-      setCurrentStage("prefilter");
-      const { included, ambiguous } = await runPrefilter(entities, selectedProfile, budgeter);
-      const toClassify = [...included, ...ambiguous];
-      setFunnelCounts(c => ({ ...c, prefilter: toClassify.length }));
-      setTokenTotals({ ...budgeter.totals });
-
-      if (abortRef.current) return;
-
-      // Classify
-      setCurrentStage("classify");
-      const verdicts = await runClassify(toClassify, selectedProfile, budgeter);
-      const yEntities = toClassify.filter(e => verdicts.get(e.id) === "Y");
-      setFunnelCounts(c => ({ ...c, classify: yEntities.length }));
-      setTokenTotals({ ...budgeter.totals });
-
-      // Create pending leads (not yet qualified)
-      const pendingLeads = yEntities.map(e => ({
-        entity: e,
-        score: 0,
-        rationale: "Not yet qualified — select and click Qualify",
-        webPresence: "none",
-        contact: null,
-        sells: "",
-        buys: "",
-        signals: signalsByEntityId.get(e.id) ?? [],
-        profileId: selectedProfile.id,
-      }));
-      setLeads(pendingLeads);
-      setScreen("results");
-
-      // Fetch vitality + gaps in background
-      const zips = [...new Set(entities.map(e => e.zipCode))].slice(0, 5);
-      if (zips.length > 0) {
-        fetchVitality(zips, selectedProfile.mustHave.slice(0, 2))
-          .then(rows => setVitalityRows(rows))
-          .catch(() => {});
-        fetchGaps(zips, selectedProfile.mustHave.slice(0, 2))
-          .then(rows => setGapRows(rows))
-          .catch(() => {});
-      }
+      await runSearch({
+        query: query.trim(),
+        source: new ColoradoRegistrySource(),
+        location: { mode: "radius", lat: center.lat, lng: center.lng, radiusMeters: radiusKm * 1000 },
+        budgeter,
+        cache: cacheRef.current,
+        autoVerify: 10,
+        onEvent: e => {
+          if (e.type === "candidates") setCandidates(e.count);
+          else if (e.type === "lead" || e.type === "update") upsertLead(e.lead);
+          else if (e.type === "budget") setTokens({ input: e.input, output: e.output });
+          else if (e.type === "error") setError(e.message);
+        },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      setScreen("results");
     }
-  }, [selectedProfile]);
+    setPhase("done");
+  }, [center, query, radiusKm, upsertLead]);
 
-  const handleQualify = useCallback(async (entityIds) => {
-    if (!selectedProfile) return;
-    const backend = new ArtifactBackend();
-    const budgeter = new TokenBudgeter(backend, { maxInputTokensPerRun: QUALIFY_BUDGET_PER_LEAD * entityIds.length });
-    const source = new ColoradoRegistrySource();
-
-    const entitiesToQualify = leads
-      .filter(l => entityIds.includes(l.entity.id))
-      .map(l => l.entity);
-
-    const signalsByEntityId = new Map();
-    if (entitiesToQualify.length > 0) {
-      const signals = await source.fetchSignals(entitiesToQualify.map(e => e.id), 90);
-      for (const s of signals) {
-        const arr = signalsByEntityId.get(s.entityId) ?? [];
-        arr.push(s);
-        signalsByEntityId.set(s.entityId, arr);
-      }
-    }
-
-    for (const entity of entitiesToQualify) {
-      try {
-        const signals = signalsByEntityId.get(entity.id) ?? [];
-        const lead = await qualifyLead(entity, selectedProfile, signals, budgeter);
-        setLeads(ls => ls.map(l => l.entity.id === entity.id ? lead : l));
-        setTokenTotals(t => ({ input: t.input + budgeter.totals.input, output: t.output + budgeter.totals.output }));
-      } catch (err) {
-        // Mark as error but keep row
-        setLeads(ls => ls.map(l => l.entity.id === entity.id ? { ...l, rationale: "Qualify failed: " + String(err) } : l));
-      }
-    }
-  }, [leads, selectedProfile]);
-
-  const handleSelectLead = useCallback((lead) => {
-    setSelectedDossier({ lead, dossier: assembleDossier(lead) });
+  const open = useCallback(lead => {
+    setOpener(null);
+    setSelected({ lead, brief: assembleBrief(lead) });
   }, []);
 
-  const handleDraftOutreach = useCallback(async () => {
-    if (!selectedDossier) return;
-    setDraftingOutreach(true);
+  const drawOpener = useCallback(async () => {
+    if (!selected || !budgeterRef.current) return;
+    setOpener("loading");
     try {
-      const backend = new ArtifactBackend();
-      const budgeter = new TokenBudgeter(backend, {});
-      const draft = await draftOutreach(selectedDossier.lead, budgeter);
-      setSelectedDossier(d => d ? { ...d, dossier: { ...d.dossier, outreachDraft: draft } } : null);
-    } finally {
-      setDraftingOutreach(false);
+      setOpener(await draftOutreach(selected.lead, budgeterRef.current));
+    } catch (err) {
+      setOpener(`Could not draft: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }, [selectedDossier]);
+  }, [selected]);
 
-  const handleFeedback = useCallback((lead, verdict) => {
-    setFeedbackMap(m => ({ ...m, [lead.entity.id]: verdict }));
-    if (selectedProfile) {
-      const updated = applyFeedback(selectedProfile, {
-        entityId: lead.entity.id,
-        entityName: lead.entity.name,
-        verdict,
-        rationale: lead.rationale || lead.entity.name,
-      });
-      setSelectedProfile(updated);
-      setProfiles(ps => ps.map(p => p.id === updated.id ? updated : p));
-    }
-  }, [selectedProfile]);
-
-  const handleSaveProfile = useCallback((profile) => {
-    setProfiles(ps => {
-      const exists = ps.find(p => p.id === profile.id);
-      return exists ? ps.map(p => p.id === profile.id ? profile : p) : [...ps, profile];
-    });
-    setSelectedProfile(profile);
-    setEditingProfile(null);
-  }, []);
-
-  const handleToggleSelect = useCallback((id) => {
-    setSelectedIds(s => {
-      const n = new Set(s);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
-  }, []);
+  const searching = phase === "searching";
 
   return (
-    <div className={T.page}>
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">Registry Engine</h1>
-          <p className="text-xs text-gray-400">Colorado business registry discovery</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {screen === "results" && (
-            <>
-              <button className={T.btn.ghost} onClick={() => setShowDigest(true)}>Digest</button>
-              <button className={T.btn.secondary} onClick={() => { setScreen("setup"); setEditingProfile(null); }}>New search</button>
-            </>
-          )}
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="max-w-3xl mx-auto p-4 space-y-4">
+        <h1 className="text-xl font-semibold">Registry Engine</h1>
 
-      <main className="p-6">
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{error}</div>
-        )}
-
-        {screen === "setup" && editingProfile === null && (
-          <SearchSetup
-            profiles={profiles}
-            selectedProfile={selectedProfile}
-            onSelectProfile={setSelectedProfile}
-            onEditProfile={p => setEditingProfile(p ?? "new")}
-            onRun={handleRun}
-            running={false}
-          />
-        )}
-
-        {editingProfile !== null && (
-          <div className="max-w-2xl mx-auto">
-            <ProfileEditor
-              profile={editingProfile === "new" ? null : editingProfile}
-              onSave={handleSaveProfile}
-              onCancel={() => setEditingProfile(null)}
+        {/* Location */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+          <div className="flex gap-2">
+            <input
+              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+              value={city}
+              onChange={e => setCity(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && locate()}
+              placeholder="City in Colorado"
             />
+            <button
+              className="px-4 py-2 rounded bg-blue-600 text-white text-sm disabled:opacity-50"
+              onClick={locate}
+              disabled={phase === "locating"}
+            >
+              {phase === "locating" ? "Locating…" : "Set location"}
+            </button>
           </div>
-        )}
 
-        {screen === "running" && (
-          <div className="max-w-2xl mx-auto">
-            <FunnelProgress
-              counts={funnelCounts}
-              currentStage={currentStage}
-              tokenInput={tokenTotals.input}
-              tokenOutput={tokenTotals.output}
-              budgetInput={CLASSIFY_BUDGET}
-            />
-          </div>
-        )}
-
-        {screen === "results" && editingProfile === null && (
-          <div>
-            <div className="flex items-center gap-4 mb-4">
-              {["results", "vitality", "gaps"].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md capitalize ${activeTab === tab ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
-                  {tab}
-                </button>
-              ))}
-              <div className="ml-auto text-xs text-gray-400">
-                {tokenTotals.input > 0 && `${tokenTotals.input.toLocaleString()} tokens in`}
-              </div>
+          {center && mapOk && <div id="geofence-map" className="h-64 rounded border border-gray-200" />}
+          {center && !mapOk && (
+            <div className="text-sm text-gray-600 bg-gray-100 rounded p-3">
+              Map unavailable in this environment — using {city} center ({center.lat.toFixed(3)}, {center.lng.toFixed(3)}) with the radius below.
             </div>
+          )}
+          {center && (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-gray-600 whitespace-nowrap">Radius: {radiusKm} km</span>
+              <input type="range" min="1" max="40" value={radiusKm}
+                onChange={e => setRadiusKm(parseInt(e.target.value, 10))} className="flex-1" />
+            </div>
+          )}
+          {center && mapOk && <div className="text-xs text-gray-400">Click the map to move the search circle.</div>}
+        </div>
 
-            {activeTab === "results" && (
-              <div className={T.card}>
-                <ResultsTable
-                  leads={leads}
-                  classifyMap={new Map()}
-                  onSelectLead={handleSelectLead}
-                  onQualify={handleQualify}
-                  onFeedback={handleFeedback}
-                  feedbackMap={feedbackMap}
-                  selectedIds={selectedIds}
-                  onToggleSelect={handleToggleSelect}
-                />
-              </div>
+        {/* Query */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+          <input
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && !searching && search()}
+            placeholder='What are you looking for? e.g. "jewelers that use princess cut diamonds"'
+          />
+          <button
+            className="w-full py-2.5 rounded bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
+            onClick={search}
+            disabled={!center || !query.trim() || searching}
+          >
+            {searching ? "Searching…" : "Search"}
+          </button>
+        </div>
+
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{error}</div>}
+
+        {/* Results */}
+        {(searching || leads.length > 0 || phase === "done") && (
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex justify-between text-xs text-gray-500 mb-2">
+              <span>{candidates} registry matches · {leads.length} leads{searching ? " · searching…" : ""}</span>
+              {tokens && <span>{tokens.input.toLocaleString()} in / {tokens.output.toLocaleString()} out tokens</span>}
+            </div>
+            {leads.length === 0 && phase === "done" && (
+              <div className="text-sm text-gray-500">No matches. Try a broader query or larger radius.</div>
             )}
-            {activeTab === "vitality" && <div className={T.card}><VitalityView rows={vitalityRows} /></div>}
-            {activeTab === "gaps" && <div className={T.card}><GapView rows={gapRows} /></div>}
+            <ul className="divide-y divide-gray-100">
+              {leads.map(lead => (
+                <li key={lead.entity.id}
+                  className="py-2 flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-1 rounded"
+                  onClick={() => open(lead)}>
+                  <span className={`w-12 text-center text-xs font-semibold rounded px-1 py-0.5 ${
+                    !lead.verified ? "bg-gray-100 text-gray-500"
+                      : lead.score >= 70 ? "bg-green-100 text-green-700"
+                      : lead.score >= 40 ? "bg-yellow-100 text-yellow-700"
+                      : "bg-gray-200 text-gray-600"}`}>
+                    {lead.verified ? `${lead.score}` : "…"}
+                  </span>
+                  <span className="flex-1 text-sm">{lead.entity.name}</span>
+                  <span className="text-xs text-gray-500">{lead.entity.city}</span>
+                  {lead.verified && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${lead.webPresence === "found" ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-500"}`}>
+                      {lead.webPresence === "found" ? "web" : "no web"}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-      </main>
+      </div>
 
-      {selectedDossier && (
-        <DossierDrawer
-          lead={selectedDossier.lead}
-          dossier={selectedDossier.dossier}
-          onClose={() => setSelectedDossier(null)}
-          onDraftOutreach={handleDraftOutreach}
-          drafting={draftingOutreach}
-        />
+      {/* Brief panel */}
+      {selected && (
+        <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <span className="font-medium text-sm">{selected.lead.entity.name}</span>
+            <button className="text-gray-400 hover:text-gray-600" onClick={() => setSelected(null)}>✕</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <pre className="text-xs whitespace-pre-wrap font-mono text-gray-700">{selected.brief.text}</pre>
+            <div>
+              <button
+                className="px-3 py-1.5 rounded border border-gray-300 text-sm disabled:opacity-50"
+                onClick={drawOpener}
+                disabled={opener === "loading" || !budgeterRef.current}
+              >
+                {opener === "loading" ? "Drafting…" : "Draft opener"}
+              </button>
+              {opener && opener !== "loading" && (
+                <p className="mt-2 text-sm text-gray-700 bg-gray-50 rounded p-3">{opener}</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
-
-      {showDigest && <DigestModal leads={leads} onClose={() => setShowDigest(false)} />}
     </div>
   );
 }
