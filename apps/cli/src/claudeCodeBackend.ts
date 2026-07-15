@@ -1,49 +1,32 @@
 import { spawn } from "node:child_process";
-import type { LlmBackend, LlmRequest, LlmResponse } from "@registry-engine/qualify";
+import type { RawLlm, RawCompleteOptions } from "@registry-engine/qualify";
 
-// LlmBackend that shells out to the Claude Code CLI in headless mode
+// RawLlm backend that shells out to the Claude Code CLI in headless mode
 // (`claude -p --output-format json`). Bills the user's Claude subscription —
 // no API key needed. Node-only: never bundle this into the artifact.
-//
-// When the request asks for web search, headless Claude Code's own WebSearch
-// tool is allowed; otherwise tools are disabled for a plain completion.
-export class ClaudeCodeBackend implements LlmBackend {
-  constructor(private readonly model: string = "sonnet") {}
+export class ClaudeCodeBackend implements RawLlm {
+  // Optional override pins every tier to one CLI model alias (e.g. "sonnet").
+  constructor(private readonly modelOverride?: string | undefined) {}
 
-  async call(req: LlmRequest): Promise<LlmResponse> {
-    const wantsWebSearch = (req.tools ?? []).some(t => t.name === "web_search");
-    const prompt = req.messages.map(m => m.content).join("\n\n");
-
-    // The prompt goes via stdin: --allowedTools is variadic and would
-    // swallow a positional prompt argument.
+  async complete(prompt: string, opts: RawCompleteOptions): Promise<string> {
+    // The prompt goes via stdin: flag values with spaces are fragile as
+    // positional arguments.
     const args = [
       "-p",
       "--output-format", "json",
-      "--model", this.model,
-      ...(req.system !== undefined ? ["--system-prompt", req.system] : []),
-      // Headless mode denies any tool not explicitly allowed, so plain
-      // completions need no tool flags at all.
-      ...(wantsWebSearch ? ["--allowedTools", "WebSearch"] : []),
+      "--model", this.modelOverride ?? opts.model,
+      ...(opts.system !== undefined ? ["--system-prompt", opts.system] : []),
     ];
 
     const stdout = await run("claude", args, prompt);
 
-    let result: { result?: string; usage?: { input_tokens?: number; output_tokens?: number } };
+    let result: { result?: string };
     try {
       result = JSON.parse(stdout) as typeof result;
     } catch {
       throw new Error(`claude CLI returned unparseable output: ${stdout.slice(0, 200)}`);
     }
-
-    const content = result.result ?? "";
-    return {
-      content,
-      usage: {
-        inputTokens: result.usage?.input_tokens ?? Math.ceil(prompt.length / 4),
-        outputTokens: result.usage?.output_tokens ?? Math.ceil(content.length / 4),
-      },
-      stopReason: "end_turn",
-    };
+    return result.result ?? "";
   }
 }
 
