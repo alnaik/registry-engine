@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@registry-engine/registry-core": ["packages/registry-core/src/index.ts"],
+      "@registry-engine/qualify": ["packages/qualify/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts", "apps/cli/src/**/*.ts", "tests/**/*.ts"]
+}

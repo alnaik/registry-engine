@@ -11,8 +11,7 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "@registry-engine/registry-core": "*",
-    "@registry-engine/shared": "*"
+    "@registry-engine/registry-core": "*"
   },
   "devDependencies": {
     "typescript": "*"

@@ -1,9 +1,8 @@
-export type { NormalizedEntity, TradeName, SourceMeta, LocationQuery, EntityFilters } from "./types.js";
-export type { RegistrySource } from "./sources/RegistrySource.js";
-export { ColoradoRegistrySource } from "./sources/colorado/index.js";
+export type { Entity, EntityAddress, Evidence } from "./entity.js";
+export { normalizeName, mergeEntities } from "./entity.js";
+export type { Plane, DriverKind, SourceSpec, Intent, FetchRequest, Driver, DriverRegistry } from "./driver.js";
+export { loadManifest, ManifestError } from "./manifest.js";
 export { MemoryCache } from "./util/cache.js";
 export type { KVCache } from "./util/cache.js";
-export { Limiter } from "./util/http.js";
+export { Limiter, fetchWithRetry, buildSoqlUrl } from "./util/http.js";
 export type { FetchRetryOptions } from "./util/http.js";
-export { zipsWithinRadius, haversineDistance } from "./location/geometry.js";
-export { resolveAddress } from "./location/resolve.js";

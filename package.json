@@ -1,11 +1,12 @@
 {
   "name": "registry-engine",
   "private": true,
+  "type": "module",
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsc --build",
+    "typecheck": "tsc",
     "bundle": "node scripts/bundle-artifact.mjs"
   },
   "devDependencies": {
