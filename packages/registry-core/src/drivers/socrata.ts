@@ -112,9 +112,13 @@ export class SocrataDriver implements Driver {
     for (const [id, row] of byId) {
       const entity = rowToEntity(source, row);
       entity.evidence.push(...keywordEvidence(source, f["name"]!, entity.name, keywords));
+      // The trade dataset repeats descriptions across filings — dedupe per entity.
+      const seenDescs = new Set<string>();
       for (const tr of tradeNamesByEntity.get(id) ?? []) {
         const desc = tn === undefined ? "" : str(tr[tn.fields.description]);
-        if (desc !== "" && !entity.names.includes(desc)) entity.names.push(desc);
+        if (desc === "" || seenDescs.has(desc.toUpperCase())) continue;
+        seenDescs.add(desc.toUpperCase());
+        if (!entity.names.includes(desc)) entity.names.push(desc);
         if (tn !== undefined) {
           entity.evidence.push(...keywordEvidence(source, tn.fields.description, desc, keywords));
         }

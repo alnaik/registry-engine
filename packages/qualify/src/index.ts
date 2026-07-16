@@ -1,3 +1,5 @@
+export { search, MAX_LLM_CALLS_PER_SEARCH } from "./engine.js";
+export type { SearchConfig, SearchOutcome, EngineEvent } from "./engine.js";
 export { createLlm, Llm, LlmCallBudgetError, TIER_MODELS } from "./llm/adapter.js";
 export type { Tier, RawLlm, RawCompleteOptions, LlmConfig, LlmCallOptions } from "./llm/adapter.js";
 export { mapQuery, parseMapResponse, MAP_SYSTEM } from "./verbs/map.js";
