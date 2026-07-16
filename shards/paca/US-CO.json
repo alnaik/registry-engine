@@ -1,0 +1,2818 @@
+{
+ "source": "paca",
+ "region": "US-CO",
+ "generated": "2026-07-16",
+ "protocol_note": "Recorded from apps.mrp.usda.gov ServiceNow widget API (no CORS; Node-only). See docs/data/paca.md.",
+ "records": [
+  {
+   "license_number": "20060307",
+   "name_of_business": "LEEVERS SUPERMARKETS INC",
+   "license_status": "Active",
+   "physical_city": "Castle Rock",
+   "physical_state": "CO",
+   "physical_zip_code": "80104",
+   "license_issuance_date": "2006-01-03",
+   "trade_names": [],
+   "branches": [
+    "SAVE A LOT",
+    "SAVE A LOT"
+   ],
+   "principals": [
+    "CHRISTOPHER LEEVERS",
+    "JOHN LEEVERS",
+    "ESOTTR",
+    "ESOTTR"
+   ],
+   "telephone_number": "(303) 814-8646",
+   "email_address": "debbiel@leevers.com",
+   "website": ""
+  },
+  {
+   "license_number": "20240968",
+   "name_of_business": "CARLOS & ERNESTINE GALICIA FARMS LLC",
+   "license_status": "Active",
+   "physical_city": "FORT LUPTON",
+   "physical_state": "CO",
+   "physical_zip_code": "80621",
+   "license_issuance_date": "2024-07-02",
+   "trade_names": [
+    "GALICIA FARMS"
+   ],
+   "branches": [],
+   "principals": [
+    "Ernestine Galicia",
+    "Carlos Galicia"
+   ],
+   "telephone_number": "(303) 618-4670",
+   "email_address": "GALICIAFARMS@COMCAST.NET",
+   "website": ""
+  },
+  {
+   "license_number": "20111376",
+   "name_of_business": "BLANCA POTATO LLC",
+   "license_status": "Active",
+   "physical_city": "BLANCA",
+   "physical_state": "CO",
+   "physical_zip_code": "81123",
+   "license_issuance_date": "2011-08-31",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN ARTAECHEVARRIA",
+    "JARED SMITH",
+    "VIRGIL VALDEZ",
+    "SEGUNDO DIAZ"
+   ],
+   "telephone_number": "(719) 379-3211",
+   "email_address": "RODNEY@BLANCAPOTATO.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20220969",
+   "name_of_business": "East Denver Food Hub LLC",
+   "license_status": "Active",
+   "physical_city": "Denver",
+   "physical_state": "CO",
+   "physical_zip_code": "80204",
+   "license_issuance_date": "2022-08-03",
+   "trade_names": [
+    "Hearty",
+    "Hearty Provisions"
+   ],
+   "branches": [],
+   "principals": [
+    "Roberto Meza",
+    "David Demerling"
+   ],
+   "telephone_number": "(720) 722-3425",
+   "email_address": "David@eastdenverfoodhub.com",
+   "website": "Eastdenverfoodhub.com"
+  },
+  {
+   "license_number": "20250268",
+   "name_of_business": "THE MARKET AT NEDERLAND, LLC",
+   "license_status": "Active",
+   "physical_city": "Nederland",
+   "physical_state": "CO",
+   "physical_zip_code": "80466",
+   "license_issuance_date": "2024-12-31",
+   "trade_names": [
+    "B & F Mountain Market"
+   ],
+   "branches": [],
+   "principals": [
+    "DARIN HILL",
+    "VALERIE HILL"
+   ],
+   "telephone_number": "(970) 626-5811",
+   "email_address": "ap@mymarketstores.com",
+   "website": "mymarketstores.com"
+  },
+  {
+   "license_number": "20161211",
+   "name_of_business": "HAYS MARKET INC",
+   "license_status": "Active",
+   "physical_city": "JOHNSTOWN",
+   "physical_state": "CO",
+   "physical_zip_code": "80534",
+   "license_issuance_date": "2016-09-30",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "SALLY HAYS",
+    "RICHARD HAYS",
+    "RYAN HAYS",
+    "RUSSELL HAYS",
+    "NEAL HAYS"
+   ],
+   "telephone_number": "(970) 587-4658",
+   "email_address": "russell@haysmarket.com",
+   "website": ""
+  },
+  {
+   "license_number": "20260008",
+   "name_of_business": "BENNYS FOODS SERVICE INC",
+   "license_status": "Active",
+   "physical_city": "Colorado Springs",
+   "physical_state": "CO",
+   "physical_zip_code": "80919",
+   "license_issuance_date": "2025-10-02",
+   "trade_names": [
+    "Benny's Food Service"
+   ],
+   "branches": [],
+   "principals": [
+    "Steve De La Torre",
+    "Bryan De La Torre"
+   ],
+   "telephone_number": "(719) 501-8176",
+   "email_address": "bennyfoodservice@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20141271",
+   "name_of_business": "PARADIGM FRESH INC",
+   "license_status": "Active",
+   "physical_city": "FORT MORGAN",
+   "physical_state": "CO",
+   "physical_zip_code": "80701",
+   "license_issuance_date": "2014-09-30",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN HARRIS"
+   ],
+   "telephone_number": "(970) 775-2049",
+   "email_address": "JOHN@PARADIGMFRESH.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20161210",
+   "name_of_business": "HAYS MARKET OF BERTHOUD LLC",
+   "license_status": "Active",
+   "physical_city": "BERTHOUD",
+   "physical_state": "CO",
+   "physical_zip_code": "80513",
+   "license_issuance_date": "2016-09-30",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "RUSSELL HAYS",
+    "RYAN HAYS",
+    "NEAL HAYS"
+   ],
+   "telephone_number": "(970) 532-0257",
+   "email_address": "neal@haysmarket.com",
+   "website": ""
+  },
+  {
+   "license_number": "20180766",
+   "name_of_business": "DIONISIO PRODUCE & FARMS LLC",
+   "license_status": "Active",
+   "physical_city": "PUEBLO",
+   "physical_state": "CO",
+   "physical_zip_code": "81006",
+   "license_issuance_date": "2018-05-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "RUSSELL DIONISIO"
+   ],
+   "telephone_number": "(719) 948-3194",
+   "email_address": "RDIONISIO@DIONISIOPRODUCE.COM",
+   "website": "www.dionisioproduce.com"
+  },
+  {
+   "license_number": "20200267",
+   "name_of_business": "FRESH START PRODUCE TOO INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80239",
+   "license_issuance_date": "2019-12-12",
+   "trade_names": [
+    "Fresh Start Mercado"
+   ],
+   "branches": [],
+   "principals": [
+    "JACLYN HUBAN"
+   ],
+   "telephone_number": "(303) 842-7986",
+   "email_address": "jackie@freshstartproducetoo.com",
+   "website": "WWW.FRESHSTARTPRODUCETOO.COM"
+  },
+  {
+   "license_number": "20200857",
+   "name_of_business": "MILNE SALES INC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "2020-06-01",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS MILNE",
+    "TINA MILNE"
+   ],
+   "telephone_number": "(719) 852-4727",
+   "email_address": "tom@milnesales.com",
+   "website": ""
+  },
+  {
+   "license_number": "20161185",
+   "name_of_business": "HERITAGE MARKET LLC",
+   "license_status": "Active",
+   "physical_city": "EATON",
+   "physical_state": "CO",
+   "physical_zip_code": "80615",
+   "license_issuance_date": "2016-09-20",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN ROHN",
+    "KATHERINE ROHN"
+   ],
+   "telephone_number": "(970) 454-1900",
+   "email_address": "heritagemarketeatonco@gmail.com",
+   "website": "www.heritagemarket.net"
+  },
+  {
+   "license_number": "20160843",
+   "name_of_business": "HIRAKATA FARMS AND PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "ROCKY FORD",
+   "physical_state": "CO",
+   "physical_zip_code": "81067",
+   "license_issuance_date": "2016-06-24",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "GLENN HIRAKATA",
+    "MICHAEL HIRAKATA"
+   ],
+   "telephone_number": "(719) 254-7614",
+   "email_address": "cmchirakata@hotmail.com",
+   "website": "Hirakatafarms.com"
+  },
+  {
+   "license_number": "20110109",
+   "name_of_business": "KK ENTERPRISES LLC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "2010-11-09",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "PAMELA KLECKER",
+    "JAN KLECKER",
+    "ADAM KLECKER"
+   ],
+   "telephone_number": "(719) 852-2076",
+   "email_address": "jpkleck@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "19980059",
+   "name_of_business": "MOUNTAIN QUALITY MARKETING LLC",
+   "license_status": "Active",
+   "physical_city": "MONTROSE",
+   "physical_state": "CO",
+   "physical_zip_code": "81403",
+   "license_issuance_date": "1997-10-10",
+   "trade_names": [
+    "Mountain Quality Farms"
+   ],
+   "branches": [],
+   "principals": [
+    "REID FISHERING"
+   ],
+   "telephone_number": "(970) 249-1633",
+   "email_address": "REID@MOUNTAINQUALITY.FARM",
+   "website": ""
+  },
+  {
+   "license_number": "20030590",
+   "name_of_business": "ASPEN GROCERY INC",
+   "license_status": "Active",
+   "physical_city": "ASPEN",
+   "physical_state": "CO",
+   "physical_zip_code": "81611",
+   "license_issuance_date": "2003-02-05",
+   "trade_names": [
+    "CRESTED BUTTE CLARKS MARKET",
+    "BATTLEMENT MESSA CLARKS MARKET",
+    "NORWOOD CLARKS MARKET",
+    "CLARKS MARKET",
+    "BLANDING CLARKS MARKET",
+    "ASPEN CLARKS MARKET",
+    "CANYON COUNTRY",
+    "TELLERIDE CLARKS MARKET",
+    "CLARKS EXPRESS",
+    "CLARKS CENTRAL OFFICE",
+    "SNOWMASS CLARKS MARKET"
+   ],
+   "branches": [
+    "NORWOOD CLARKS MARKET",
+    "BATTLEMENT MESSA CLARKS MARKET",
+    "CRESTED BUTTE CLARKS MARKET",
+    "CLARKS CENTRAL OFFICE",
+    "BLANDING CLARKS MARKET",
+    "CANYON COUNTRY",
+    "SNOWMASS CLARKS MARKET",
+    "TELLURIDE CLARKS MARKET",
+    "CLARKS MARKET",
+    "CLARKS EXPRESS"
+   ],
+   "principals": [
+    "JOSEPH CLARK JR",
+    "LINDA CLARK"
+   ],
+   "telephone_number": "(970) 925-5295",
+   "email_address": "vendor@clarksmarket.com",
+   "website": ""
+  },
+  {
+   "license_number": "20131135",
+   "name_of_business": "SOUTHERN COLORADO FARMS LLC",
+   "license_status": "Active",
+   "physical_city": "CENTER",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "2013-07-25",
+   "trade_names": [
+    "NATURE FRESH"
+   ],
+   "branches": [],
+   "principals": [
+    "VICTOR SMITH"
+   ],
+   "telephone_number": "(719) 754-2681",
+   "email_address": "ap@southerncoloradofarms.com",
+   "website": ""
+  },
+  {
+   "license_number": "20140142",
+   "name_of_business": "5280 PRODUCE INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2013-11-06",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MICHAEL MARTELLI",
+    "BRAD JESTER"
+   ],
+   "telephone_number": "(303) 292-1303",
+   "email_address": "5280FICCO@GMAIL.COM",
+   "website": "www.5280produce.com"
+  },
+  {
+   "license_number": "20241160",
+   "name_of_business": "FALCON FOOD SERVICE INC",
+   "license_status": "Active",
+   "physical_city": "Colorado Springs",
+   "physical_state": "CO",
+   "physical_zip_code": "80917",
+   "license_issuance_date": "2024-08-27",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ALFRED MARTINEZ III"
+   ],
+   "telephone_number": "(661) 670-3719",
+   "email_address": "ajproducerguy@yahoo.com",
+   "website": ""
+  },
+  {
+   "license_number": "20170387",
+   "name_of_business": "GREEN CHEF CORPORATION",
+   "license_status": "Active",
+   "physical_city": "Boulder",
+   "physical_state": "CO",
+   "physical_zip_code": "80301",
+   "license_issuance_date": "2017-01-31",
+   "trade_names": [],
+   "branches": [
+    "Green Chef Corporation - Aurora DC",
+    "GREEN CHEF CORPORATION"
+   ],
+   "principals": [
+    "GROCERY DELIVERY E SERVICES USA INC",
+    "GROCERY DELIVERY E SERVICES USA INC",
+    "Assaf Ronen"
+   ],
+   "telephone_number": "(720) 452-7430",
+   "email_address": "jolaade.aboaba@hellofresh.com",
+   "website": "WWW.GREENCHEF.COM"
+  },
+  {
+   "license_number": "20041006",
+   "name_of_business": "IDAHO-PACIFIC COLORADO CORPORATION",
+   "license_status": "Active",
+   "physical_city": "CENTER",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "2004-07-12",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "WALLACE BROWNING III",
+    "BADEN BURT",
+    "PETER WEBEL",
+    "TODD SUTTON",
+    "JON SCHODDE",
+    "IDAHO PACIFIC HOLDING INC",
+    "IDAHO PACIFIC HOLDING INC"
+   ],
+   "telephone_number": "(208) 538-6971",
+   "email_address": "Jennifer@IDAHOPACIFIC.COM",
+   "website": "idahopacific.com"
+  },
+  {
+   "license_number": "20231038",
+   "name_of_business": "High Country Produce LLC",
+   "license_status": "Active",
+   "physical_city": "Montrose",
+   "physical_state": "CO",
+   "physical_zip_code": "81403",
+   "license_issuance_date": "2023-06-27",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Dixon Walne"
+   ],
+   "telephone_number": "(970) 402-4585",
+   "email_address": "highcountryproduce@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20010406",
+   "name_of_business": "OCHOCO FOODS INC",
+   "license_status": "Active",
+   "physical_city": "PRINEVILLE",
+   "physical_state": "CO",
+   "physical_zip_code": "97754",
+   "license_issuance_date": "2000-12-08",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN AMODEO",
+    "RONALD BRYANT"
+   ],
+   "telephone_number": "(541) 447-6291",
+   "email_address": "ericksonsprine@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20200452",
+   "name_of_business": "PACIFIC MERCANTILE CO",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80202",
+   "license_issuance_date": "2020-02-18",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "KYLE NAGAI",
+    "JOLIE NOGUCHI",
+    "KEITH NAGAI"
+   ],
+   "telephone_number": "(303) 295-0293",
+   "email_address": "alyssanoguchi@pmccolorado.com",
+   "website": "www.pacificeastwest.com"
+  },
+  {
+   "license_number": "20100265",
+   "name_of_business": "ROCKY MOUNTAIN PRODUCE GROUP INC",
+   "license_status": "Active",
+   "physical_city": "WINDSOR",
+   "physical_state": "CO",
+   "physical_zip_code": "80550",
+   "license_issuance_date": "2009-11-23",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "J SHAWN BARRIS"
+   ],
+   "telephone_number": "(970) 674-9641",
+   "email_address": "SHAWNBARRIS@HOTMAIL.COM",
+   "website": "WWW.ROCKYMOUNTAINPRODUCE.NET"
+  },
+  {
+   "license_number": "19792103",
+   "name_of_business": "MCLANE WESTERN INC",
+   "license_status": "Active",
+   "physical_city": "LONGMONT",
+   "physical_state": "CO",
+   "physical_zip_code": "80504",
+   "license_issuance_date": "1979-09-28",
+   "trade_names": [],
+   "branches": [
+    "McLane Salt Lake City"
+   ],
+   "principals": [
+    "MCLANE COMPANY INC",
+    "MCLANE COMPANY INC",
+    "Eric Hildenbrand",
+    "CAROLINE MANN",
+    "Wendy Wong",
+    "Christopher Smith",
+    "ANTHONEY FRANKENBERGER",
+    "Chad Rice"
+   ],
+   "telephone_number": "(303) 682-7500",
+   "email_address": "productlicense@mclaneco.com",
+   "website": ""
+  },
+  {
+   "license_number": "19940629",
+   "name_of_business": "ZAPATA SEED COMPANY",
+   "license_status": "Active",
+   "physical_city": "HOOPER",
+   "physical_state": "CO",
+   "physical_zip_code": "81136",
+   "license_issuance_date": "1994-02-02",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ANNA OSTERHOUT",
+    "PATRICK BROWNELL"
+   ],
+   "telephone_number": "(719) 754-9048",
+   "email_address": "SALES@ZAPATASEEDCOMPANY.COM",
+   "website": "WWW.ZAPATASEEDCOMPANY.COM"
+  },
+  {
+   "license_number": "19910709",
+   "name_of_business": "COOSEMANS DENVER INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80239",
+   "license_issuance_date": "1991-03-01",
+   "trade_names": [
+    "COOSEMANS-DENVER INC",
+    "Colorado Specialty Farms"
+   ],
+   "branches": [],
+   "principals": [
+    "DANIEL COOSEMAN",
+    "JAMES MACEK"
+   ],
+   "telephone_number": "(303) 371-3130",
+   "email_address": "JAMESM@COOSEMANSDENVER.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19981485",
+   "name_of_business": "HEINIES MARKET INC",
+   "license_status": "Active",
+   "physical_city": "WHEAT RIDGE",
+   "physical_state": "CO",
+   "physical_zip_code": "80033",
+   "license_issuance_date": "1998-06-25",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "HEINZ SILZ"
+   ],
+   "telephone_number": "(303) 425-9955",
+   "email_address": "heiniesmarket303@gmail.com",
+   "website": "HEINIESMARKET.COM/"
+  },
+  {
+   "license_number": "20210525",
+   "name_of_business": "Hayden Family LLC",
+   "license_status": "Active",
+   "physical_city": "Hayden",
+   "physical_state": "CO",
+   "physical_zip_code": "81639",
+   "license_issuance_date": "2021-02-26",
+   "trade_names": [
+    " Hayden Merc Ace Hardware"
+   ],
+   "branches": [],
+   "principals": [
+    "William Hayden",
+    "WILLIAM HAYDEN",
+    "William Hayden"
+   ],
+   "telephone_number": "(970) 276-3922",
+   "email_address": "hyhybm@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20211217",
+   "name_of_business": "Coal Creek Produce LLC",
+   "license_status": "Active",
+   "physical_city": "Montrose",
+   "physical_state": "CO",
+   "physical_zip_code": "81403",
+   "license_issuance_date": "2021-09-17",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Valdez Farms LLC",
+    "Valdez Farms LLC",
+    "DUANE HOMEWOOD",
+    "Chris Homewood",
+    "RDH Enterprises LLC",
+    "RDH Enterprises LLC"
+   ],
+   "telephone_number": "(970) 252-1057",
+   "email_address": "coalcreekproduce@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20130945",
+   "name_of_business": "GROWER-SHIPPER POTATO CO INC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "2013-06-10",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DAN HARVEY",
+    "CRAIG MINER",
+    "SEGUNDO DIAZ",
+    "RONALD BOND",
+    "CHRIS MINER"
+   ],
+   "telephone_number": "(719) 852-3569",
+   "email_address": "MRCHICKENDEACON@HOTMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20111285",
+   "name_of_business": "TALBOTTS MOUNTAIN GOLD LLLP",
+   "license_status": "Active",
+   "physical_city": "PALISADE",
+   "physical_state": "CO",
+   "physical_zip_code": "81526",
+   "license_issuance_date": "2011-08-11",
+   "trade_names": [
+    "MOUNTAIN GOLD"
+   ],
+   "branches": [],
+   "principals": [
+    "BONNIE TALBOTT",
+    "NATHAN TALBOTT",
+    "CHARLES TALBOTT",
+    "HARRY TALBOTT",
+    "DAVID TALBOTT"
+   ],
+   "telephone_number": "(970) 464-5656",
+   "email_address": "liz@talbottfarms.com",
+   "website": ""
+  },
+  {
+   "license_number": "19821370",
+   "name_of_business": "SHOP-ALL INC",
+   "license_status": "Active",
+   "physical_city": "YUMA",
+   "physical_state": "CO",
+   "physical_zip_code": "80759",
+   "license_issuance_date": "1982-06-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "EMPLOYEE STK OWNRSHP PLAN",
+    "EMPLOYEE STK OWNRSHP PLAN",
+    "GARY BRANDNER",
+    "DENNY BLACK",
+    "SHERMAN MCCALLA",
+    "JAMES BERRY",
+    "APRIL BERRY"
+   ],
+   "telephone_number": "(970) 848-5427",
+   "email_address": "ABERRY19@CENTURYTEL.NET",
+   "website": ""
+  },
+  {
+   "license_number": "20201068",
+   "name_of_business": "LM Fort Collins CO LLC",
+   "license_status": "Active",
+   "physical_city": "Fort Collins",
+   "physical_state": "CO",
+   "physical_zip_code": "80524",
+   "license_issuance_date": "2020-07-27",
+   "trade_names": [
+    "LUCKY'S MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "LM ACQUISITION CO LLC",
+    "LM ACQUISITION CO LLC",
+    "JASON SHARON",
+    "LM ACQUISITION CO LLC",
+    "LM ACQUISITION CO LLC"
+   ],
+   "telephone_number": "(970) 482-0388",
+   "email_address": "storedir.ftc47@luckysmarket.com",
+   "website": ""
+  },
+  {
+   "license_number": "20260007",
+   "name_of_business": "ESHS AT WINDSOR LLC",
+   "license_status": "Active",
+   "physical_city": "Windsor",
+   "physical_state": "CO",
+   "physical_zip_code": "80550",
+   "license_issuance_date": "2025-10-02",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "REUBEN ESH"
+   ],
+   "telephone_number": "(970) 292-8387",
+   "email_address": "martha@eshsgrocery.com",
+   "website": "www.eshsgrocery.com"
+  },
+  {
+   "license_number": "20130507",
+   "name_of_business": "GROWER SALES AND MARKETING LLC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "2013-03-01",
+   "trade_names": [
+    "FARM FRESH DIRECT OF AMERICA"
+   ],
+   "branches": [],
+   "principals": [
+    "FARM FRESH DIRECT LLC",
+    "FARM FRESH DIRECT LLC",
+    "VIRGIL VALDEZ",
+    "Cal-Ore Produce",
+    "Cal-Ore Produce",
+    "BLAKAL INC",
+    "BLAKAL INC"
+   ],
+   "telephone_number": "(719) 852-2600",
+   "email_address": "racheal.werner@farmfreshdirect.com",
+   "website": ""
+  },
+  {
+   "license_number": "20230976",
+   "name_of_business": "PRIME PACKING LLC",
+   "license_status": "Active",
+   "physical_city": "CENTER ",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "2023-06-07",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN ARTAECHEVARRIA",
+    "Asier Artaechevarria",
+    "Josh Wager",
+    "THREE S RANCH INC",
+    "THREE S RANCH INC"
+   ],
+   "telephone_number": "(719) 588-2227",
+   "email_address": "rodney@savvymgt.net",
+   "website": ""
+  },
+  {
+   "license_number": "19931724",
+   "name_of_business": "FAGERBERG PRODUCE COMPANY INCORPORATED",
+   "license_status": "Active",
+   "physical_city": "EATON",
+   "physical_state": "CO",
+   "physical_zip_code": "80615",
+   "license_issuance_date": "1993-09-08",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "LESLIE FAGERBERG",
+    "RYAN FAGERBERG",
+    "LYNN FAGERBERG"
+   ],
+   "telephone_number": "(970) 834-1353",
+   "email_address": "GREG@FAGERBERGPRODUCE.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19911127",
+   "name_of_business": "COLO-PAC PRODUCE INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "1991-05-21",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JAMES GARIN",
+    "JOHN GARIN"
+   ],
+   "telephone_number": "(303) 291-0155",
+   "email_address": "IanH@COLO-PAC.COM",
+   "website": "colopac.com"
+  },
+  {
+   "license_number": "20040292",
+   "name_of_business": "BIG SKY TRADING LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80239",
+   "license_issuance_date": "2004-01-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JEFFREY REID"
+   ],
+   "telephone_number": "(303) 292-2050",
+   "email_address": "JEFF@BIGSKYDENVER.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20190136",
+   "name_of_business": "Hugo VPM LLC",
+   "license_status": "Active",
+   "physical_city": "Omaha",
+   "physical_state": "CO",
+   "physical_zip_code": "68138",
+   "license_issuance_date": "2018-12-07",
+   "trade_names": [
+    "The Village Pie Maker",
+    "Branch",
+    "Village Pie Maker"
+   ],
+   "branches": [],
+   "principals": [
+    "Hugo Enterprises LLC",
+    "Hugo Enterprises LLC",
+    "Joe Ricketts"
+   ],
+   "telephone_number": "(303) 962-0025",
+   "email_address": "schristensen@hugollc.com",
+   "website": "www.villagepiemaker.com"
+  },
+  {
+   "license_number": "20120400",
+   "name_of_business": "BYNUM INC",
+   "license_status": "Active",
+   "physical_city": "CEDAREDGE",
+   "physical_state": "CO",
+   "physical_zip_code": "81413",
+   "license_issuance_date": "2012-01-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "BLAKE BYNUM"
+   ],
+   "telephone_number": "(970) 856-3151",
+   "email_address": "FOODTOWN232@AOL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20211031",
+   "name_of_business": "EDIBLE COMPONENT INC",
+   "license_status": "Active",
+   "physical_city": "GOLDEN",
+   "physical_state": "CO",
+   "physical_zip_code": "80401",
+   "license_issuance_date": "2021-08-04",
+   "trade_names": [
+    "ROCKY MOUNTAIN INGREDIENTS"
+   ],
+   "branches": [],
+   "principals": [
+    "SANDRA BAACK"
+   ],
+   "telephone_number": "(303) 278-8729",
+   "email_address": "baack.sandra@rm-ingredients.com",
+   "website": ""
+  },
+  {
+   "license_number": "19951796",
+   "name_of_business": "ASPEN PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "CENTER",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "1995-08-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ERIC ELLITHORPE",
+    "JEDEDIAH ELLITHORPE"
+   ],
+   "telephone_number": "(719) 754-3464",
+   "email_address": "jed@aspenllc.com",
+   "website": ""
+  },
+  {
+   "license_number": "20220211",
+   "name_of_business": "GLOBAL VILLAGE FRUIT INC",
+   "license_status": "Active",
+   "physical_city": "Boulder",
+   "physical_state": "CO",
+   "physical_zip_code": "80301",
+   "license_issuance_date": "2021-12-06",
+   "trade_names": [
+    "Jack & Annie's ",
+    "THE JACKFRUIT COMPANY"
+   ],
+   "branches": [],
+   "principals": [
+    "ANNEMARIE RYU",
+    "Creadve International",
+    "Creadve International",
+    "Homer Robinson"
+   ],
+   "telephone_number": "(507) 254-5117",
+   "email_address": "annie@THEJACKFRUITCOMPANY.COM",
+   "website": "WWW.THEJACKFRUITCOMPANY.COM"
+  },
+  {
+   "license_number": "20211125",
+   "name_of_business": "HARVEST DISTRIBUTION INC",
+   "license_status": "Active",
+   "physical_city": "COLORADO SPRINGS",
+   "physical_state": "CO",
+   "physical_zip_code": "80907",
+   "license_issuance_date": "2021-08-24",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ALFRED BURGESS II",
+    "RICHARD HOLLAND"
+   ],
+   "telephone_number": "(719) 599-7661",
+   "email_address": "d.bloos@harvestdist.com",
+   "website": ""
+  },
+  {
+   "license_number": "20240235",
+   "name_of_business": "LEROUX CREEK FOOD CORP",
+   "license_status": "Active",
+   "physical_city": "HOTCHKISS",
+   "physical_state": "CO",
+   "physical_zip_code": "81419",
+   "license_issuance_date": "2023-12-11",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "WYATT WILSON",
+    "EDWARD TUFT",
+    "SARAH TUFT"
+   ],
+   "telephone_number": "(970) 872-2256",
+   "email_address": "sarah@lerouxcreek.com",
+   "website": "https://lerouxcreek.com/"
+  },
+  {
+   "license_number": "19931157",
+   "name_of_business": "PETROCCO FARMS INC",
+   "license_status": "Active",
+   "physical_city": "BRIGHTON",
+   "physical_state": "CO",
+   "physical_zip_code": "80601",
+   "license_issuance_date": "1993-05-14",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JULIE MARRONE",
+    "DAVID PETROCCO JR",
+    "JOSEPH PETROCCO",
+    "DAVID PETROCCO SR"
+   ],
+   "telephone_number": "(303) 659-6498",
+   "email_address": "DAVE@PETROCCOFARMS.COM",
+   "website": "WWW.PETROCCOFARMS.COM"
+  },
+  {
+   "license_number": "20090648",
+   "name_of_business": "STROHAUER FARMS INC",
+   "license_status": "Active",
+   "physical_city": "LA SALLE",
+   "physical_state": "CO",
+   "physical_zip_code": "80645",
+   "license_issuance_date": "2009-04-14",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MARY STROHAUER",
+    "HARRY STROHAUER"
+   ],
+   "telephone_number": "(970) 284-6526",
+   "email_address": "katie@strohauerfarms.com",
+   "website": "WWW.STROHAUERFARMS.COM"
+  },
+  {
+   "license_number": "20130525",
+   "name_of_business": "WHITE ROCK SPECIALTIES LLC",
+   "license_status": "Active",
+   "physical_city": "MOSCA",
+   "physical_state": "CO",
+   "physical_zip_code": "81146",
+   "license_issuance_date": "2013-03-08",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "WHITE MOUNTAIN FARM INC",
+    "WHITE MOUNTAIN FARM INC",
+    "PAUL NEW",
+    "SWR LLC",
+    "SWR LLC",
+    "SHELDON ROCKEY"
+   ],
+   "telephone_number": "(719) 206-3184",
+   "email_address": "PAUL@WHITEROCKSPEC.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20120568",
+   "name_of_business": "HAR MART CORP",
+   "license_status": "Active",
+   "physical_city": "AURORA",
+   "physical_state": "CO",
+   "physical_zip_code": "80014",
+   "license_issuance_date": "2012-02-07",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOONG KWON",
+    "TAE HO KWON"
+   ],
+   "telephone_number": "(303) 745-4592",
+   "email_address": "DENVERHARMART@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20240416",
+   "name_of_business": "MOON REALESTATE INVESTMENTS LLC",
+   "license_status": "Active",
+   "physical_city": "COLORADO SPRINGS",
+   "physical_state": "CO",
+   "physical_zip_code": "80910",
+   "license_issuance_date": "2024-02-06",
+   "trade_names": [
+    "LUNA MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "POM MOON"
+   ],
+   "telephone_number": "(719) 597-3192",
+   "email_address": "pom.moon@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20201084",
+   "name_of_business": "719 PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "DEL NORTE",
+   "physical_state": "CO",
+   "physical_zip_code": "81132",
+   "license_issuance_date": "2020-07-30",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Terry Haynie",
+    "Sharon Haynie",
+    "Haynie Ryan"
+   ],
+   "telephone_number": "(719) 657-2604",
+   "email_address": "RYAN@719PRODUCE.COM",
+   "website": "WWW.719PRODUCE.COM"
+  },
+  {
+   "license_number": "20190123",
+   "name_of_business": "Domenico Food Products Inc",
+   "license_status": "Active",
+   "physical_city": "Parker",
+   "physical_state": "CO",
+   "physical_zip_code": "80134",
+   "license_issuance_date": "2018-12-04",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN HYVONEN"
+   ],
+   "telephone_number": "(303) 840-2404",
+   "email_address": "jhyvonen@domenico.net",
+   "website": ""
+  },
+  {
+   "license_number": "20190907",
+   "name_of_business": "COLORADO FAST FOOD PRODUCTS LLC",
+   "license_status": "Active",
+   "physical_city": "COLORADO SPRINGS",
+   "physical_state": "CO",
+   "physical_zip_code": "80919",
+   "license_issuance_date": "2019-07-02",
+   "trade_names": [
+    "COLORADO FRESH FOOD PRODUCTS"
+   ],
+   "branches": [],
+   "principals": [
+    "JULIO GARDUNO"
+   ],
+   "telephone_number": "(719) 200-8272",
+   "email_address": "COLORADOFRESHFOODPRODUCTS@YAHOO.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20000487",
+   "name_of_business": "O'NEAL PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "Swink",
+   "physical_state": "CO",
+   "physical_zip_code": "81077",
+   "license_issuance_date": "1999-12-29",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MACKIE O'NEAL JR"
+   ],
+   "telephone_number": "(719) 384-7700",
+   "email_address": "ONEALPRODUCE@AOL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20021069",
+   "name_of_business": "LEE HING INC",
+   "license_status": "Active",
+   "physical_city": "COLORADO SPRINGS",
+   "physical_state": "CO",
+   "physical_zip_code": "80915",
+   "license_issuance_date": "2002-05-07",
+   "trade_names": [
+    "LEE HING FOOD SERVICE"
+   ],
+   "branches": [],
+   "principals": [
+    "KEN ZHOU",
+    "JING CHUN ZHOU",
+    "CHUN ZHOU",
+    "MEI HUA ZHOU",
+    "MEI JIN ZHOU",
+    "MEI JIN (MAY) ZHOU"
+   ],
+   "telephone_number": "(719) 596-5135",
+   "email_address": "LEEHINGaccount@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19163252",
+   "name_of_business": "MONTE VISTA POTATO GROWERS COOP ASSOC TH",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "1956-03-09",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Kent Palmgren",
+    "Clay Mitchell",
+    "Kyler Brown"
+   ],
+   "telephone_number": "(719) 852-4701",
+   "email_address": "JASON.MVPG@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20251145",
+   "name_of_business": "PEAK TO PEAK FOODS LLC",
+   "license_status": "Active",
+   "physical_city": "Denver",
+   "physical_state": "CO",
+   "physical_zip_code": "80239",
+   "license_issuance_date": "2025-09-25",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Jake Trujillo ",
+    "RP Financial Holdings INC",
+    "RP Financial Holdings INC"
+   ],
+   "telephone_number": "(720) 400-7035",
+   "email_address": "admin@peaktopeakfoods.com",
+   "website": "www.peaktopeakfoods.com"
+  },
+  {
+   "license_number": "19850563",
+   "name_of_business": "SPENCER'S PRODUCE LAWN & GARDEN CENTER I",
+   "license_status": "Active",
+   "physical_city": "COLORADO SPRINGS",
+   "physical_state": "CO",
+   "physical_zip_code": "80905",
+   "license_issuance_date": "1985-01-30",
+   "trade_names": [],
+   "branches": [
+    "SPENCER'S PRODUCE LAWN & GARDEN"
+   ],
+   "principals": [
+    "DAN ROBINSON",
+    "ALICE ROBINSON",
+    "MICHEL SPENCER",
+    "SUSAN SPENCER"
+   ],
+   "telephone_number": "(719) 632-2788",
+   "email_address": "spencers@spencersgardens.com",
+   "website": ""
+  },
+  {
+   "license_number": "20220100",
+   "name_of_business": "KickedLoad LLC",
+   "license_status": "Active",
+   "physical_city": "Evergreen",
+   "physical_state": "CO",
+   "physical_zip_code": "80439",
+   "license_issuance_date": "2021-10-28",
+   "trade_names": [
+    "SuperVeg"
+   ],
+   "branches": [],
+   "principals": [
+    "Manor & Co LLC",
+    "Manor & Co LLC",
+    "Brian Freeman LLC",
+    "Brian Freeman LLC",
+    "Brian Freeman",
+    "BRIAN FREEMAN"
+   ],
+   "telephone_number": "(303) 777-7113",
+   "email_address": "brian@SuperVeg.com",
+   "website": "www.SuperVeg.com"
+  },
+  {
+   "license_number": "20111382",
+   "name_of_business": "MOUNTAIN FOOD LLC",
+   "license_status": "Active",
+   "physical_city": "AURORA",
+   "physical_state": "CO",
+   "physical_zip_code": "80010",
+   "license_issuance_date": "2011-09-06",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "XIAO GUAN",
+    "WEN YANG",
+    "JIA LIANG",
+    "B & G Global Holding Inc.",
+    "B & G Global Holding Inc."
+   ],
+   "telephone_number": "(303) 576-8288",
+   "email_address": "vickylin108@hotmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20241243",
+   "name_of_business": "DENVER FRESH PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2024-09-20",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "SIMON FLORES MARTINEZ",
+    "MANUEL FLORES MARTINEZ"
+   ],
+   "telephone_number": "(720) 314-0426",
+   "email_address": "denverfreshproduce@gmail.com",
+   "website": "www.denverfreshproduce.com"
+  },
+  {
+   "license_number": "20150841",
+   "name_of_business": "TATER TRADERS LLC",
+   "license_status": "Active",
+   "physical_city": "CENTER ",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "2015-06-25",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MORGAN BEIRIGER"
+   ],
+   "telephone_number": "(303) 278-0812",
+   "email_address": "VENDOR@TATERTRADERS.COM",
+   "website": "www.tatertraders.com"
+  },
+  {
+   "license_number": "20200705",
+   "name_of_business": "Gotham Greens Aurora LLC",
+   "license_status": "Active",
+   "physical_city": "Aurora",
+   "physical_state": "CO",
+   "physical_zip_code": "80010",
+   "license_issuance_date": "2020-04-30",
+   "trade_names": [],
+   "branches": [
+    "GG Colorado II LLC"
+   ],
+   "principals": [
+    "Gotham Greens Holdings PBC",
+    "Gotham Greens Holdings PBC",
+    "Puri Viraj",
+    "ERIC HALEY",
+    "GOTHAM GREENS HOLDINGS PBC",
+    "GOTHAM GREENS HOLDINGS PBC"
+   ],
+   "telephone_number": "(718) 935-0600",
+   "email_address": "allie@gothamgreens.com",
+   "website": ""
+  },
+  {
+   "license_number": "19880659",
+   "name_of_business": "ROGERS MESA FRUIT CO INC",
+   "license_status": "Active",
+   "physical_city": "HOTCHKISS",
+   "physical_state": "CO",
+   "physical_zip_code": "81419",
+   "license_issuance_date": "1988-02-08",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS ALVEY"
+   ],
+   "telephone_number": "(970) 872-2155",
+   "email_address": "OFFICE@ROGERSMESAFRUIT.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20250619",
+   "name_of_business": "METZ POTATO COMPANY LLC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "2025-04-24",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JENNIFER METZ",
+    "KENNETH METZ",
+    "KENNETH METZ",
+    "PEGGY METZ"
+   ],
+   "telephone_number": "(719) 852-3462",
+   "email_address": "jen@metzpotato.com",
+   "website": "https://www.metzpotato.com/"
+  },
+  {
+   "license_number": "20161068",
+   "name_of_business": "EDWARDS RIGHT PRICE MARKET INC",
+   "license_status": "Active",
+   "physical_city": "FORT MORGAN",
+   "physical_state": "CO",
+   "physical_zip_code": "80701",
+   "license_issuance_date": "2016-08-19",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "VICKI EDWARDS",
+    "RON EDWARDS",
+    "ANGELA EDWARDS - AKER",
+    "WILLIAM DEAL"
+   ],
+   "telephone_number": "(970) 867-5211",
+   "email_address": "edwardsmgr@edwardsmarket.com",
+   "website": "www.edwardsmarket.com"
+  },
+  {
+   "license_number": "19661697",
+   "name_of_business": "WORLEY AND MCCULLOUGH INC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "1966-01-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JAMES MCCULLOUGH"
+   ],
+   "telephone_number": "(719) 852-5136",
+   "email_address": "kogden@worley-mccullough.com",
+   "website": "WWW.WORLEY-MCCULLOUGH.COM"
+  },
+  {
+   "license_number": "20220021",
+   "name_of_business": "Summer House Produce LLC",
+   "license_status": "Active",
+   "physical_city": "Loveland",
+   "physical_state": "CO",
+   "physical_zip_code": "80537",
+   "license_issuance_date": "2021-10-06",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DAVID FAHRENBRUCH"
+   ],
+   "telephone_number": "(970) 567-1680",
+   "email_address": "dfahrenbruch@aol.com",
+   "website": ""
+  },
+  {
+   "license_number": "20230284",
+   "name_of_business": "THE MARKET AT SIDNEY LLC",
+   "license_status": "Active",
+   "physical_city": "RIDGWAY",
+   "physical_state": "CO",
+   "physical_zip_code": "81432",
+   "license_issuance_date": "2023-01-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "VALERIE HILL",
+    "HILL GROCERY COMPANY INC",
+    "HILL GROCERY COMPANY INC",
+    "DARIN HILL"
+   ],
+   "telephone_number": "(406) 482-3737",
+   "email_address": "AP@MYMARKETSTORES.COM",
+   "website": "MYMARKETSTORES.COM"
+  },
+  {
+   "license_number": "19761508",
+   "name_of_business": "TAYLOR FARMS COLORADO INC",
+   "license_status": "Active",
+   "physical_city": "COLORADO SPGS",
+   "physical_state": "CO",
+   "physical_zip_code": "80916",
+   "license_issuance_date": "1976-05-03",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "RUSSELL CROSSEN",
+    "BRUCE TAYLOR",
+    "TAYLOR FRESH FOODS",
+    "TAYLOR FRESH FOODS",
+    "Christopher Hallee"
+   ],
+   "telephone_number": "(719) 473-8251",
+   "email_address": "RCROSSEN@TAYLORFARMS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19851596",
+   "name_of_business": "ALPINE SUMMIT SALES INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80239",
+   "license_issuance_date": "1985-07-22",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MASON BROWN",
+    "BRANDON BROWN",
+    "RANDALL BROWN"
+   ],
+   "telephone_number": "(303) 756-6554",
+   "email_address": "RANDY@ALPINESUMMIT.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20260059",
+   "name_of_business": "SAL AMATO PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "Commerce City",
+   "physical_state": "CO",
+   "physical_zip_code": "80022",
+   "license_issuance_date": "2025-10-20",
+   "trade_names": [
+    "Fresh1 Delivery",
+    "Tucci Fresh Produce"
+   ],
+   "branches": [],
+   "principals": [
+    "ETHAN LEHRBURGER",
+    "MICHAEL SORENSON",
+    "Mountain Vista Foods LLC",
+    "Mountain Vista Foods LLC"
+   ],
+   "telephone_number": "(303) 995-8625",
+   "email_address": "ethan@salamatoproduce.com",
+   "website": "salamatoproduce.com"
+  },
+  {
+   "license_number": "20200921",
+   "name_of_business": "Farm To Fork Colorado",
+   "license_status": "Active",
+   "physical_city": "Colorado Springs",
+   "physical_state": "CO",
+   "physical_zip_code": "80907",
+   "license_issuance_date": "2020-06-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Christina Lumm",
+    "George Lumm"
+   ],
+   "telephone_number": "(719) 301-7670",
+   "email_address": "CHRIS@FARMTOFORKCOLORADO.COM",
+   "website": "www.farmtoforkcolorado.com"
+  },
+  {
+   "license_number": "20251049",
+   "name_of_business": "Daffy Industries LLC",
+   "license_status": "Active",
+   "physical_city": "Denver",
+   "physical_state": "CO",
+   "physical_zip_code": "80239",
+   "license_issuance_date": "2025-08-26",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Grant Savage"
+   ],
+   "telephone_number": "(303) 288-7830",
+   "email_address": "grant@daffyapple.com",
+   "website": "www.daffyapple.com"
+  },
+  {
+   "license_number": "20190860",
+   "name_of_business": "FRESH 1 DELIVERY INC",
+   "license_status": "Active",
+   "physical_city": "Commerce City",
+   "physical_state": "CO",
+   "physical_zip_code": "80022",
+   "license_issuance_date": "2019-06-20",
+   "trade_names": [
+    "Sal Amato Produce"
+   ],
+   "branches": [],
+   "principals": [
+    "JACOB HOWES"
+   ],
+   "telephone_number": "(303) 621-4920",
+   "email_address": "jhowes@fresh1denver.com",
+   "website": ""
+  },
+  {
+   "license_number": "20191179",
+   "name_of_business": "ESHS GROCERY MARKET LLC",
+   "license_status": "Active",
+   "physical_city": "LOVELAND",
+   "physical_state": "CO",
+   "physical_zip_code": "80538",
+   "license_issuance_date": "2019-09-12",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "REUBEN ESH"
+   ],
+   "telephone_number": "(970) 292-8387",
+   "email_address": "martha@eshsgrocery.com",
+   "website": "www.eshsgrocery.com"
+  },
+  {
+   "license_number": "20110428",
+   "name_of_business": "TWO BROTHERS ORGANICS INC",
+   "license_status": "Active",
+   "physical_city": "HOTCHKISS",
+   "physical_state": "CO",
+   "physical_zip_code": "81419",
+   "license_issuance_date": "2011-02-22",
+   "trade_names": [
+    "BIG B'S JUICES",
+    "BIG B'S FABULOUS JUICES",
+    "Big B's Fruit Company"
+   ],
+   "branches": [],
+   "principals": [
+    "Tracey Schwartz",
+    "JEFFREY SCHWARTZ",
+    "SETH SCHWARTZ"
+   ],
+   "telephone_number": "(970) 872-3065",
+   "email_address": "seth@bigbs.com",
+   "website": "WWW.BIGBS.COM"
+  },
+  {
+   "license_number": "20230264",
+   "name_of_business": "MOUNTAIN VALLEY PRODUCE NG LLC",
+   "license_status": "Active",
+   "physical_city": "CENTER ",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "2022-12-29",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Virginia Myers",
+    "ERNEST MYERS"
+   ],
+   "telephone_number": "(719) 754-2139",
+   "email_address": "willie@mvproduce.com",
+   "website": "mvproduce.com"
+  },
+  {
+   "license_number": "19960876",
+   "name_of_business": "BUXMAN ENTERPRISES LTD",
+   "license_status": "Active",
+   "physical_city": "EDWARDS",
+   "physical_state": "CO",
+   "physical_zip_code": "81632",
+   "license_issuance_date": "1996-02-26",
+   "trade_names": [
+    "VILLAGE MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "CHRISTINE FOX",
+    "JOHNNY BUXMAN JR"
+   ],
+   "telephone_number": "(970) 945-1113",
+   "email_address": "village@sopris.net",
+   "website": ""
+  },
+  {
+   "license_number": "20191201",
+   "name_of_business": "ASTEC LTD",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2019-09-18",
+   "trade_names": [
+    "Life Force Foods",
+    "Friends Trading Company",
+    "Sprouts Extraordinaire's",
+    "Rocky Mountain Wheatgrass"
+   ],
+   "branches": [],
+   "principals": [
+    "PATRICK DUFFAS",
+    "MARGARET DALPES",
+    "STEPHEN CARLSON"
+   ],
+   "telephone_number": "(303) 321-5370",
+   "email_address": "S_Carlson123@yahoo.com",
+   "website": "www.sproutsextraordinaire.com"
+  },
+  {
+   "license_number": "20170684",
+   "name_of_business": "PW MONTGOMERY LLC",
+   "license_status": "Active",
+   "physical_city": "GREELEY",
+   "physical_state": "CO",
+   "physical_zip_code": "80634",
+   "license_issuance_date": "2017-04-26",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JULIE PAXSON",
+    "Bollingberg Seeds Co",
+    "Bollingberg Seeds Co",
+    "PATRICK KING",
+    "ENGTROM BEAN & SEED INC",
+    "ENGTROM BEAN & SEED INC"
+   ],
+   "telephone_number": "(970) 405-7010",
+   "email_address": "JULIE@PWMONTGOMERY.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20180144",
+   "name_of_business": "LA TULENSE FOOD & IMPORTS INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2017-11-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DAVID VILLASENOR"
+   ],
+   "telephone_number": "(303) 296-3776",
+   "email_address": "accounting@LATULENSEINC.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20200018",
+   "name_of_business": "ESHS AT DACONO LLC",
+   "license_status": "Active",
+   "physical_city": "DACONO",
+   "physical_state": "CO",
+   "physical_zip_code": "80514",
+   "license_issuance_date": "2019-10-04",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "REUBEN ESH"
+   ],
+   "telephone_number": "(303) 833-5005",
+   "email_address": "martha@ESHSGROCERY.COM",
+   "website": "www.eshsgrocery.com"
+  },
+  {
+   "license_number": "20231262",
+   "name_of_business": "MISSION & VEGETABLES PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2023-08-23",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "EDGAR SORIANO JIMENEZ",
+    "JOSE VILLANUEVA CUELLAR"
+   ],
+   "telephone_number": "(720) 978-0002",
+   "email_address": "MISSION-MARKET@HOTMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19890600",
+   "name_of_business": "READY FOODS INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80204",
+   "license_issuance_date": "1989-01-31",
+   "trade_names": [],
+   "branches": [
+    "Abarca Six",
+    "Abarca Seven",
+    "Abarca Three",
+    "Abarca Ten"
+   ],
+   "principals": [
+    "ADRIANNA ABARCA",
+    "MARCO ABARCA"
+   ],
+   "telephone_number": "(303) 892-5861",
+   "email_address": "GREALE@READYFOODS.BIZ",
+   "website": "www.readyfoods.biz"
+  },
+  {
+   "license_number": "20231231",
+   "name_of_business": "THE HONEST STAND LTD",
+   "license_status": "Active",
+   "physical_city": "NIWOT",
+   "physical_state": "CO",
+   "physical_zip_code": "80503",
+   "license_issuance_date": "2023-08-14",
+   "trade_names": [
+    "THE HONEST STAND",
+    "BOULDER ORGANIC FOODS"
+   ],
+   "branches": [],
+   "principals": [
+    "LACY BUCK",
+    "EQUITY EQUIVALENT RESERVE PROFIT INTERES",
+    "EQUITY EQUIVALENT RESERVE PROFIT INTERES",
+    "JACQUELINE KOEHN",
+    "ROGER RINEBOLD",
+    "MEREDITH BROOKS",
+    "PACIFIC PREMIRE TRUST D'AGOSTINO JR, CHA",
+    "PACIFIC PREMIRE TRUST  D'AGOSTINO JR",
+    "ALTO IRA EMPIRE TRUST BENAJAMIN RUDMAN ,",
+    "ALTO IRA EMPIRE TRUST BENAJAMIN RUDMAN ",
+    "BOB GOSSETT",
+    "CHRIS OGLE",
+    "AARON LORD",
+    "EDWARD MARTIN",
+    "THE GIORGI COMPANIES INC",
+    "THE GIORGI COMPANIES INC",
+    "MATTHEW VERNON",
+    "LISA KARLSTEIN",
+    "VERITY NOBLE",
+    "JEREMY DAY",
+    "WEST HARRINGTON",
+    "KAAREN CARONE",
+    "KATHERINE ADAIR",
+    "JON DAY",
+    "ALEXANDRA RUMMAN",
+    "LAUREN LORTIE",
+    "ROBERT MARTIN",
+    "WALTER CZAPRAN",
+    "ALEXANDRA CARONE",
+    "DEMETRIE CARONE",
+    "TIM MARTIN",
+    "MICHAEL DRAPER"
+   ],
+   "telephone_number": "(303) 530-0470",
+   "email_address": "accounting@thehoneststand.com",
+   "website": "BOULDERORGANICFOODS.COM"
+  },
+  {
+   "license_number": "20200547",
+   "name_of_business": "HINES FARMS LLC",
+   "license_status": "Active",
+   "physical_city": "DELTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81416",
+   "license_issuance_date": "2020-03-06",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "REGINA HINES",
+    "BRENT HINES"
+   ],
+   "telephone_number": "(970) 874-4173",
+   "email_address": "HINESBRENT@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20050637",
+   "name_of_business": "HURON PRODUCE LTD",
+   "license_status": "Active",
+   "physical_city": "FREDERICK",
+   "physical_state": "CO",
+   "physical_zip_code": "80516",
+   "license_issuance_date": "2005-04-13",
+   "trade_names": [
+    "LIPMAN FAMILY FARMS"
+   ],
+   "branches": [
+    "HURON PRODUCE LTD"
+   ],
+   "principals": [
+    "ELYSE LIPMAN",
+    "MAXWELL PRESS",
+    "DARREN MICELLE",
+    "DREW YURKO",
+    "TOBY PURSE",
+    "LIPMAN CANADA HOLDINGS INC",
+    "LIPMAN CANADA HOLDINGS INC"
+   ],
+   "telephone_number": "(970) 377-2720",
+   "email_address": "ldiess@mccarronlaw.com",
+   "website": "HURONPRODUCE.COM"
+  },
+  {
+   "license_number": "20250248",
+   "name_of_business": "VITAMIN COTTAGE NATURAL FOOD MARKETS INC",
+   "license_status": "Active",
+   "physical_city": "LAKEWOOD",
+   "physical_state": "CO",
+   "physical_zip_code": "80228",
+   "license_issuance_date": "2024-12-18",
+   "trade_names": [
+    "NATURAL GROCERS BY VITAMIN COTTAGE"
+   ],
+   "branches": [
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE",
+    "NATURAL GROCERS BY VITAMIN COTTAGE"
+   ],
+   "principals": [
+    "KEMPER ISELY",
+    "HEATHER ISELY",
+    "ZEPHYR ISELY",
+    "ELIZABETH ISELY",
+    "ALAN LEWIS"
+   ],
+   "telephone_number": "(303) 986-4600",
+   "email_address": "LICENSING@NATURALGROCERS.COM",
+   "website": "www.naturalgrocers.com"
+  },
+  {
+   "license_number": "20030588",
+   "name_of_business": "EXPO LLC",
+   "license_status": "Active",
+   "physical_city": "ALAMOSA",
+   "physical_state": "CO",
+   "physical_zip_code": "81101",
+   "license_issuance_date": "2003-02-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "LARUE FARMS INC",
+    "LARUE FARMS INC",
+    "THREE S RANCH INC",
+    "THREE S RANCH INC",
+    "Ernie Myers",
+    "ANATAK FARMS",
+    "ANATAK FARMS",
+    "C & C FARMS LLC",
+    "C & C FARMS LLC",
+    "LEE JACKSON",
+    "LONNIE GILLESPIE",
+    "JACK FELMLEE",
+    "JERE METZ",
+    "CHRIS MINER",
+    "TIM WALL",
+    "TODD MORTENSEN",
+    "JAMES KNUTZON",
+    "DWAYNE CATALANO",
+    "RON ESCHMAN",
+    "BOND FARMS LLC",
+    "BOND FARMS LLC",
+    "PRICE FARMS LLC",
+    "PRICE FARMS LLC",
+    "DARREN WHITE",
+    "G4 INC",
+    "G4 INC",
+    "CAROLYN SKINNER",
+    "GARY MINER",
+    "CRAIG MINER",
+    "North Road Farms",
+    "North Road Farms",
+    "KUNUGI FARMS",
+    "KUNUGI FARMS",
+    "KARLA BURNS",
+    "CLIFF EDWARDS",
+    "SEGUNDO DIAZ",
+    "LOBO FARM LLC",
+    "LOBO FARM LLC",
+    "MIKE BROTHERS",
+    "JAMES COOLEY",
+    "ESPERANZA FARMS LLC",
+    "ESPERANZA FARMS LLC",
+    "ALLIED POTATO",
+    "ALLIED POTATO",
+    "COLBERT FARMS INC",
+    "COLBERT FARMS INC",
+    "LAM Operating",
+    "LAM Operating",
+    "ALEX MILLER"
+   ],
+   "telephone_number": "(719) 852-2600",
+   "email_address": "RACHEAL.WERNER@FARMFRESHDIRECT.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20260052",
+   "name_of_business": "PROCTOR PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "ROCKY FORD",
+   "physical_state": "CO",
+   "physical_zip_code": "81067",
+   "license_issuance_date": "2025-10-17",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Matthew Proctor"
+   ],
+   "telephone_number": "(719) 469-4291",
+   "email_address": "mtproctor6@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20190120",
+   "name_of_business": "MICHAELS OF DENVER CATERING INC",
+   "license_status": "Active",
+   "physical_city": "ARVADA",
+   "physical_state": "CO",
+   "physical_zip_code": "80002",
+   "license_issuance_date": "2018-12-04",
+   "trade_names": [
+    "MY KIDS LUNCH"
+   ],
+   "branches": [
+    "MY KIDS LUNCH"
+   ],
+   "principals": [
+    "MICHAEL SUDAK"
+   ],
+   "telephone_number": "(303) 778-0916",
+   "email_address": "MSUDAK@HOTLUNCHONLINE.COM",
+   "website": "WWW.MYKIDSLUNCH.COM"
+  },
+  {
+   "license_number": "19980125",
+   "name_of_business": "SKYVIEW INC",
+   "license_status": "Active",
+   "physical_city": "NEDERLAND",
+   "physical_state": "CO",
+   "physical_zip_code": "80466",
+   "license_issuance_date": "1997-10-27",
+   "trade_names": [
+    "B & F MOUNTAIN MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "DANIEL BALL",
+    "WILLIAM BALL",
+    "ROBERT BALL"
+   ],
+   "telephone_number": "(303) 258-3105",
+   "email_address": "DANDANNYBALL@AOL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20210975",
+   "name_of_business": "Firstfruits International Ltd",
+   "license_status": "Active",
+   "physical_city": "Montrose",
+   "physical_state": "CO",
+   "physical_zip_code": "81401",
+   "license_issuance_date": "2021-07-23",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Jonathan Allen"
+   ],
+   "telephone_number": "(970) 209-8341",
+   "email_address": "jon@firstfruitsintl.com",
+   "website": "www.firstfruitsintl.com"
+  },
+  {
+   "license_number": "20140051",
+   "name_of_business": "G MART WESTMINSTER CORPORATION",
+   "license_status": "Active",
+   "physical_city": "WESTMINSTER",
+   "physical_state": "CO",
+   "physical_zip_code": "80031",
+   "license_issuance_date": "2013-10-09",
+   "trade_names": [
+    "H MART"
+   ],
+   "branches": [],
+   "principals": [
+    "HUEE KWON",
+    "KYONG MOO JUNG"
+   ],
+   "telephone_number": "(720) 287-5340",
+   "email_address": "GMARTWESTMINSTER@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20190546",
+   "name_of_business": "ARASH GROCERY & DELI INC",
+   "license_status": "Active",
+   "physical_city": "AURORA",
+   "physical_state": "CO",
+   "physical_zip_code": "80014",
+   "license_issuance_date": "2019-04-11",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MEHRAN DIBA",
+    "AHAHID DIBA"
+   ],
+   "telephone_number": "(303) 752-9272",
+   "email_address": "arashmarket@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20200448",
+   "name_of_business": "MEXHASS INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2020-02-14",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JESUS ALVAREZ",
+    "KARLA VAVARRO"
+   ],
+   "telephone_number": "(720) 254-6742",
+   "email_address": "bibialvarom83@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20250384",
+   "name_of_business": "DILLON COMPANIES LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80223",
+   "license_issuance_date": "2025-02-13",
+   "trade_names": [
+    "CITY MARKET",
+    "BAKERS",
+    "GERBES",
+    "PEYTON FOUNTAIN",
+    "DILLONS",
+    "KING SOOPERS"
+   ],
+   "branches": [
+    "PEYTON FOUNTAIN",
+    "CITY MARKET",
+    "KING SOOPERS",
+    "CITY MARKET",
+    "KING SOOPERS",
+    "CITY MARKET",
+    "GERBES",
+    "BAKERS"
+   ],
+   "principals": [
+    "CARIN FIKE",
+    "STEVE DREHER",
+    "THE KROGER CO",
+    "THE KROGER CO",
+    "CHRISTINE WHEATLY"
+   ],
+   "telephone_number": "(615) 232-9557",
+   "email_address": "BUSINESS.LICENSE@KROGER.COM",
+   "website": "WWW.DILLONS.COM"
+  },
+  {
+   "license_number": "20160310",
+   "name_of_business": "LIPMAN COLORADO LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2016-01-08",
+   "trade_names": [
+    "LIPMAN FAMILY FARMS",
+    "SAMS PRODUCE"
+   ],
+   "branches": [],
+   "principals": [
+    "ELYSE LIPMAN",
+    "DARREN MICELLE",
+    "DREW YURKO",
+    "Lipman Portland LLC",
+    "Lipman Portland LLC",
+    "TOBY PURSE"
+   ],
+   "telephone_number": "(239) 657-4421",
+   "email_address": "ldiess@mccarronlaw.com",
+   "website": ""
+  },
+  {
+   "license_number": "20131057",
+   "name_of_business": "SCOFIELD FRUITS LLC",
+   "license_status": "Active",
+   "physical_city": "LOVELAND",
+   "physical_state": "CO",
+   "physical_zip_code": "80537",
+   "license_issuance_date": "2013-06-28",
+   "trade_names": [
+    "PREMIUM COLORADO PRODUCE"
+   ],
+   "branches": [],
+   "principals": [
+    "LEIGHANN SCOFIELD",
+    "MICHAEL SCOFIELD"
+   ],
+   "telephone_number": "(970) 622-8228",
+   "email_address": "MIKE@SCOFIELDFRUITS.COM",
+   "website": "WWW.SCOFIELDFRUITS.COM"
+  },
+  {
+   "license_number": "20190650",
+   "name_of_business": "J & J SALES INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80237",
+   "license_issuance_date": "2019-05-13",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN MCCLAIN",
+    "Laura Wright"
+   ],
+   "telephone_number": "(720) 863-1211",
+   "email_address": "laura@jjsalesinc.com",
+   "website": ""
+  },
+  {
+   "license_number": "20190436",
+   "name_of_business": "COLORADO FOOD ENTERPRISES INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2019-03-20",
+   "trade_names": [
+    "Colorado Fresh Enterprises"
+   ],
+   "branches": [],
+   "principals": [
+    "JAMES TERAN"
+   ],
+   "telephone_number": "(720) 390-6125",
+   "email_address": "abby@coloradofoodenterprises.com",
+   "website": "www.coloradofoodenterprises.com"
+  },
+  {
+   "license_number": "19930153",
+   "name_of_business": "RUSLER PRODUCE COMPANY INC",
+   "license_status": "Active",
+   "physical_city": "AVONDALE",
+   "physical_state": "CO",
+   "physical_zip_code": "81022",
+   "license_issuance_date": "1992-10-28",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MARI RUSLER",
+    "THOMAS RUSLER"
+   ],
+   "telephone_number": "(719) 947-3361",
+   "email_address": "tommy@ruslerproduce.com",
+   "website": ""
+  },
+  {
+   "license_number": "20250094",
+   "name_of_business": "MILE HI FOODS CO",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2024-10-25",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "TONY TADDONIO",
+    "PAMELA TADDONIO"
+   ],
+   "telephone_number": "(303) 399-6066",
+   "email_address": "tladdonio@mhff.net",
+   "website": ""
+  },
+  {
+   "license_number": "20210389",
+   "name_of_business": "CUSTOM MADE MEALS LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2021-01-21",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DOUG BURRIS",
+    "CMM INTERMEDIATE HOLDINGS INC",
+    "CMM INTERMEDIATE HOLDINGS INC"
+   ],
+   "telephone_number": "(303) 227-4993",
+   "email_address": "renae.ketterer@countryfreshinc.com",
+   "website": "www.custommademeals.com"
+  },
+  {
+   "license_number": "20150575",
+   "name_of_business": "KRESCO LLC",
+   "license_status": "Active",
+   "physical_city": "SAN DIEGO",
+   "physical_state": "CO",
+   "physical_zip_code": "92110",
+   "license_issuance_date": "2015-04-08",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JUAN ROCHA PEDRAZA",
+    "SARA ROCHA PEDRAZA"
+   ],
+   "telephone_number": "(619) 575-4111",
+   "email_address": "JUANR@KRESCOSD.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19991750",
+   "name_of_business": "FARM FRESH DIRECT LLC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "1999-09-14",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "BOND FARMS LLC",
+    "BOND FARMS LLC",
+    "BOND FARMS LLC",
+    "BOND FARMS LLC",
+    "THREES RANCH INC",
+    "THREES RANCH INC",
+    "SEGUNDO DIAZ",
+    "M&M GRAIN & PRODUCE",
+    "M&M GRAIN & PRODUCE",
+    "DYNAMIC AG (AD)",
+    "DYNAMIC AG (AD)",
+    "WHITE MOUNTAIN",
+    "WHITE MOUNTAIN",
+    "KB FARMS",
+    "KB FARMS",
+    "North Road Farms",
+    "North Road Farms",
+    "G4 INC",
+    "G4 INC",
+    "Josh Wager",
+    "ALLIED POTATO",
+    "ALLIED POTATO",
+    "LAM FARMS",
+    "LAM FARMS",
+    "ALX AG LLC",
+    "ALX AG LLC",
+    "EAGLE PRODUCE",
+    "EAGLE PRODUCE",
+    "MINER FARMS",
+    "MINER FARMS",
+    "TRAVIS BEIRIGER",
+    "ZAPATA SEED",
+    "ELEVATIO AG",
+    "ELEVATIO AG",
+    "Anaiak Farms",
+    "Anaiak Farms",
+    "GSR FARMS",
+    "GSR FARMS",
+    "LOBO FARM LLC",
+    "LOBO FARM LLC",
+    "DYNAMIC AG (AR)",
+    "DYNAMIC AG (AR)",
+    "SALAZAR FARMS",
+    "SALAZAR FARMS",
+    "GRANT BEIRIGER",
+    "SAN ACACIO SEED LLC",
+    "SAN ACACIO SEED LLC",
+    "JDS FARMS INC",
+    "JDS FARMS INC",
+    "JC FARMS",
+    "JC FARMS",
+    "ESPERANZA FARMS LLC",
+    "ESPERANZA FARMS LLC",
+    "C & C FARMS LLC",
+    "C & C FARMS LLC",
+    "KUNUGI FARMS",
+    "KUNUGI FARMS"
+   ],
+   "telephone_number": "(719) 852-2600",
+   "email_address": "AlexM@farmfresh.com",
+   "website": ""
+  },
+  {
+   "license_number": "20121505",
+   "name_of_business": "SHAMROCK FOODS COMPANY INC",
+   "license_status": "Active",
+   "physical_city": "COMMERCE CITY",
+   "physical_state": "CO",
+   "physical_zip_code": "80022",
+   "license_issuance_date": "2012-09-20",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "SHAMROCK FOODS CO",
+    "SHAMROCK FOODS CO",
+    "WILLIAM MCCLELLAND"
+   ],
+   "telephone_number": "(602) 477-2500",
+   "email_address": "GEORGE-JACOB@SHAMROCKFOODS.COM",
+   "website": "www.shamrockfoods.com"
+  },
+  {
+   "license_number": "20201069",
+   "name_of_business": "LM Boulder CO LLC",
+   "license_status": "Active",
+   "physical_city": "BOULDER",
+   "physical_state": "CO",
+   "physical_zip_code": "80304",
+   "license_issuance_date": "2020-07-27",
+   "trade_names": [
+    "LUCKY'S MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "LM ACQUISITION CO LLC",
+    "LM ACQUISITION CO LLC",
+    "JASON SHARON"
+   ],
+   "telephone_number": "(303) 444-0215",
+   "email_address": "STOREDIR.NBO1@LUCKYSMARKET.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19790194",
+   "name_of_business": "HI LAND POTATO CO INC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "1978-10-27",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MATTEW SMARTT ",
+    "REID MATTIVE",
+    "DWIGHT BARLOW",
+    "GRANT MATTIVE",
+    "PHILIP SMARTT",
+    "ROBERT MATTIVE",
+    "GAIL MATTIVE"
+   ],
+   "telephone_number": "(719) 852-4096",
+   "email_address": "HILANDPOTATO@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20131035",
+   "name_of_business": "PRODUCE MARKETING GROUP LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2013-06-25",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "BUFFY SCOTT"
+   ],
+   "telephone_number": "(720) 328-6096",
+   "email_address": "producemarketinggroup@yahoo.com",
+   "website": ""
+  },
+  {
+   "license_number": "20241083",
+   "name_of_business": "3491 E ROAD LLC",
+   "license_status": "Active",
+   "physical_city": "Palisade",
+   "physical_state": "CO",
+   "physical_zip_code": "81526",
+   "license_issuance_date": "2024-08-12",
+   "trade_names": [
+    "Ruckman Family Orchards"
+   ],
+   "branches": [],
+   "principals": [
+    "Albert Ruckman",
+    "Teddy Ruckman"
+   ],
+   "telephone_number": "(970) 712-4244",
+   "email_address": "nruckman@gmail.com",
+   "website": "www.ruckmanfamilypalisadepeaches.com"
+  },
+  {
+   "license_number": "20090493",
+   "name_of_business": "FRESH GUYS LLC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2009-03-09",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "PETER BRAIDMAN"
+   ],
+   "telephone_number": "(720) 519-5519",
+   "email_address": "PETER@THEFRESHGUYS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20251029",
+   "name_of_business": "ARCH INDUSTRIES INC",
+   "license_status": "Active",
+   "physical_city": "La Jara",
+   "physical_state": "CO",
+   "physical_zip_code": "81140",
+   "license_issuance_date": "2025-08-21",
+   "trade_names": [
+    "Jack's Market"
+   ],
+   "branches": [],
+   "principals": [
+    "Amanda  Archuleta",
+    "Jonathan Archuleta"
+   ],
+   "telephone_number": "(719) 274-5896",
+   "email_address": "jenjacksmarket@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20240184",
+   "name_of_business": "PLATINUM POTATO INC",
+   "license_status": "Active",
+   "physical_city": "CENTER",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "2023-11-20",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Morgan McCormick"
+   ],
+   "telephone_number": "(719) 754-0114",
+   "email_address": "vendor@platinumpotato.com",
+   "website": "www.platinumpotato.com"
+  },
+  {
+   "license_number": "19880298",
+   "name_of_business": "THE SPUD SELLER INC",
+   "license_status": "Active",
+   "physical_city": "MONTE VISTA",
+   "physical_state": "CO",
+   "physical_zip_code": "81144",
+   "license_issuance_date": "1987-11-19",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "LYNN MCCULLOUGH",
+    "SHIRLEY MCCULLOUGH"
+   ],
+   "telephone_number": "(719) 852-4737",
+   "email_address": "jennie@spudseller.com",
+   "website": ""
+  },
+  {
+   "license_number": "19980737",
+   "name_of_business": "FRESHPOINT DENVER INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "1998-02-27",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ANDREW WURDACK",
+    "JAMES PROCUNIAR",
+    "ANTHONY WALKER",
+    "RYAN RUMBARGER",
+    "BRANDON SEWELL",
+    "FRESHPOINT INC",
+    "FRESHPOINT INC"
+   ],
+   "telephone_number": "(281) 899-4281",
+   "email_address": "geeti.dhatigara@sysco.com",
+   "website": ""
+  },
+  {
+   "license_number": "20200141",
+   "name_of_business": "Johnson Fruit LLC",
+   "license_status": "Active",
+   "physical_city": "Buena Vista",
+   "physical_state": "CO",
+   "physical_zip_code": "81211",
+   "license_issuance_date": "2019-11-01",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Andrew Johnson",
+    "David Johnson"
+   ],
+   "telephone_number": "(719) 395-8434",
+   "email_address": "frx1200@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "19801283",
+   "name_of_business": "SKYVIEW COOLING COMPANY",
+   "license_status": "Active",
+   "physical_city": "CENTER",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "1980-07-14",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "VICTOR SMITH"
+   ],
+   "telephone_number": "(928) 783-4880",
+   "email_address": "TSTROME@SKYVIEWCOOLING.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20250841",
+   "name_of_business": "De La Torre LLC Distribution",
+   "license_status": "Active",
+   "physical_city": "GRAND JUNCTION",
+   "physical_state": "CO",
+   "physical_zip_code": "81504",
+   "license_issuance_date": "2025-07-09",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "LUIS DE LA TORRE"
+   ],
+   "telephone_number": "(970) 216-2145",
+   "email_address": "delatorrepadilla@hotmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20230095",
+   "name_of_business": "Superior Spud Sales LLC",
+   "license_status": "Active",
+   "physical_city": "La Jara",
+   "physical_state": "CO",
+   "physical_zip_code": "81140",
+   "license_issuance_date": "2022-11-04",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Ryan Crowther",
+    "Shonell Crowther"
+   ],
+   "telephone_number": "(719) 992-1304",
+   "email_address": "superiorspudsales@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20170551",
+   "name_of_business": "Mi Pueblo Latin Market, Inc.",
+   "license_status": "Active",
+   "physical_city": "Aurora",
+   "physical_state": "CO",
+   "physical_zip_code": "80011",
+   "license_issuance_date": "2017-03-08",
+   "trade_names": [],
+   "branches": [
+    "MI PUEBLO MARKRT",
+    "MI PUEBLO MARKET",
+    "MI PUEBLO MARKET",
+    "MI PUEBLO MARKET",
+    "MI PUEBLO MARKET",
+    "MI PUEBLO MARKET"
+   ],
+   "principals": [
+    "DANEEN CUEVA",
+    "JAIME CUEVA"
+   ],
+   "telephone_number": "(303) 531-2488",
+   "email_address": "tacorico@aol.com",
+   "website": "WWW.MIPUEBLOMARKETCO.COM"
+  },
+  {
+   "license_number": "19901906",
+   "name_of_business": "SKYLINE POTATO COMPANY",
+   "license_status": "Active",
+   "physical_city": "CENTER",
+   "physical_state": "CO",
+   "physical_zip_code": "81125",
+   "license_issuance_date": "1990-09-17",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "IVAN WRIGHT",
+    "WILLIAM ALDERETE",
+    "VICTOR SMITH",
+    "AUSTIN SAVAGE",
+    "RANDAL BACHE"
+   ],
+   "telephone_number": "(719) 754-3484",
+   "email_address": "LES.ALDERETE@SKYLINEPOTATO.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19990061",
+   "name_of_business": "VALLEY MEAT & FOOD LLC",
+   "license_status": "Active",
+   "physical_city": "ALAMOSA",
+   "physical_state": "CO",
+   "physical_zip_code": "81101",
+   "license_issuance_date": "1998-10-13",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "WAYNE JR CROWTHER"
+   ],
+   "telephone_number": "(719) 589-6328",
+   "email_address": "valleymeat@ymail.com",
+   "website": "www.valleymeatandfood.com"
+  },
+  {
+   "license_number": "20241116",
+   "name_of_business": "Pressery LLC",
+   "license_status": "Active",
+   "physical_city": "Denver",
+   "physical_state": "CO",
+   "physical_zip_code": "80239",
+   "license_issuance_date": "2024-08-15",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Ian Lee"
+   ],
+   "telephone_number": "(847) 668-8657",
+   "email_address": "purchasing@pressery.com",
+   "website": ""
+  },
+  {
+   "license_number": "20260203",
+   "name_of_business": "MARCZYK FINE FOODS INC",
+   "license_status": "Active",
+   "physical_city": "DENVER",
+   "physical_state": "CO",
+   "physical_zip_code": "80207",
+   "license_issuance_date": "2025-12-08",
+   "trade_names": [
+    "MARCZYK FINE FOODS"
+   ],
+   "branches": [
+    "MARCZYK FINE FOODS INC"
+   ],
+   "principals": [
+    "ROB JONES",
+    "BARBARA MACFARLANE",
+    "PETER MARCZYK",
+    "PAUL MARCZYK"
+   ],
+   "telephone_number": "(303) 894-9499",
+   "email_address": "rob@marczyk.com",
+   "website": "WWW.MARCZYK.COM"
+  },
+  {
+   "license_number": "20130728",
+   "name_of_business": "HUNGENBERG PRODUCE INC",
+   "license_status": "Active",
+   "physical_city": "GREELEY",
+   "physical_state": "CO",
+   "physical_zip_code": "80631",
+   "license_issuance_date": "2013-04-29",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JASON HUNGENBERG",
+    "JARED HUNGENBERG",
+    "MICHAEL HUNGENBERG",
+    "JORDAN HUNGENBERG",
+    "PAUL HUNGENBERG"
+   ],
+   "telephone_number": "(970) 356-6616",
+   "email_address": "JASON@HUNGENBERGPRODUCE.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20241115",
+   "name_of_business": "ETHAN LEHRBURGER LLC",
+   "license_status": "Active",
+   "physical_city": "Denver",
+   "physical_state": "CO",
+   "physical_zip_code": "80216",
+   "license_issuance_date": "2024-08-15",
+   "trade_names": [
+    "Tucci Fresh Produce",
+    "Sunvae"
+   ],
+   "branches": [],
+   "principals": [
+    "ETHAN LEHRBURGER"
+   ],
+   "telephone_number": "(303) 292-1994",
+   "email_address": "sales@tuccifresh.com",
+   "website": ""
+  }
+ ]
+}

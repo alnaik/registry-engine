@@ -1,51 +1,81 @@
 # Registry Engine
 
-A registry-grounded local-business discovery and qualification tool.
+A pluggable multi-registry B2B lead finder. Government registries in, ranked
+leads with contacts out.
 
-**Status:** Phase 0 complete — scaffold, data verification, architecture docs.
+**Status:** v3 "socket" — query-driven pipeline over a declarative source
+manifest. Two plugs live: Colorado SoS (existence) and USDA PACA (produce
+category + contacts).
 
-## What it does
+## The thesis
 
-Web search and Google Maps show businesses that market themselves. Government registries enumerate businesses that *legally exist*. Registry Engine queries official state business registries (starting with Colorado's Secretary of State), lets you describe what you're looking for in plain English, and returns qualified, actionable results.
+Web search shows businesses that market themselves; registries enumerate
+businesses that *legally exist* — and federal license registries say what a
+business *does* with regulatory certainty. Category is therefore a **routing
+problem**, not a verification problem: classify the query, look up which
+registry natively carries that category, fetch, and join. No per-candidate
+LLM verification.
 
-Works for finding both **customers** (seller mode) and **suppliers** (buyer mode) with the same engine.
+## Five verbs, three planes
 
-## Key features (Phases 1–4)
+```
+map(query)   1 cheap LLM call max — common queries resolve from a static
+             table with ZERO calls → {categories, geo, direction} + caveats
+route(intent) pure manifest lookup: category ∩ geo ∩ plane. 0 tokens.
+fetch(...)   drivers pull the routed registries, normalize to a canonical
+             Entity, merge on normalized name. 0 tokens.
+probe(...)   contact discovery: published domains verified, else name-slug
+             guesses checked A+MX via DNS-over-HTTPS. 0 tokens.
+brief(...)   1 best-tier LLM call, batched over all ranked leads; must
+             surface what registries can't verify. 0 calls if no backend.
+```
 
-- **Registry-grounded completeness** — coverage by law, not by web presence
-- **Natural-language qualification** — arbitrary fit criteria, not fixed categories
-- **Timing signals** — new filings, status transitions, new trade names
-- **Dossiers** — one-page actionable brief per lead
-- **Registry-exclusive analytics** — UCC supplier intelligence, market vitality, gap density
-- **Negative-space filter** — entities with no web presence (invisible to Maps-based tools)
-- **Zero cost to operator** — runs as a Claude Artifact using your own Claude subscription
+Planes: **existence** (SoS registries) · **category** (federal license
+registries: PACA today; FMCSA/SAM later) · **contact** (registry POC fields,
+DNS/MX, pattern email).
 
-## Privacy
+Hard budget: **≤2 LLM calls per search, zero per-candidate calls** — enforced
+by a call counter that throws, and by tests.
 
-Registry Engine queries public records only. It does not attempt to discover non-published personal contact information. Principal addresses are registered agent addresses in many cases — this is noted wherever addresses are displayed.
+## Adding a source or a state
+
+A manifest entry in `packages/registry-core/src/sources/manifest.json` —
+plane, coverage (geo ∩ categories), endpoint, field map, quirks. **Zero code
+changes**, guaranteed by `tests/registry-core/zero-code-state.test.ts`.
+
+Drivers are few and generic: `socrata` (CO SoS; CT/WA/NY later), `rest`
+(future), `static_shard` (registries browsers can't reach — recorded JSON
+shards per region, e.g. `shards/paca/US-CO.json`; see `docs/data/paca.md`
+for the recorded PACA protocol).
 
 ## Architecture
 
-npm workspaces monorepo:
-
 ```
-packages/registry-core/   — MIT. Data layer. No LLM code.
-packages/qualify/         — Proprietary. LLM qualification pipeline.
-packages/shared/          — Shared utilities (CSV export, formatting).
-apps/artifact/            — The Claude Artifact (.jsx bundle).
-apps/cli/                 — Dev harness and future digest backend.
+packages/registry-core/   MIT. Canonical Entity, drivers, manifest, route().
+packages/qualify/         LLM adapter (tiered), map/probe/brief verbs, engine.
+apps/artifact/            Single-file Claude Artifact (<100kb enforced).
+apps/cli/                 Validation harness (LLM via headless claude -p).
+shards/                   Recorded region shards for static_shard sources.
 ```
-
-See `docs/decisions/` for architectural decision records.
-See `docs/states/` for data source documentation.
 
 ## Development
 
 ```bash
 npm install
-npm test          # run fixture sanity tests
+npm test              # driver fixtures, route, verbs, E2E golden queries
+npm run typecheck     # strict TS across the workspace
+npm run bundle        # dist/artifact.jsx, hard-fails at 100kb
 ```
 
-## Adding a state
+CLI harness:
 
-See `docs/states/README.md`.
+```bash
+node --experimental-strip-types apps/cli/src/index.ts  # or bundle with esbuild
+  search "yukon gold potato supplier near me" [--no-llm] [--shards=http://localhost:8787]
+```
+
+## Privacy
+
+Public records only. Probe results are name-derived guesses unless a contact
+was published by the registry itself — evidence marks the difference, and
+briefs must disclose what is inferred versus verified.

@@ -1,6 +1,7 @@
+// Async-friendly so browser implementations (window.storage) conform too.
 export interface KVCache {
-  get(key: string): unknown;
-  set(key: string, value: unknown): void;
+  get(key: string): unknown | Promise<unknown>;
+  set(key: string, value: unknown): void | Promise<void>;
 }
 
 export class MemoryCache implements KVCache {

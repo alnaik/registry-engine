@@ -4,3 +4,4 @@ dist/
 *.d.ts
 .vite/
 dist/
+.DS_Store

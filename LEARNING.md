@@ -132,3 +132,27 @@ UCC financing statements are public records that show when a lender (the "secure
 ### The digest command
 
 The digest command gives the CLI parity with the artifact's DigestModal: it queries the SoS API for businesses formed in the last N days across a set of zip codes and prints a markdown summary. Unlike qualify, this command uses no LLM — it's a pure data fetch. This makes it safe to run as a scheduled job (future feature: email delivery) without any API-key management for the qualify stage.
+
+---
+
+## v2 — The Distillation
+
+### What changed and why
+
+Phases 0–4 built everything the original spec asked for. Then we worked backwards from the customer's actual flow — type what you want, circle an area on a map, get a verified list — and realized most of the machinery (profiles, feedback loops, analytics tabs, digests, UCC joins) was ceremony around a four-verb core: **fetch → triage → verify → brief**. All of it was deleted from the product surface (git history keeps it). See ADR 0009.
+
+### The lesson about where filtering happens
+
+The v1 radius bug ("load failed" on a 20km Denver search) wasn't a network glitch — it was architecture. v1 downloaded every Good Standing business in the area (~300k rows for the Denver metro) and *then* filtered client-side. v2 derives search keywords from the user's query first and sends them **inside the registry query itself** (`upper(entityname) LIKE '%JEWEL%'`), so the government's servers do the heavy filtering and only a few hundred candidates ever cross the network. The general principle: push predicates as close to the data as the API allows.
+
+### The user's query is the profile
+
+v1 stored qualification profiles with keyword arrays and feedback history. v2 derives an ephemeral "intent" from the raw query with one small LLM call — keywords for the registry, exclusions, and the specific requirement that web verification must confirm. Nothing hardcoded, nothing stored, nothing to maintain. A profile system can always be rebuilt later as *saved queries* if users ask for it.
+
+### Validating with a subscription instead of an API key
+
+The CLI's LLM backend shells out to the Claude Code CLI in headless mode (`claude -p`), which bills a Claude subscription rather than metered API credits — and headless Claude Code can use its own web search for the verify stage. One gotcha found live: `--allowedTools` is a variadic flag that swallowed the prompt argument, so the prompt goes via stdin. Second gotcha: each headless call carries Claude Code's own large system prompt (~15k tokens), so token counts look alarming but are subscription usage, not dollars.
+
+### The live validation result
+
+`search "shops and jewelers that use princess cut diamonds" --city=Denver --radius=3` found 81 name-level candidates in seconds and web-verified leads with honest, specific rationales — including correctly scoring lookalike businesses *low* (a crystal-decor shop with a jewelry-ish name got 8/100, with the reason spelled out). The verify stage checking "does this business exist at this address and do the specific thing" is exactly the product.
