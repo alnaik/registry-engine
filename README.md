@@ -74,6 +74,17 @@ node --experimental-strip-types apps/cli/src/index.ts  # or bundle with esbuild
   search "yukon gold potato supplier near me" [--no-llm] [--shards=http://localhost:8787]
 ```
 
+## Known limitation: pasted-into-chat artifacts can't fetch
+
+`dist/artifact.jsx` pasted directly into a claude.ai chat message runs in a
+sandbox that blocks all outbound `fetch`/XHR to external hosts — so
+`route()`/`fetch()`/`probe()` fail there (`map()`/`brief()` still work; they
+go through `window.claude.complete`, a bridged API the sandbox allows, not a
+network fetch). See `docs/decisions/0011-artifact-sandbox-blocks-fetch.md`
+for the finding and delivery-model options. The CLI harness is unaffected
+(Node has no such sandbox) and is the reliable way to run a full search
+today.
+
 ## Privacy
 
 Public records only. Probe results are name-derived guesses unless a contact
