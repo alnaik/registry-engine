@@ -34,7 +34,8 @@ export interface Intent {
 
 export interface FetchRequest {
   keywords: string[];   // fragments matched against names / descriptions
-  cities: string[];     // geo filter; empty = whole coverage geo
+  region: string;       // "US-CO" — picks shard files, scopes contact probes
+  cities: string[];     // geo filter within the region; empty = whole region
   categories: string[]; // canonical slugs, for category-plane sources
   limit?: number | undefined;
 }

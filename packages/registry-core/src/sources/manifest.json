@@ -1,0 +1,61 @@
+{
+  "sources": [
+    {
+      "id": "co_sos",
+      "name": "Colorado Secretary of State",
+      "plane": "existence",
+      "driver": "socrata",
+      "coverage": { "geo": ["US-CO"], "categories": ["*"] },
+      "endpoint": "https://data.colorado.gov/resource",
+      "fields": {
+        "id": "entityid",
+        "name": "entityname",
+        "status": "entitystatus",
+        "street": "principaladdress1",
+        "city": "principalcity",
+        "state": "principalstate",
+        "zip": "principalzipcode",
+        "officer_first": "agentfirstname",
+        "officer_last": "agentlastname",
+        "officer_org": "agentorganizationname"
+      },
+      "quirks": {
+        "datasetId": "4ykn-tg5h",
+        "statusValue": "Good Standing",
+        "tradeNames": {
+          "datasetId": "u7sb-g482",
+          "statusValue": "GOOD",
+          "fields": {
+            "entityId": "entityid",
+            "description": "tradenamedescription",
+            "status": "entitystatus",
+            "city": "city"
+          }
+        }
+      }
+    },
+    {
+      "id": "paca",
+      "name": "USDA PACA produce license registry",
+      "plane": "category",
+      "driver": "static_shard",
+      "coverage": { "geo": ["US"], "categories": ["produce"] },
+      "endpoint": "https://raw.githubusercontent.com/alnaik/registry-engine/main/shards/paca",
+      "fields": {
+        "id": "license_number",
+        "name": "name_of_business",
+        "status": "license_status",
+        "city": "physical_city",
+        "state": "physical_state",
+        "zip": "physical_zip_code"
+      },
+      "contact_fields": ["telephone_number", "email_address", "website"],
+      "quirks": {
+        "statusValue": "Active",
+        "namesField": "trade_names",
+        "officersField": "principals",
+        "shardRegions": ["US-CO"]
+      }
+    }
+  ]
+}

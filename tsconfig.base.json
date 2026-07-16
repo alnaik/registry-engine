@@ -12,6 +12,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "esModuleInterop": false,
+    "resolveJsonModule": true,
     "skipLibCheck": true
   }
 }
