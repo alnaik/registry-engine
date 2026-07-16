@@ -40,7 +40,7 @@
       "plane": "category",
       "driver": "static_shard",
       "coverage": { "geo": ["US"], "categories": ["produce"] },
-      "endpoint": "https://raw.githubusercontent.com/alnaik/registry-engine/main/shards/paca",
+      "endpoint": "https://gist.githubusercontent.com/alnaik/48d13eb9b5f428e547e99ab4b49b4a85/raw",
       "fields": {
         "id": "license_number",
         "name": "name_of_business",
