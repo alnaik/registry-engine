@@ -29,7 +29,7 @@ function stubNetwork() {
       if (where.includes("%POTATO%")) return respond(potatoRows);
       return respond([]);
     }
-    if (url.includes("raw.githubusercontent.com") && url.endsWith("/US-CO.json")) {
+    if (url.endsWith("/US-CO.json")) {
       return respond(pacaShard);
     }
     if (url.startsWith("https://cloudflare-dns.com/")) {
