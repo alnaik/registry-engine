@@ -51,15 +51,26 @@ export function rowToEntity(source: SourceSpec, row: Record<string, unknown>): E
   };
 }
 
+// A hit at a word start ("JEWEL" in "GLAMLY JEWELRY") is real signal; a hit
+// buried mid-word ("GEM" in "MANAGEMENT") is substring noise — the note
+// records the difference and ranking weights them apart.
 export function keywordEvidence(
   source: SourceSpec,
   field: string,
   value: string,
   keywords: string[]
 ): Evidence[] {
-  const hit = keywords.find(kw => value.toUpperCase().includes(kw.toUpperCase()));
-  if (hit === undefined) return [];
-  return [{ source: source.id, field, value, note: `matched "${hit.toLowerCase()}"` }];
+  const upper = value.toUpperCase();
+  for (const kw of keywords) {
+    const k = kw.toUpperCase();
+    if (!upper.includes(k)) continue;
+    const atWordStart = new RegExp(`(?:^|[^A-Z0-9])${k.replace(/[^A-Z0-9]/g, "")}`).test(upper);
+    return [{
+      source: source.id, field, value,
+      note: atWordStart ? `matched "${kw.toLowerCase()}"` : `matched "${kw.toLowerCase()}" inside a word`,
+    }];
+  }
+  return [];
 }
 
 export function str(v: unknown): string {

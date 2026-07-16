@@ -23,7 +23,9 @@ export function scoreEntity(entity: Entity, probe: ProbeResult | undefined): num
   let score = 0;
   if (entity.source_ids.length >= 2) score += 40;
   if (entity.contacts.length > 0) score += 20;
-  score += Math.min(entity.evidence.filter(e => e.note?.startsWith("matched")).length * 10, 20);
+  const matches = entity.evidence.filter(e => e.note?.startsWith("matched"));
+  const strong = matches.filter(e => !e.note!.includes("inside a word"));
+  score += Math.min(strong.length * 10, 20) + Math.min((matches.length - strong.length) * 2, 4);
   if (probe?.mx === true) score += 15;
   else if (probe?.a === true) score += 5;
   if (entity.categories.length > 0) score += 10;
