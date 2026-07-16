@@ -1,181 +1,103 @@
-import { ColoradoRegistrySource, fetchVitality } from "@registry-engine/registry-core";
-import type { LocationQuery, EntityFilters } from "@registry-engine/registry-core";
+import { search, MAX_LLM_CALLS_PER_SEARCH } from "@registry-engine/qualify";
+import { ClaudeCodeBackend } from "./claudeCodeBackend.js";
 
-function parseArgs(argv: string[]): { command: string; flags: Record<string, string> } {
+// Validation harness: the exact pipeline the artifact runs, with LLM calls
+// through the Claude Code CLI (headless) — subscription-billed, no API key.
+
+function parseArgs(argv: string[]): { command: string; positional: string[]; flags: Record<string, string> } {
   const args = argv.slice(2);
   const command = args[0] ?? "help";
+  const positional: string[] = [];
   const flags: Record<string, string> = {};
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
     if (arg === undefined) continue;
     const match = arg.match(/^--([^=]+)(?:=(.*))?$/);
-    if (match !== null) {
-      const key = match[1] ?? "";
-      const value = match[2] ?? "true";
-      flags[key] = value;
-    }
+    if (match !== null) flags[match[1] ?? ""] = match[2] ?? "true";
+    else positional.push(arg);
   }
-  return { command, flags };
+  return { command, positional, flags };
 }
 
-function buildLocationQuery(flags: Record<string, string>): LocationQuery {
-  if (flags["lat"] !== undefined && flags["lng"] !== undefined) {
-    const lat = parseFloat(flags["lat"]);
-    const lng = parseFloat(flags["lng"]);
-    const radiusMeters = flags["radius"] !== undefined ? parseFloat(flags["radius"]) : 8000;
-    return { mode: "radius", lat, lng, radiusMeters };
-  }
-  const zips = flags["zips"] !== undefined ? flags["zips"].split(",").map(z => z.trim()) : [];
-  return { mode: "zip", zips };
-}
-
-async function cmdEntities(flags: Record<string, string>): Promise<void> {
-  const query = buildLocationQuery(flags);
-  const filters: EntityFilters = {
-    status: flags["status"] ?? "Good Standing",
-  };
-  const source = new ColoradoRegistrySource();
-  let count = 0;
-  for await (const entity of source.fetchEntities(query, filters)) {
-    const tradeNameStr = entity.tradeNames.length > 0
-      ? ` [DBA: ${entity.tradeNames.map(t => t.description).join(", ")}]`
-      : "";
-    console.log(`${entity.name}${tradeNameStr} | ${entity.zipCode} | ${entity.status} | formed: ${entity.formDate.slice(0, 10)}`);
-    count++;
-  }
-  console.log(`\nTotal: ${count} entities`);
-}
-
-async function cmdTriggers(flags: Record<string, string>): Promise<void> {
-  const query = buildLocationQuery(flags);
-  const windowDays = flags["days"] !== undefined ? parseInt(flags["days"], 10) : 90;
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - windowDays);
-
-  const filters: EntityFilters = {
-    status: "Good Standing",
-    formDateAfter: cutoff.toISOString(),
-  };
-
-  const source = new ColoradoRegistrySource();
-  const entityIds: string[] = [];
-  const entityMap = new Map<string, string>();
-
-  console.log(`Fetching entities formed in last ${windowDays} days...`);
-  for await (const entity of source.fetchEntities(query, filters)) {
-    entityIds.push(entity.id);
-    entityMap.set(entity.id, entity.name);
-    const daysAgo = Math.round((Date.now() - new Date(entity.formDate).getTime()) / 86400000);
-    console.log(`NEW_FILING | ${entity.name} | formed ${daysAgo}d ago | ${entity.zipCode}`);
-  }
-
-  if (entityIds.length > 0) {
-    console.log(`\nFetching status-change signals for ${entityIds.length} entities...`);
-    const signals = await source.fetchSignals(entityIds, windowDays);
-    for (const signal of signals) {
-      console.log(`${signal.type} | ${signal.entityName} | ${signal.date.slice(0, 10)} | ${signal.summary}`);
-    }
-    if (signals.length === 0) {
-      console.log("No additional status-change signals found.");
-    }
-  }
-}
-
-async function cmdVitality(flags: Record<string, string>): Promise<void> {
-  const zips = flags["zips"] !== undefined ? flags["zips"].split(",").map(z => z.trim()) : [];
-  const keywords = flags["keywords"] !== undefined ? flags["keywords"].split(",").map(k => k.trim()) : ["LLC", "INC"];
-
-  if (zips.length === 0) {
-    console.error("Error: --zips is required for vitality command");
+async function cmdSearch(positional: string[], flags: Record<string, string>): Promise<void> {
+  const query = positional[0];
+  if (query === undefined || query.trim().length === 0) {
+    printHelp();
     process.exit(1);
   }
 
-  console.log(`Fetching vitality data for ${zips.length} zip(s) x ${keywords.length} keyword(s)...`);
-  const rows = await fetchVitality(zips, keywords);
+  // --shards=<base> points static_shard sources at a local server so the
+  // full join can be validated before shards are published.
+  const sources = flags["shards"] === undefined ? undefined : (await import("@registry-engine/registry-core")).SOURCES.map(s =>
+    s.driver === "static_shard" ? { ...s, endpoint: `${flags["shards"]}/${s.id}` } : s);
 
-  // Print table header
-  console.log("\nzip\t\tkeyword\t\t\tf90d\tdis90d\tf365d\tdis365d");
-  console.log("-".repeat(72));
-  for (const row of rows) {
-    console.log(
-      `${row.zipCode}\t\t${row.keyword.padEnd(16)}\t${row.formations90d}\t${row.dissolutions90d}\t${row.formations365d}\t${row.dissolutions365d}`
-    );
+  const out = await search(query, {
+    // omitting llm entirely puts the engine on its zero-token path
+    ...(flags["no-llm"] === "true" ? {} : { llm: { backend: new ClaudeCodeBackend(flags["model"]) } }),
+    sources,
+    limit: flags["limit"] !== undefined ? parseInt(flags["limit"], 10) : undefined,
+    maxLeads: flags["leads"] !== undefined ? parseInt(flags["leads"], 10) : undefined,
+    onEvent: event => {
+      switch (event.type) {
+        case "map":
+          console.log(`map     ${JSON.stringify(event.map.intent)} keywords=[${event.map.keywords.join(",")}] llm=${event.map.usedLlm ? "1 call" : "static"}`);
+          for (const c of event.map.caveats) console.log(`        ⚠ ${c}`);
+          break;
+        case "routed":
+          console.log(`route   ${event.sources.map(s => `${s.id}(${s.plane})`).join(" + ") || "no sources for this category∩geo"}`);
+          break;
+        case "fetched":
+          console.log(`fetch   ${event.sourceId}: ${event.count} records`);
+          break;
+        case "source_error":
+          console.error(`fetch   ${event.sourceId} ERROR: ${event.message}`);
+          break;
+        case "merged":
+          console.log(`merge   ${event.count} entities`);
+          break;
+        case "probed":
+          console.log(`probe   ${event.count} entities checked (DNS A+MX)`);
+          break;
+        default:
+          break;
+      }
+    },
+  });
+
+  console.log(`\n${"═".repeat(64)}`);
+  console.log(`${out.leads.length} leads | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}\n`);
+  for (const lead of out.leads) {
+    const e = lead.entity;
+    console.log(`[${String(lead.score).padStart(3)}] ${e.name}  (${[e.address.city, e.source_ids.join("+")].filter(Boolean).join(" · ")})`);
+    if (e.contacts.length > 0) console.log(`      contact: ${e.contacts.join(" · ")}`);
+    console.log(`      ${lead.brief}`);
+    for (const ev of e.evidence) console.log(`      · [${ev.source}] ${ev.field}=${ev.value}${ev.note ? ` (${ev.note})` : ""}`);
+    console.log();
   }
-}
-
-async function cmdDigest(flags: Record<string, string>): Promise<void> {
-  const zips = flags["zips"] !== undefined ? flags["zips"].split(",").map(z => z.trim()) : [];
-  const days = flags["days"] !== undefined ? parseInt(flags["days"], 10) : 30;
-
-  if (zips.length === 0) {
-    console.error("Error: --zips is required for digest command");
-    process.exit(1);
-  }
-
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const sinceStr = since.toISOString();
-
-  const source = new ColoradoRegistrySource();
-  const query: LocationQuery = { mode: "zip", zips };
-  const filters: EntityFilters = { status: "Good Standing", formDateAfter: sinceStr };
-
-  const entities: Array<{ name: string; zipCode: string; city: string; formDate: string }> = [];
-  for await (const entity of source.fetchEntities(query, filters)) {
-    entities.push({ name: entity.name, zipCode: entity.zipCode, city: entity.city, formDate: entity.formDate });
-  }
-
-  const dateLabel = since.toISOString().slice(0, 10);
-  console.log(`# Registry Engine Digest`);
-  console.log(`Generated: ${new Date().toISOString().slice(0, 10)}`);
-  console.log(`Period: last ${days} days (since ${dateLabel})`);
-  console.log(`Zips: ${zips.join(", ")}`);
-  console.log(`\n## New Registrations (${entities.length})\n`);
-
-  if (entities.length === 0) {
-    console.log("No new registrations in this period.");
-  } else {
-    for (const e of entities) {
-      console.log(`- **${e.name}** — ${e.city}, CO ${e.zipCode} (formed ${e.formDate.slice(0, 10)})`);
-    }
-  }
-
-  console.log(`\n---`);
-  console.log(`Note: scheduled email delivery requires a hosted backend. This CLI output is the same digest the future backend will send.`);
 }
 
 function printHelp(): void {
-  console.log(`Registry Engine CLI
+  console.log(`Registry Engine CLI — map → route → fetch → probe → brief
 
 Usage:
-  node src/index.ts entities --zips=80202,80203 [--status="Good Standing"]
-  node src/index.ts entities --lat=39.7392 --lng=-104.9903 --radius=8000
-  node src/index.ts triggers --zips=80202,80203 [--days=90]
-  node src/index.ts vitality --zips=80202,80203 --keywords=jeweler,jewelry
-  node src/index.ts digest --zips=80202,80203 [--days=30]
+  search "yukon gold potato supplier near me" [--limit=100] [--leads=12] [--model=sonnet] [--no-llm]
+
+Flags:
+  --limit=<n>   per-source fetch cap
+  --leads=<n>   max briefed leads (default 12)
+  --model=<m>   claude CLI model override for headless calls
+  --no-llm      run the zero-token path only (static map + template briefs)
+
+LLM calls (max ${MAX_LLM_CALLS_PER_SEARCH}/search) run through the Claude Code CLI
+(claude -p) and bill your subscription — no API key needed.
 `);
 }
 
 async function main(): Promise<void> {
-  const { command, flags } = parseArgs(process.argv);
-
+  const { command, positional, flags } = parseArgs(process.argv);
   try {
-    switch (command) {
-      case "entities":
-        await cmdEntities(flags);
-        break;
-      case "triggers":
-        await cmdTriggers(flags);
-        break;
-      case "vitality":
-        await cmdVitality(flags);
-        break;
-      case "digest":
-        await cmdDigest(flags);
-        break;
-      default:
-        printHelp();
-    }
+    if (command === "search") await cmdSearch(positional, flags);
+    else printHelp();
   } catch (err) {
     console.error("Error:", err instanceof Error ? err.message : String(err));
     process.exit(1);

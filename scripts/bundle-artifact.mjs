@@ -65,7 +65,12 @@ async function main() {
   }
 
   const sizeKb = Math.round(output.length / 1024);
-  console.log(`Bundle written to dist/artifact.jsx (${sizeKb}kb)`);
+  const MAX_KB = 100;
+  if (sizeKb >= MAX_KB) {
+    console.error(`Bundle is ${sizeKb}kb — hard limit is <${MAX_KB}kb. Trim configs/tables.`);
+    process.exit(1);
+  }
+  console.log(`Bundle written to dist/artifact.jsx (${sizeKb}kb, limit <${MAX_KB}kb)`);
   console.log("No banned imports found");
   console.log("\nPaste dist/artifact.jsx into claude.ai to run.");
 }

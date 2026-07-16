@@ -7,12 +7,11 @@
     "registry-engine": "./src/index.ts"
   },
   "scripts": {
-    "start": "node --loader ts-node/esm src/index.ts"
+    "start": "vite-node src/index.ts --"
   },
   "dependencies": {
     "@registry-engine/registry-core": "*",
-    "@registry-engine/qualify": "*",
-    "@registry-engine/shared": "*"
+    "@registry-engine/qualify": "*"
   },
   "devDependencies": {
     "typescript": "*"
