@@ -3,6 +3,24 @@
 A pluggable multi-registry B2B lead finder. Government registries in, ranked
 leads with contacts out.
 
+## Quickstart
+
+```bash
+npm install
+npm run --workspace apps/cli start -- search "produce supplier in denver" --no-llm
+```
+
+Runs in any terminal with Node 20+ via `vite-node` — no build step, no API
+key. Drop `--no-llm` to enable the two LLM calls per search; that path shells
+out to the Claude Code CLI (`claude -p`), so it needs Claude Code installed
+and logged in. Flags: `--limit=<n>` per-source fetch cap (default 500) ·
+`--leads=<n>` max briefed leads (default 12) · `--model=<m>` Claude model for
+headless calls · `--shards=<url>` alternate shard host.
+
+> Note: `node --experimental-strip-types apps/cli/src/index.ts` does **not**
+> work — the source uses `.js`-suffixed ESM imports, which strip-types can't
+> resolve back to `.ts` files. Use the `vite-node` command above.
+
 **Status:** v3 "socket" — query-driven pipeline over a declarative source
 manifest. Two plugs live: Colorado SoS (existence) and USDA PACA (produce
 category + contacts).
@@ -67,12 +85,7 @@ npm run typecheck     # strict TS across the workspace
 npm run bundle        # dist/artifact.jsx, hard-fails at 100kb
 ```
 
-CLI harness:
-
-```bash
-node --experimental-strip-types apps/cli/src/index.ts  # or bundle with esbuild
-  search "yukon gold potato supplier near me" [--no-llm] [--shards=http://localhost:8787]
-```
+CLI harness: see Quickstart above.
 
 ## Known limitation: pasted-into-chat artifacts can't fetch
 
