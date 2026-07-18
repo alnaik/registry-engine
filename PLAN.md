@@ -39,7 +39,7 @@ fallback in `createLlm`. Record the removal as ADR 0012; git history keeps
 the code if a standalone search page is ever revisited (that page would need
 a real API for the search agent — out of scope, deliberately deferred).
 
-### Phase 2 — `--region` flag + manifest-driven regions ✅ (this checkpoint)
+### Phase 2 — `--region` flag + manifest-driven regions ✅
 `SearchConfig.region` exists (`packages/qualify/src/engine.ts`) but the CLI
 never sets it, and `map.ts` hardcodes `DEFAULT_REGION = "US-CO"` plus a
 Colorado-only city list. Work: add `--region=US-XX` to the CLI; derive the
@@ -49,7 +49,12 @@ quirks or drop city inference to a generic mechanism. Acceptance:
 `zero-code-state.test.ts` still proves manifest-only state adds, and a
 fictional state is reachable end-to-end via `--region`.
 
-### Phase 3 — probe/web-check rework
+### Phase 3 — probe/web-check rework ✅ (this checkpoint)
+Investigation result: the merge logic was correct — the existence fetch is
+keyword-only, so category-plane entities whose legal names carry no search
+keyword were never fetched at all. Fixed by `Driver.fetchByNames` existence
+backfill (ADR 0013); slug guessing removed; web-search URLs on unverified
+leads. Live run: 21/21 former misses now join; zero "no co_sos match" flags.
 Live-run findings (2026-07-17): DNS/MX **works** for registry-published
 domains (multiple `A:yes MX:yes`); name-slug `.com` guesses essentially
 never hit; and the `co_sos` existence cross-match failed for **every**

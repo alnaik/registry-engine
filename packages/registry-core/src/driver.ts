@@ -45,6 +45,10 @@ export interface FetchRequest {
 export interface Driver {
   readonly kind: DriverKind;
   fetch(source: SourceSpec, req: FetchRequest, opts?: FetchRetryOptions): Promise<Entity[]>;
+  // Targeted existence lookup: fetch records whose name matches one of the
+  // given business names. Used to backfill the existence join for entities
+  // discovered on other planes. Optional — drivers without it are skipped.
+  fetchByNames?(source: SourceSpec, names: string[], opts?: FetchRetryOptions): Promise<Entity[]>;
 }
 
 export type DriverRegistry = Partial<Record<DriverKind, Driver>>;

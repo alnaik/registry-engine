@@ -2,6 +2,7 @@ import type { Entity } from "@registry-engine/registry-core";
 import type { Llm } from "../llm/adapter.js";
 import type { MapResult } from "./map.js";
 import type { ProbeResult } from "./probe.js";
+import { publishedDomain } from "./probe.js";
 
 // brief(): the search's second (and last) LLM call — tier:best, batched over
 // ALL leads at once. Ranking is zero-token arithmetic over evidence; the
@@ -12,6 +13,8 @@ export interface Lead {
   score: number;
   probe: ProbeResult | undefined;
   brief: string;
+  // ready-to-open web search for leads without a published domain
+  searchUrl: string | null;
 }
 
 const MAX_LEADS = 12;
@@ -32,9 +35,22 @@ export function scoreEntity(entity: Entity, probe: ProbeResult | undefined): num
   return score;
 }
 
+// The manual follow-up for anything DNS can't verify: a prefilled web
+// search on the exact legal name plus locality.
+export function webSearchUrl(entity: Entity): string {
+  const locality = [entity.address.city, entity.address.state].filter(v => v !== undefined && v !== "").join(" ");
+  return `https://duckduckgo.com/?q=${encodeURIComponent(`"${entity.name}" ${locality}`.trim())}`;
+}
+
 export function rankEntities(entities: Entity[], probes: Map<string, ProbeResult>): Lead[] {
   return entities
-    .map(entity => ({ entity, score: scoreEntity(entity, probes.get(entity.id)), probe: probes.get(entity.id), brief: "" }))
+    .map(entity => ({
+      entity,
+      score: scoreEntity(entity, probes.get(entity.id)),
+      probe: probes.get(entity.id),
+      brief: "",
+      searchUrl: publishedDomain(entity) === null ? webSearchUrl(entity) : null,
+    }))
     .sort((a, b) => b.score - a.score || a.entity.name.localeCompare(b.entity.name));
 }
 

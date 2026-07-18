@@ -1,5 +1,5 @@
 import type { Entity, SourceSpec, DriverRegistry, FetchRetryOptions } from "@registry-engine/registry-core";
-import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities } from "@registry-engine/registry-core";
+import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities, normalizeName } from "@registry-engine/registry-core";
 import { createLlm, type Llm, type LlmConfig } from "./llm/adapter.js";
 import { mapQuery, type MapResult } from "./verbs/map.js";
 import { probeEntities, type ProbeResult } from "./verbs/probe.js";
@@ -15,6 +15,7 @@ export type EngineEvent =
   | { type: "fetched"; sourceId: string; count: number }
   | { type: "source_error"; sourceId: string; message: string }
   | { type: "merged"; count: number }
+  | { type: "backfilled"; sourceId: string; count: number }
   | { type: "probed"; count: number }
   | { type: "done"; leads: Lead[] };
 
@@ -89,7 +90,37 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   fetched.sort((a, b) => ((a as { __rank?: number }).__rank ?? 9) - ((b as { __rank?: number }).__rank ?? 9));
   for (const e of fetched) delete (e as { __rank?: number }).__rank;
 
-  const entities = mergeEntities(fetched);
+  // Existence backfill: category-plane entities whose names carry no search
+  // keyword were never fetched from the existence registry, so the merge had
+  // nothing to join. Look those names up directly and re-merge.
+  let entities = mergeEntities(fetched);
+  const existenceSpec = ordered.find(s => s.plane === "existence");
+  const existenceDriver = existenceSpec === undefined ? undefined : drivers[existenceSpec.driver];
+  if (existenceSpec !== undefined && existenceDriver?.fetchByNames !== undefined) {
+    const unmatched = entities.filter(e => !e.source_ids.includes(existenceSpec.id));
+    if (unmatched.length > 0) {
+      try {
+        const found = await existenceDriver.fetchByNames(
+          existenceSpec,
+          unmatched.flatMap(e => [e.name, ...e.names]),
+          cfg.fetchOpts
+        );
+        // Keep only rows that actually join an unmatched entity — a LIKE
+        // pattern can overmatch, and a non-joining row would surface as a
+        // phantom lead the query never asked for.
+        const wanted = new Set(unmatched.flatMap(e => [e.name, ...e.names]).map(normalizeName).filter(k => k.length > 0));
+        const joined = found.filter(b => [b.name, ...b.names].map(normalizeName).some(k => wanted.has(k)));
+        emit({ type: "backfilled", sourceId: existenceSpec.id, count: joined.length });
+        if (joined.length > 0) {
+          // Backfilled rows are existence-plane: merge them first so the
+          // legal name and status win the merged record.
+          entities = mergeEntities([...joined, ...fetched]);
+        }
+      } catch (err) {
+        emit({ type: "source_error", sourceId: existenceSpec.id, message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+  }
   emit({ type: "merged", count: entities.length });
 
   // Probe in preliminary-rank order so the request budget goes to the

@@ -132,3 +132,74 @@ describe("SocrataDriver", () => {
     expect(results.length).toBeLessThanOrEqual(1);
   });
 });
+
+describe("SocrataDriver.fetchByNames", () => {
+  const driver = new SocrataDriver();
+
+  it("builds normalized LIKE patterns and a status filter", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await driver.fetchByNames(CO_SOS, ["ALPINE SUMMIT SALES, INC.", "COLO-PAC PRODUCE, INC."]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const where = decodeURIComponent(urls[0]!.split("$where=")[1]!.split("&")[0]!);
+    expect(where).toContain("%ALPINE%SUMMIT%SALES%");
+    expect(where).toContain("%COLO%PAC%PRODUCE%");
+    expect(where).toContain("entitystatus='Good Standing'");
+    expect(where).not.toContain("principalcity");
+  });
+
+  it("returns [] with zero requests when no name survives normalization", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await driver.fetchByNames(CO_SOS, ["A", "!!", "Co"]);
+    expect(result).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("chunks names across requests", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const names = Array.from({ length: 12 }, (_, i) => `DISTINCT ENTITY NUMBER ${i} INC`);
+    await driver.fetchByNames(CO_SOS, names);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("escapes injection attempts", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await driver.fetchByNames(CO_SOS, ["PRODUCE'); DELETE--"]);
+    const where = decodeURIComponent(urls[0]!.split("$where=")[1]!.split("&")[0]!);
+    const insidePatterns = [...where.matchAll(/'%[^']*%'/g)].map(m => m[0]);
+    expect(insidePatterns.every(p => !p.slice(1, -1).includes("'"))).toBe(true);
+  });
+
+  it("maps rows and stamps backfill evidence", async () => {
+    vi.stubGlobal("fetch", async () => ({
+      ok: true, status: 200, json: async () => [entityRows[0]!],
+    }) as unknown as Response);
+    const [e] = await driver.fetchByNames(CO_SOS, [String(entityRows[0]!["entityname"])]);
+    expect(e).toBeDefined();
+    expect(e!.id).toBe(`co_sos:${String(entityRows[0]!["entityid"])}`);
+    expect(e!.name).toBe(String(entityRows[0]!["entityname"]));
+    expect(e!.evidence.some(ev => ev.note === "existence backfill — name match from another plane")).toBe(true);
+  });
+
+  it("dedupes rows repeated across chunks by id", async () => {
+    const names = Array.from({ length: 12 }, (_, i) => `DISTINCT ENTITY NUMBER ${i} INC`);
+    const row = { ...entityRows[0]! };
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true, status: 200, json: async () => [row],
+    }) as unknown as Response));
+    const results = await driver.fetchByNames(CO_SOS, names);
+    expect(results).toHaveLength(1);
+  });
+});

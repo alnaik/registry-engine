@@ -1,18 +1,18 @@
 import type { Entity } from "@registry-engine/registry-core";
-import { normalizeName, Limiter } from "@registry-engine/registry-core";
+import { Limiter } from "@registry-engine/registry-core";
 
-// probe(): zero-token contact discovery. Published contacts win; otherwise
-// guess domain slugs from the business name and check A + MX over
-// Cloudflare's CORS-enabled DNS-over-HTTPS. An MX hit yields a pattern
-// email guess — always marked unverified in evidence.
+// probe(): zero-token contact verification. Published contacts (email or
+// website) are checked A + MX over Cloudflare's CORS-enabled
+// DNS-over-HTTPS; there is no name-based domain guessing. An MX hit on a
+// published domain yields a pattern email guess — always marked unverified
+// in evidence. Entities with no published domain to verify are left for
+// the web-search link generated downstream in brief().
 
 const DOH_BASE = "https://cloudflare-dns.com/dns-query";
 const FREEMAIL = new Set([
   "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com",
   "icloud.com", "msn.com", "comcast.net", "live.com", "protonmail.com",
 ]);
-// Name tokens that never belong in a domain slug.
-const SLUG_NOISE = new Set(["THE", "AND", "OF", "A", "AN"]);
 
 export interface ProbeResult {
   entityId: string;
@@ -62,7 +62,7 @@ async function probeOne(entity: Entity, limiter: Limiter, doFetch: typeof fetch)
   };
 
   const published = publishedDomain(entity);
-  const candidates = published !== null ? [published] : slugCandidates(entity);
+  const candidates = published !== null ? [published] : [];
 
   for (const domain of candidates) {
     result.tried.push(domain);
@@ -85,8 +85,11 @@ async function probeOne(entity: Entity, limiter: Limiter, doFetch: typeof fetch)
 function applyToEntity(entity: Entity, r: ProbeResult): void {
   if (r.domain === null) {
     entity.evidence.push({
-      source: "probe", field: "dns", value: r.tried.join(", ") || "(no candidates)",
-      note: "no live domain found from name-based guesses",
+      source: "probe", field: "dns",
+      value: r.tried.join(", ") || "(no published domain)",
+      note: r.tried.length > 0
+        ? "published domain did not resolve (A/MX both empty)"
+        : "no published domain to verify — use the web-search link",
     });
     return;
   }
@@ -114,17 +117,6 @@ export function publishedDomain(entity: Entity): string | null {
     if (host !== undefined && c.includes(".") && !c.includes("@") && !FREEMAIL.has(host)) return host;
   }
   return null;
-}
-
-export function slugCandidates(entity: Entity): string[] {
-  const tokens = normalizeName(entity.name).split(" ").filter(t => !SLUG_NOISE.has(t) && /^[A-Z0-9]+$/.test(t));
-  const joined = tokens.join("").toLowerCase();
-  const firstTwo = tokens.slice(0, 2).join("").toLowerCase();
-  const out: string[] = [];
-  for (const slug of [joined, firstTwo]) {
-    if (slug.length >= 4 && slug.length <= 40 && !out.includes(slug)) out.push(slug);
-  }
-  return out.map(s => `${s}.com`);
 }
 
 function hasEmail(entity: Entity): boolean {

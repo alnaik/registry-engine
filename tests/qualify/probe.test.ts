@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { probeEntities, publishedDomain, slugCandidates } from "../../packages/qualify/src/verbs/probe.js";
+import { probeEntities, publishedDomain } from "../../packages/qualify/src/verbs/probe.js";
 import type { Entity } from "../../packages/registry-core/src/entity.js";
 
 function entity(overrides: Partial<Entity>): Entity {
@@ -24,17 +24,6 @@ function dohFetch(live: Record<string, string[]>) {
   }) as unknown as typeof fetch;
 }
 
-describe("slugCandidates", () => {
-  it("derives slugs from the normalized name, dropping org suffixes and noise words", () => {
-    const e = entity({ name: "The Hi Land Potato Co Inc" });
-    expect(slugCandidates(e)).toEqual(["hilandpotato.com", "hiland.com"]);
-  });
-
-  it("skips too-short slugs", () => {
-    expect(slugCandidates(entity({ name: "AB Co" }))).toEqual([]);
-  });
-});
-
 describe("publishedDomain", () => {
   it("prefers a published email domain and ignores freemail", () => {
     expect(publishedDomain(entity({ contacts: ["bob@gmail.com", "sales@acmegems.com"] }))).toBe("acmegems.com");
@@ -50,28 +39,26 @@ describe("publishedDomain", () => {
 });
 
 describe("probeEntities", () => {
-  it("finds a live guessed domain, records A/MX, and pattern-guesses an email marked UNVERIFIED", async () => {
-    const e = entity({ name: "Acme Jewelers LLC" });
-    const results = await probeEntities([e], {
-      fetchImpl: dohFetch({ "acmejewelers.com": ["A", "MX"] }),
-    });
+  it("makes zero DNS requests for an entity with no published contact and records the no-published-domain evidence", async () => {
+    const e = entity({ name: "Acme Jewelers LLC", contacts: [] });
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("should not be called — no published domain to verify");
+    }) as unknown as typeof fetch;
+    const results = await probeEntities([e], { fetchImpl });
     const r = results.get(e.id)!;
-    expect(r.domain).toBe("acmejewelers.com");
-    expect(r.a).toBe(true);
-    expect(r.mx).toBe(true);
-    expect(r.emailGuess).toBe("info@acmejewelers.com");
-    expect(e.contacts).toContain("https://acmejewelers.com");
-    expect(e.contacts).toContain("info@acmejewelers.com");
-    expect(e.evidence.some(ev => ev.field === "email" && ev.note?.includes("UNVERIFIED"))).toBe(true);
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(r.domain).toBeNull();
+    expect(r.tried).toEqual([]);
+    expect(e.evidence.some(ev => ev.note === "no published domain to verify — use the web-search link")).toBe(true);
   });
 
-  it("falls through candidates and records a miss when nothing is live", async () => {
-    const e = entity({ name: "Acme Jewelers LLC" });
+  it("records a non-resolving published domain", async () => {
+    const e = entity({ name: "Acme Jewelers LLC", contacts: ["https://acmejewelers.com"] });
     const results = await probeEntities([e], { fetchImpl: dohFetch({}) });
     const r = results.get(e.id)!;
     expect(r.domain).toBeNull();
-    expect(r.tried).toEqual(["acmejewelers.com", "acmejewel.com"].slice(0, r.tried.length));
-    expect(e.evidence.some(ev => ev.note?.includes("no live domain"))).toBe(true);
+    expect(r.tried).toEqual(["acmejewelers.com"]);
+    expect(e.evidence.some(ev => ev.note === "published domain did not resolve (A/MX both empty)")).toBe(true);
   });
 
   it("verifies the published domain instead of guessing and adds no email guess when one is published", async () => {
