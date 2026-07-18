@@ -10,4 +10,3 @@ export class MemoryCache implements KVCache {
   set(key: string, value: unknown): void { this.store.set(key, value); }
 }
 
-// WindowStorageCache implemented in apps/artifact (needs window.storage) — not here
