@@ -43,8 +43,8 @@ map(query)   1 cheap LLM call max — common queries resolve from a static
 route(intent) pure manifest lookup: category ∩ geo ∩ plane. 0 tokens.
 fetch(...)   drivers pull the routed registries, normalize to a canonical
              Entity, merge on normalized name. 0 tokens.
-probe(...)   contact discovery: published domains verified, else name-slug
-             guesses checked A+MX via DNS-over-HTTPS. 0 tokens.
+probe(...)   contact verification: published domains checked A+MX via
+             DNS-over-HTTPS; no name-slug guessing. 0 tokens.
 brief(...)   1 best-tier LLM call, batched over all ranked leads; must
              surface what registries can't verify. 0 calls if no backend.
 ```
@@ -95,6 +95,7 @@ delivery surface.
 
 ## Privacy
 
-Public records only. Probe results are name-derived guesses unless a contact
-was published by the registry itself — evidence marks the difference, and
-briefs must disclose what is inferred versus verified.
+Public records only. Contacts are only those published by the registry itself
+(plus a pattern email guess when that domain has MX — always marked
+UNVERIFIED). Leads without a published domain get a prefilled web-search link
+instead of a guessed one; briefs must disclose what is inferred versus verified.

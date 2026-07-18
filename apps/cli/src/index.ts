@@ -65,6 +65,9 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
         case "merged":
           console.log(`merge   ${event.count} entities`);
           break;
+        case "backfilled":
+          console.log(`backfill ${event.sourceId}: ${event.count} matched by name`);
+          break;
         case "probed":
           console.log(`probe   ${event.count} entities checked (DNS A+MX)`);
           break;
@@ -80,6 +83,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     const e = lead.entity;
     console.log(`[${String(lead.score).padStart(3)}] ${e.name}  (${[e.address.city, e.source_ids.join("+")].filter(Boolean).join(" · ")})`);
     if (e.contacts.length > 0) console.log(`      contact: ${e.contacts.join(" · ")}`);
+    if (lead.searchUrl !== null) console.log(`      search:  ${lead.searchUrl}`);
     console.log(`      ${lead.brief}`);
     for (const ev of e.evidence) console.log(`      · [${ev.source}] ${ev.field}=${ev.value}${ev.note ? ` (${ev.note})` : ""}`);
     console.log();

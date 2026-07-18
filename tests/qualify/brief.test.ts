@@ -33,6 +33,21 @@ describe("rankEntities", () => {
     expect(ranked[0]!.entity.id).toBe("x:1");
     expect(ranked[0]!.score).toBeGreaterThan(ranked[1]!.score);
   });
+
+  it("attaches a web-search URL when no published domain exists", () => {
+    const e = entity({ contacts: [], name: "No Domain Co", address: { city: "Mocktown", state: "CO" } });
+    const [lead] = rankEntities([e], new Map());
+    expect(lead!.searchUrl).not.toBeNull();
+    expect(lead!.searchUrl).toContain("duckduckgo.com");
+    const q = new URL(lead!.searchUrl!).searchParams.get("q");
+    expect(q).toBe(`"No Domain Co" Mocktown CO`);
+  });
+
+  it("no search URL when a published domain exists", () => {
+    const e = entity({ contacts: ["info@example.com"] });
+    const [lead] = rankEntities([e], new Map());
+    expect(lead!.searchUrl).toBeNull();
+  });
 });
 
 describe("briefLeads", () => {
@@ -96,7 +111,7 @@ describe("parseBriefResponse hardening", () => {
 
 describe("templateBrief", () => {
   it("carries category, sources, contacts and caveats", () => {
-    const lead = { entity: entity({ categories: ["produce"], source_ids: ["co_sos", "paca"], contacts: ["info@x.com"] }), score: 0, probe: undefined, brief: "" };
+    const lead = { entity: entity({ categories: ["produce"], source_ids: ["co_sos", "paca"], contacts: ["info@x.com"] }), score: 0, probe: undefined, brief: "", searchUrl: null };
     const text = templateBrief(lead, MAP);
     expect(text).toContain("produce");
     expect(text).toContain("co_sos + paca");

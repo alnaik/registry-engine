@@ -1,5 +1,6 @@
 import type { Driver, SourceSpec, FetchRequest } from "../driver.js";
 import type { Entity } from "../entity.js";
+import { normalizeName } from "../entity.js";
 import { buildSoqlUrl, fetchWithRetry, Limiter, type FetchRetryOptions } from "../util/http.js";
 import { rowToEntity, keywordEvidence, str } from "./mapRow.js";
 
@@ -8,6 +9,9 @@ const DEFAULT_LIMIT = 500;
 const MAX_KEYWORDS = 8;
 const ID_CHUNK = 100;
 const CONCURRENCY = 4;
+const MAX_BACKFILL_NAMES = 150;   // cap on distinct name patterns per call
+const NAME_CHUNK = 10;            // OR'd LIKE patterns per request
+const BACKFILL_PAGE_LIMIT = 200;  // row cap per chunk request
 
 // Socrata quirks carried by the manifest entry. The optional tradeNames block
 // wires a second dataset whose descriptions are keyword-searched and whose
@@ -125,6 +129,49 @@ export class SocrataDriver implements Driver {
       }
       entities.push(entity);
       if (entities.length >= limit) break;
+    }
+    return entities;
+  }
+
+  // Targeted existence lookup: given business names discovered on another
+  // plane, fetch existence-registry rows whose name matches — no keywords,
+  // no city filter, just a normalized-name LIKE join back to the caller.
+  async fetchByNames(source: SourceSpec, names: string[], opts: FetchRetryOptions = {}): Promise<Entity[]> {
+    const quirks = readQuirks(source);
+    const patterns: string[] = [];
+    for (const name of names) {
+      const tokens = soqlSafeLiteral(normalizeName(name)).split(" ").filter(t => t.length > 0);
+      if (tokens.join("").length < 4) continue;
+      const pattern = `%${tokens.join("%")}%`;
+      if (!patterns.includes(pattern)) patterns.push(pattern);
+    }
+    const capped = patterns.slice(0, MAX_BACKFILL_NAMES);
+    if (capped.length === 0) return [];
+
+    const f = source.fields;
+    const statusWhere = `${f["status"]}='${quirks.statusValue}'`;
+    const limiter = new Limiter(CONCURRENCY);
+
+    const chunkResults = await Promise.all(chunks(capped, NAME_CHUNK).map(chunk => {
+      const where = [statusWhere, likeClause(f["name"]!, chunk)].join(" AND ");
+      return this.pages(source, quirks.datasetId, where, BACKFILL_PAGE_LIMIT, limiter, opts);
+    }));
+
+    const idField = f["id"]!;
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const row of chunkResults.flat()) {
+      const id = str(row[idField]);
+      if (!byId.has(id)) byId.set(id, row);
+    }
+
+    const entities: Entity[] = [];
+    for (const row of byId.values()) {
+      const entity = rowToEntity(source, row);
+      entity.evidence.push({
+        source: source.id, field: f["name"]!, value: entity.name,
+        note: "existence backfill — name match from another plane",
+      });
+      entities.push(entity);
     }
     return entities;
   }
