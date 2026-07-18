@@ -15,7 +15,8 @@ key. Drop `--no-llm` to enable the two LLM calls per search; that path shells
 out to the Claude Code CLI (`claude -p`), so it needs Claude Code installed
 and logged in. Flags: `--limit=<n>` per-source fetch cap (default 500) ·
 `--leads=<n>` max briefed leads (default 12) · `--model=<m>` Claude model for
-headless calls · `--shards=<url>` alternate shard host.
+headless calls · `--region=<US-XX>` region to search (default and valid set
+come from the source manifest) · `--shards=<url>` alternate shard host.
 
 > Note: `node --experimental-strip-types apps/cli/src/index.ts` does **not**
 > work — the source uses `.js`-suffixed ESM imports, which strip-types can't

@@ -4,6 +4,7 @@ export type { Plane, DriverKind, SourceSpec, Intent, FetchRequest, Driver, Drive
 export { loadManifest, ManifestError } from "./manifest.js";
 export { SOURCES } from "./sources/index.js";
 export { route } from "./route.js";
+export { knownRegions, defaultRegion, regionCities } from "./regions.js";
 export { defaultDrivers, SocrataDriver, StaticShardDriver, soqlSafeLiteral, rowToEntity } from "./drivers/index.js";
 export { MemoryCache } from "./util/cache.js";
 export type { KVCache } from "./util/cache.js";

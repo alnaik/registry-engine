@@ -10,7 +10,7 @@ export function route(intent: Intent, sources: SourceSpec[]): SourceSpec[] {
 }
 
 // "US" covers "US-CO"; "US-CO" covers only itself.
-function geoCovers(coverage: string[], region: string): boolean {
+export function geoCovers(coverage: string[], region: string): boolean {
   return coverage.some(g => g === region || region.startsWith(`${g}-`));
 }
 

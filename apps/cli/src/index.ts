@@ -1,4 +1,5 @@
 import { search, MAX_LLM_CALLS_PER_SEARCH } from "@registry-engine/qualify";
+import { SOURCES, knownRegions } from "@registry-engine/registry-core";
 import { ClaudeCodeBackend } from "./claudeCodeBackend.js";
 
 // Validation harness: the full pipeline, with LLM calls through the Claude
@@ -28,13 +29,22 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
 
   // --shards=<base> points static_shard sources at a local server so the
   // full join can be validated before shards are published.
-  const sources = flags["shards"] === undefined ? undefined : (await import("@registry-engine/registry-core")).SOURCES.map(s =>
+  const sources = flags["shards"] === undefined ? undefined : SOURCES.map(s =>
     s.driver === "static_shard" ? { ...s, endpoint: `${flags["shards"]}/${s.id}` } : s);
+
+  if (flags["region"] !== undefined) {
+    const valid = knownRegions(sources ?? SOURCES);
+    if (!valid.includes(flags["region"])) {
+      console.error(`unknown region "${flags["region"]}" — valid regions: ${valid.join(", ")}`);
+      process.exit(1);
+    }
+  }
 
   const out = await search(query, {
     // omitting llm entirely puts the engine on its zero-token path
     ...(flags["no-llm"] === "true" ? {} : { llm: { backend: new ClaudeCodeBackend(flags["model"]) } }),
     sources,
+    region: flags["region"],
     limit: flags["limit"] !== undefined ? parseInt(flags["limit"], 10) : undefined,
     maxLeads: flags["leads"] !== undefined ? parseInt(flags["leads"], 10) : undefined,
     onEvent: event => {
@@ -80,13 +90,14 @@ function printHelp(): void {
   console.log(`Registry Engine CLI — map → route → fetch → probe → brief
 
 Usage:
-  search "yukon gold potato supplier near me" [--limit=100] [--leads=12] [--model=sonnet] [--no-llm]
+  search "yukon gold potato supplier near me" [--limit=100] [--leads=12] [--model=sonnet] [--no-llm] [--region=US-CO]
 
 Flags:
   --limit=<n>   per-source fetch cap
   --leads=<n>   max briefed leads (default 12)
   --model=<m>   claude CLI model override for headless calls
   --no-llm      run the zero-token path only (static map + template briefs)
+  --region=<US-XX>  region to search (default: first region in the source manifest)
 
 LLM calls (max ${MAX_LLM_CALLS_PER_SEARCH}/search) run through the Claude Code CLI
 (claude -p) and bill your subscription — no API key needed.
