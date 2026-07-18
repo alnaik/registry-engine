@@ -52,14 +52,6 @@ const STATIC_CATEGORIES: Record<string, { category: string; keywords: string[] }
   vet:        { category: "veterinary", keywords: ["veterinar", "animal", "pet"] },
 };
 
-// Multi-word names first so "colorado springs" wins over stray "springs".
-const CO_CITIES = [
-  "colorado springs", "fort collins", "castle rock", "monte vista", "grand junction",
-  "denver", "boulder", "aurora", "lakewood", "littleton", "arvada", "westminster",
-  "thornton", "centennial", "pueblo", "greeley", "longmont", "loveland",
-  "broomfield", "parker", "golden", "alamosa", "durango",
-];
-
 const BUY_WORDS = new Set(["supplier", "suppliers", "wholesaler", "wholesalers", "distributor", "distributors", "vendor", "vendors", "source", "sourcing"]);
 const DEMAND_WORDS = new Set(["need", "needs", "use", "uses", "using", "want", "wants", "buy", "buys"]);
 const STOPWORDS = new Set([
@@ -68,17 +60,19 @@ const STOPWORDS = new Set([
   "businesses", "business", "companies", "company", "shops", "shop", "stores", "store",
 ]);
 
-const DEFAULT_REGION = "US-CO";
-
 export async function mapQuery(
   query: string,
   llm: Llm | null,
-  opts: { region?: string | undefined } = {}
+  opts: { region: string; cities?: string[] | undefined }
 ): Promise<MapResult> {
-  const region = opts.region ?? DEFAULT_REGION;
+  const region = opts.region;
   const q = query.toLowerCase();
 
-  const cities: string[] = CO_CITIES.filter(c => q.includes(c));
+  // Cities come from the manifest's per-source quirks (via the engine), not
+  // a hardcoded table. Sort longest-first so "colorado springs" wins over
+  // a stray "springs" match.
+  const cityTable = (opts.cities ?? []).map(c => c.toLowerCase()).sort((a, b) => b.length - a.length);
+  const cities: string[] = cityTable.filter(c => q.includes(c));
   const tokens = q.replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
 
   const categories: string[] = [];

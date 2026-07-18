@@ -22,6 +22,12 @@
       "quirks": {
         "datasetId": "4ykn-tg5h",
         "statusValue": "Good Standing",
+        "cities": [
+          "Colorado Springs", "Fort Collins", "Castle Rock", "Monte Vista", "Grand Junction",
+          "Denver", "Boulder", "Aurora", "Lakewood", "Littleton", "Arvada", "Westminster",
+          "Thornton", "Centennial", "Pueblo", "Greeley", "Longmont", "Loveland",
+          "Broomfield", "Parker", "Golden", "Alamosa", "Durango"
+        ],
         "tradeNames": {
           "datasetId": "u7sb-g482",
           "statusValue": "GOOD",

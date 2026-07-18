@@ -1,5 +1,5 @@
 import type { Entity, SourceSpec, DriverRegistry, FetchRetryOptions } from "@registry-engine/registry-core";
-import { SOURCES, defaultDrivers, route, mergeEntities } from "@registry-engine/registry-core";
+import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities } from "@registry-engine/registry-core";
 import { createLlm, type Llm, type LlmConfig } from "./llm/adapter.js";
 import { mapQuery, type MapResult } from "./verbs/map.js";
 import { probeEntities, type ProbeResult } from "./verbs/probe.js";
@@ -54,7 +54,8 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
     llm = null;
   }
 
-  const map = await mapQuery(query, llm, { region: cfg.region });
+  const region = cfg.region ?? defaultRegion(sources);
+  const map = await mapQuery(query, llm, { region, cities: regionCities(sources, region) });
   emit({ type: "map", map });
 
   const routed = route(map.intent, sources);

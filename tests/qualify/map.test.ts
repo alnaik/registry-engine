@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { mapQuery, parseMapResponse } from "../../packages/qualify/src/verbs/map.js";
 import { createLlm, type RawLlm } from "../../packages/qualify/src/llm/adapter.js";
 
+const CO = { region: "US-CO", cities: ["Colorado Springs", "Denver", "Boulder"] };
+
 function countingLlm(response: string) {
   let calls = 0;
   const backend: RawLlm = { complete: async () => { calls++; return response; } };
@@ -11,7 +13,7 @@ function countingLlm(response: string) {
 describe("mapQuery — static table (zero LLM calls)", () => {
   it("golden query (a): jewelers needing princess cut diamonds, Denver", async () => {
     const { llm, calls } = countingLlm("SHOULD NOT BE CALLED");
-    const r = await mapQuery("find jewelers that need princess cut diamonds in Denver", llm);
+    const r = await mapQuery("find jewelers that need princess cut diamonds in Denver", llm, CO);
     expect(calls()).toBe(0);
     expect(r.usedLlm).toBe(false);
     expect(r.intent.categories).toContain("jewelry");
@@ -25,7 +27,7 @@ describe("mapQuery — static table (zero LLM calls)", () => {
 
   it("golden query (b): yukon gold potato supplier near me", async () => {
     const { llm, calls } = countingLlm("SHOULD NOT BE CALLED");
-    const r = await mapQuery("yukon gold potato supplier near me", llm);
+    const r = await mapQuery("yukon gold potato supplier near me", llm, CO);
     expect(calls()).toBe(0);
     expect(r.intent.categories).toContain("produce");
     expect(r.keywords).toContain("potato");
@@ -35,7 +37,7 @@ describe("mapQuery — static table (zero LLM calls)", () => {
   });
 
   it("resolves multi-word cities", async () => {
-    const r = await mapQuery("bakeries in colorado springs", null);
+    const r = await mapQuery("bakeries in colorado springs", null, CO);
     expect(r.intent.geo.cities).toEqual(["Colorado Springs"]);
     expect(r.intent.categories).toContain("bakery");
   });
@@ -46,7 +48,7 @@ describe("mapQuery — LLM fallback", () => {
     const { llm, calls } = countingLlm(
       '{"categories":["aerospace"],"keywords":["aero","space"],"cities":["Boulder"],"direction":"sell","caveats":["titanium spec unverifiable"]}'
     );
-    const r = await mapQuery("titanium fastener buyers in aerospace, Boulder", llm);
+    const r = await mapQuery("titanium fastener buyers in aerospace, Boulder", llm, CO);
     expect(calls()).toBe(1);
     expect(r.usedLlm).toBe(true);
     expect(r.intent.categories).toEqual(["aerospace"]);
@@ -57,14 +59,14 @@ describe("mapQuery — LLM fallback", () => {
 
   it("falls back to naive keyword extraction on model garbage", async () => {
     const { llm } = countingLlm("I think you should try searching for... maybe?");
-    const r = await mapQuery("quantum widget makers", llm);
+    const r = await mapQuery("quantum widget makers", llm, CO);
     expect(r.usedLlm).toBe(false);
     expect(r.intent.categories).toEqual([]);
     expect(r.keywords).toContain("quantum");
   });
 
   it("works with no LLM at all", async () => {
-    const r = await mapQuery("quantum widget makers", null);
+    const r = await mapQuery("quantum widget makers", null, CO);
     expect(r.keywords).toEqual(["quantum", "widget", "makers"]);
   });
 });

@@ -39,7 +39,7 @@ fallback in `createLlm`. Record the removal as ADR 0012; git history keeps
 the code if a standalone search page is ever revisited (that page would need
 a real API for the search agent — out of scope, deliberately deferred).
 
-### Phase 2 — `--region` flag + manifest-driven regions
+### Phase 2 — `--region` flag + manifest-driven regions ✅ (this checkpoint)
 `SearchConfig.region` exists (`packages/qualify/src/engine.ts`) but the CLI
 never sets it, and `map.ts` hardcodes `DEFAULT_REGION = "US-CO"` plus a
 Colorado-only city list. Work: add `--region=US-XX` to the CLI; derive the
