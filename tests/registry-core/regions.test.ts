@@ -4,8 +4,8 @@ import { SOURCES } from "../../packages/registry-core/src/sources/index.js";
 import { loadManifest } from "../../packages/registry-core/src/manifest.js";
 
 describe("knownRegions / defaultRegion / regionCities over the shipped manifest", () => {
-  it("knownRegions(SOURCES) is [\"US-CO\"] — paca's bare US geo is excluded, its shardRegions dedupes", () => {
-    expect(knownRegions(SOURCES)).toEqual(["US-CO"]);
+  it("knownRegions(SOURCES) is [\"US-CO\", \"US-CT\", \"US-NY\"] — paca's bare US geo is excluded, its shardRegions dedupes", () => {
+    expect(knownRegions(SOURCES)).toEqual(["US-CO", "US-CT", "US-NY"]);
   });
 
   it("defaultRegion(SOURCES) is US-CO", () => {

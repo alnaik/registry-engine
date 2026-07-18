@@ -65,13 +65,20 @@ or drop slug guessing (LLC/INC tokens are currently kept in slugs), and for
 each lead without a verified domain emit a ready-to-open web-search URL in the
 CLI/brief output — the manual post-list search flow.
 
-### Phase 4 — more states in the socket
-After Phase 2: add states where **both** planes have data — existence via a
-Socrata SoS dataset (CT/WA/NY are the known candidates) and category via a
-recorded PACA shard for that region (protocol: `docs/data/paca.md`), hosted
-alongside `US-CO.json` on the gist. Manifest entries + shard files only;
-zero code changes is the acceptance test. First step of the phase is a
-data-availability survey to pick the states.
+### Phase 4 — more states in the socket ✅ (this checkpoint)
+Survey (2026-07-18): CT clean (data.ct.gov `n7gp-d28j`); NY viable with a
+documented quirk (`n9v6-gdp6` has no status column → status maps to
+`jurisdiction='New York'`, drops ~8% foreign entities); WA definitively not
+on Socrata (Data Extract discontinued, CCFS bot-guarded) — deferred. Added
+`ct_sos` + `ny_dos` manifest entries and recorded PACA shards US-CT (115
+active) / US-NY (1,324 active). Zero code changes held: only manifest.json,
+two shipped-manifest test expectations, ADR 0014, README. Live runs joined
+both planes in Hartford and Brooklyn with the Phase 3 backfill working.
+**Open item: gist upload of US-CT.json / US-NY.json was permission-blocked
+(publishing recorded contact data needs explicit user approval) — shards
+verified via a local host + `--shards`; run
+`cd shards/paca && gh gist edit 48d13eb9b5f428e547e99ab4b49b4a85 --add
+US-CT.json` (and US-NY.json) once approved.**
 
 ## Next iteration (v5) — new category planes
 
