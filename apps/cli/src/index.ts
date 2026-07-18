@@ -1,8 +1,8 @@
 import { search, MAX_LLM_CALLS_PER_SEARCH } from "@registry-engine/qualify";
 import { ClaudeCodeBackend } from "./claudeCodeBackend.js";
 
-// Validation harness: the exact pipeline the artifact runs, with LLM calls
-// through the Claude Code CLI (headless) — subscription-billed, no API key.
+// Validation harness: the full pipeline, with LLM calls through the Claude
+// Code CLI (headless) — subscription-billed, no API key.
 
 function parseArgs(argv: string[]): { command: string; positional: string[]; flags: Record<string, string> } {
   const args = argv.slice(2);

@@ -6,14 +6,12 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc",
-    "bundle": "node scripts/bundle-artifact.mjs"
+    "typecheck": "tsc"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
     "vitest": "^2.1.0",
     "vite-node": "^2.1.0",
-    "esbuild": "^0.23.0",
     "@types/node": "^20.0.0"
   }
 }

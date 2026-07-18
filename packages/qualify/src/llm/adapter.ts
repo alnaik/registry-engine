@@ -15,9 +15,8 @@ export interface RawCompleteOptions {
   system?: string | undefined;
 }
 
-// The one thing a backend must do. On claude.ai both tiers collapse to
-// window.claude.complete; with an API key the tier picks the model; the CLI
-// injects a `claude -p` backend.
+// The one thing a backend must do. With an API key the tier picks the
+// model; the CLI injects a `claude -p` backend.
 export interface RawLlm {
   complete(prompt: string, opts: RawCompleteOptions): Promise<string>;
 }
@@ -75,22 +74,10 @@ export function createLlm(cfg: LlmConfig = {}): Llm {
     cfg.backend ??
     (cfg.apiKey !== undefined && cfg.apiKey !== ""
       ? anthropicApiBackend(cfg.apiKey)
-      : windowClaudeBackend());
+      : (() => {
+          throw new Error("No LLM backend available: set cfg.apiKey or inject cfg.backend");
+        })());
   return new Llm(raw, cfg.maxCalls);
-}
-
-// claude.ai artifact runtime: a single completion function, no model choice,
-// no system param — the system prompt is prepended to the user prompt.
-function windowClaudeBackend(): RawLlm {
-  const w = (globalThis as { window?: { claude?: { complete?: (prompt: string) => Promise<string> } } }).window;
-  const claude = w?.claude;
-  if (typeof claude?.complete !== "function") {
-    throw new Error("No LLM backend available: set cfg.apiKey, inject cfg.backend, or run inside claude.ai");
-  }
-  return {
-    complete: (prompt, opts) =>
-      claude.complete!(opts.system !== undefined ? `${opts.system}\n\n${prompt}` : prompt),
-  };
 }
 
 function anthropicApiBackend(apiKey: string): RawLlm {

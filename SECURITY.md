@@ -22,8 +22,8 @@ This document describes the known threats to Registry Engine, the mitigations in
 
 3. **Model outputs cannot trigger side effects.** The LLM call returns a JSON string. Parsing and downstream operations (storage writes, further fetches) happen in code, not in response to model instructions. The model has no ability to call tools other than `web_search` with `max_uses: 2`.
 
-4. **Contact info rendered as plain text only.** Contact information extracted from web results is rendered as React text nodes, never as `<a href>` or `dangerouslySetInnerHTML`. A user must manually copy and use it.
-   - Code location: `apps/artifact/src/components/DossierDrawer.jsx`
+4. **Contact info rendered as plain text only.** Contact information extracted from web results is rendered as plain text, never as `<a href>` or `dangerouslySetInnerHTML`. A user must manually copy and use it.
+   - Code location: artifact app removed in v4 (see `docs/decisions/0012-remove-artifact-app.md`); this surface no longer exists.
 
 ---
 
@@ -33,8 +33,8 @@ This document describes the known threats to Registry Engine, the mitigations in
 
 **Attack:** A business name or trade description contains `<script>alert(1)</script>` or similar. If rendered via `innerHTML`, this executes in the user's browser.
 
-**Mitigation:** All registry and web-derived strings are rendered via React text nodes only. The rule: NEVER use `dangerouslySetInnerHTML` with external data. This is enforced as a code review checklist item and flagged in the esbuild banned-import check for the string `dangerouslySetInnerHTML`.
-- Code location: all components in `apps/artifact/src/components/`
+**Mitigation:** All registry and web-derived strings are rendered as plain text only. The rule: NEVER use `dangerouslySetInnerHTML` with external data. This was enforced as a code review checklist item.
+- Code location: artifact app removed in v4 (see `docs/decisions/0012-remove-artifact-app.md`); this surface no longer exists.
 
 ---
 
@@ -45,7 +45,7 @@ This document describes the known threats to Registry Engine, the mitigations in
 **Attack:** A business name starting with `=`, `+`, `-`, or `@` is interpreted as a formula by Excel/Sheets, potentially executing code or exfiltrating data when opened.
 
 **Mitigation:** The CSV export helper prefixes all cells starting with `=`, `+`, `-`, or `@` with a single quote `'`. This renders the cell as a literal string in spreadsheet apps.
-- Code location: `csvCell` in the artifact's results component (`apps/artifact/src/components/`)
+- Code location: artifact app removed in v4 (see `docs/decisions/0012-remove-artifact-app.md`); this surface no longer exists.
 
 ---
 
@@ -88,7 +88,7 @@ This document describes the known threats to Registry Engine, the mitigations in
 4. **Trade name coverage is not 100%** — not all businesses register trade names.
 5. **`entityformdate` records may be incomplete** for entities formed before electronic filing.
 
-Each limitation is noted in the UI where the relevant data is displayed (tooltip or footnote). Code location: `apps/artifact/src/components/`.
+Each limitation was noted in the UI where the relevant data was displayed (tooltip or footnote). Code location: artifact app removed in v4 (see `docs/decisions/0012-remove-artifact-app.md`); this surface no longer exists.
 
 ---
 
@@ -106,3 +106,4 @@ Each limitation is noted in the UI where the relevant data is displayed (tooltip
 - v1.0 (2026-07-07, Phase 0): Initial threat model.
 - v1.4 (2026-07-07, Phase 4): Added formal test suite for prompt injection resilience (`tests/qualify/injection.test.ts`, 7 tests). Verified score clamping, rationale/contact length caps, unknown-key dropping, webPresence whitelist, and prototype-pollution immunity. Added `UccRelationship` to dossier with explicit "fuzzy match — verify before citing" warning to prevent users from treating unverified data as authoritative. Added `digest` CLI command with no LLM involvement (read-only SoS queries only).
 - v2.0 (2026-07-08, distillation): Pipeline rebuilt as query-driven fetch→triage→verify→brief; profiles, feedback loop, vitality/gaps, UCC, and digest removed from the product surface. Added Threat 7 (SoQL injection via LLM-derived keywords, mitigated by `soqlSafeKeyword`). Injection tests rewritten against `parseVerifyResponse`. Corrected stale code pointers (CSV helper lives in the artifact, not `packages/shared`).
+- v2.1 (2026-07-18): Artifact app removed (ADR 0012); artifact-UI-only surfaces (React rendering, CSV export UI) retired.

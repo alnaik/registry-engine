@@ -13,8 +13,8 @@ export interface MapResult {
   usedLlm: boolean;
 }
 
-// token -> category + registry-name keywords. Lean on purpose: it ships
-// inside the artifact. Extend freely; unknown tokens fall through to the LLM.
+// token -> category + registry-name keywords. Lean on purpose. Extend
+// freely; unknown tokens fall through to the LLM.
 const STATIC_CATEGORIES: Record<string, { category: string; keywords: string[] }> = {
   jeweler:    { category: "jewelry", keywords: ["jewel", "gem", "diamond", "goldsmith"] },
   jewelry:    { category: "jewelry", keywords: ["jewel", "gem", "diamond", "goldsmith"] },

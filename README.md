@@ -71,7 +71,6 @@ for the recorded PACA protocol).
 ```
 packages/registry-core/   MIT. Canonical Entity, drivers, manifest, route().
 packages/qualify/         LLM adapter (tiered), map/probe/brief verbs, engine.
-apps/artifact/            Single-file Claude Artifact (<100kb enforced).
 apps/cli/                 Validation harness (LLM via headless claude -p).
 shards/                   Recorded region shards for static_shard sources.
 ```
@@ -82,21 +81,16 @@ shards/                   Recorded region shards for static_shard sources.
 npm install
 npm test              # driver fixtures, route, verbs, E2E golden queries
 npm run typecheck     # strict TS across the workspace
-npm run bundle        # dist/artifact.jsx, hard-fails at 100kb
 ```
 
 CLI harness: see Quickstart above.
 
-## Known limitation: pasted-into-chat artifacts can't fetch
+## Delivery surface
 
-`dist/artifact.jsx` pasted directly into a claude.ai chat message runs in a
-sandbox that blocks all outbound `fetch`/XHR to external hosts — so
-`route()`/`fetch()`/`probe()` fail there (`map()`/`brief()` still work; they
-go through `window.claude.complete`, a bridged API the sandbox allows, not a
-network fetch). See `docs/decisions/0011-artifact-sandbox-blocks-fetch.md`
-for the finding and delivery-model options. The CLI harness is unaffected
-(Node has no such sandbox) and is the reliable way to run a full search
-today.
+The artifact app was removed in v4 because the claude.ai chat-artifact
+sandbox blocks outbound fetch (ADR 0011); see
+`docs/decisions/0012-remove-artifact-app.md`. The CLI harness is the
+delivery surface.
 
 ## Privacy
 

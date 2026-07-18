@@ -10,7 +10,7 @@ export class ManifestError extends Error {
   }
 }
 
-// The manifest is declarative JSON shipped inside the artifact; it is
+// The manifest is declarative JSON shipped with the library; it is
 // validated here so a bad config entry fails loudly at load, not as a
 // mystery downstream.
 export function loadManifest(raw: unknown): SourceSpec[] {

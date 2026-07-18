@@ -3,7 +3,7 @@ import type { RawLlm, RawCompleteOptions } from "@registry-engine/qualify";
 
 // RawLlm backend that shells out to the Claude Code CLI in headless mode
 // (`claude -p --output-format json`). Bills the user's Claude subscription —
-// no API key needed. Node-only: never bundle this into the artifact.
+// no API key needed. Node-only: spawns a child process.
 export class ClaudeCodeBackend implements RawLlm {
   // Optional override pins every tier to one CLI model alias (e.g. "sonnet").
   constructor(private readonly modelOverride?: string | undefined) {}
