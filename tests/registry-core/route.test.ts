@@ -9,7 +9,7 @@ function intent(overrides: Partial<Intent> = {}): Intent {
 
 describe("route over the shipped manifest", () => {
   it("shipped manifest validates at load", () => {
-    expect(SOURCES.map(s => s.id)).toEqual(["co_sos", "paca"]);
+    expect(SOURCES.map(s => s.id)).toEqual(["co_sos", "ct_sos", "ny_dos", "paca"]);
   });
 
   it("produce query in CO routes to both co_sos and paca", () => {
@@ -30,5 +30,10 @@ describe("route over the shipped manifest", () => {
   it("US coverage covers subregions but not the other way around", () => {
     const usOnly: SourceSpec = { ...SOURCES[1]!, coverage: { geo: ["US-CO"], categories: ["*"] } };
     expect(route(intent({ geo: { region: "US", cities: [] } }), [usOnly])).toEqual([]);
+  });
+
+  it("produce query in NY routes to ny_dos and paca", () => {
+    const picked = route(intent({ categories: ["produce"], geo: { region: "US-NY", cities: [] } }), SOURCES);
+    expect(picked.map(s => s.id).sort()).toEqual(["ny_dos", "paca"]);
   });
 });

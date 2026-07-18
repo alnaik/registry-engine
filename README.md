@@ -22,9 +22,10 @@ come from the source manifest) · `--shards=<url>` alternate shard host.
 > work — the source uses `.js`-suffixed ESM imports, which strip-types can't
 > resolve back to `.ts` files. Use the `vite-node` command above.
 
-**Status:** v3 "socket" — query-driven pipeline over a declarative source
-manifest. Two plugs live: Colorado SoS (existence) and USDA PACA (produce
-category + contacts).
+**Status:** v4 "socket" — query-driven pipeline over a declarative source
+manifest. Four plugs live: Colorado, Connecticut, and New York SoS/DOS
+registries (existence) and USDA PACA (produce category + contacts; shards
+for US-CO, US-CT, US-NY).
 
 ## The thesis
 
@@ -62,7 +63,7 @@ A manifest entry in `packages/registry-core/src/sources/manifest.json` —
 plane, coverage (geo ∩ categories), endpoint, field map, quirks. **Zero code
 changes**, guaranteed by `tests/registry-core/zero-code-state.test.ts`.
 
-Drivers are few and generic: `socrata` (CO SoS; CT/WA/NY later), `rest`
+Drivers are few and generic: `socrata` (CO/CT/NY registries), `rest`
 (future), `static_shard` (registries browsers can't reach — recorded JSON
 shards per region, e.g. `shards/paca/US-CO.json`; see `docs/data/paca.md`
 for the recorded PACA protocol).

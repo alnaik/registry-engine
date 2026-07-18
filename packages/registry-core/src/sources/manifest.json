@@ -41,6 +41,64 @@
       }
     },
     {
+      "id": "ct_sos",
+      "name": "Connecticut Secretary of the State business registry",
+      "plane": "existence",
+      "driver": "socrata",
+      "coverage": { "geo": ["US-CT"], "categories": ["*"] },
+      "endpoint": "https://data.ct.gov/resource",
+      "fields": {
+        "id": "id",
+        "name": "name",
+        "status": "status",
+        "street": "billingstreet",
+        "city": "billingcity",
+        "state": "billingstate",
+        "zip": "billingpostalcode"
+      },
+      "quirks": {
+        "datasetId": "n7gp-d28j",
+        "statusValue": "Active",
+        "cities": [
+          "Stamford", "Bridgeport", "New Haven", "Hartford", "Norwalk",
+          "Danbury", "Waterbury", "Fairfield", "Greenwich", "West Hartford",
+          "Hamden", "Milford", "Westport", "New Britain", "Stratford",
+          "Meriden", "Shelton", "Manchester", "Bristol", "East Hartford",
+          "Wallingford", "Middletown", "Branford", "Glastonbury"
+        ]
+      }
+    },
+    {
+      "id": "ny_dos",
+      "name": "New York Department of State corporations registry",
+      "plane": "existence",
+      "driver": "socrata",
+      "coverage": { "geo": ["US-NY"], "categories": ["*"] },
+      "endpoint": "https://data.ny.gov/resource",
+      "fields": {
+        "id": "dos_id",
+        "name": "current_entity_name",
+        "status": "jurisdiction",
+        "street": "dos_process_address_1",
+        "city": "dos_process_city",
+        "state": "dos_process_state",
+        "zip": "dos_process_zip",
+        "officer_org": "registered_agent_name"
+      },
+      "quirks": {
+        "datasetId": "n9v6-gdp6",
+        "statusValue": "New York",
+        "cities": [
+          "New York", "Brooklyn", "Albany", "Bronx", "Staten Island",
+          "Flushing", "Buffalo", "Rochester", "Jamaica", "Astoria",
+          "Yonkers", "White Plains", "Syracuse", "Long Island City",
+          "Garden City", "New Rochelle", "Melville", "Hicksville",
+          "Jackson Heights", "Huntington", "Poughkeepsie", "Westbury",
+          "Great Neck", "Valley Stream"
+        ]
+      }
+    },
+    {
       "id": "paca",
       "name": "USDA PACA produce license registry",
       "plane": "category",
@@ -60,7 +118,7 @@
         "statusValue": "Active",
         "namesField": "trade_names",
         "officersField": "principals",
-        "shardRegions": ["US-CO"]
+        "shardRegions": ["US-CO", "US-CT", "US-NY"]
       }
     }
   ]
