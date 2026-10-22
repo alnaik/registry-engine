@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.0 (v5, activity-coded discovery)
+Version: 3.1 (v5, activity-coded discovery + web app)
 Last updated: 2026-10-22
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -92,9 +92,11 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 
 **Severity:** Reputational.
 
-- Public records only. Contacts are only those a registry publishes. The one
-  exception is a pattern email on a published domain with MX, always marked
-  UNVERIFIED. Nothing is guessed from names (ADR 0013).
+- Contacts come from two places. One is what a registry publishes, plus a
+  pattern email on a published domain with MX, always marked UNVERIFIED. The
+  other is what a business published about itself on the web, found by
+  searching the business name (ADR 0016), always labeled "verify" with its
+  source. Nothing is guessed from names (ADR 0013).
 - **Individuals.** PPP records include sole proprietors, and the Colorado
   farm-products financing list names individual farm debtors. These records
   are public by statute (SBA FOIA release; Food Security Act central filing,
@@ -128,6 +130,53 @@ Every limitation below is surfaced in the output, not hidden:
 
 ---
 
+## Threat 7: Web contact lookup (Exa / Parallel)
+
+**Severity:** Medium. Third-party web pages now flow into results (ADR 0016).
+
+**Mitigations:**
+1. **Web text never reaches the LLM.** `extractContact` pattern-extracts
+   only a website origin, a US phone and an email. The brief's packed lead
+   line carries only those strings, never page text. The provider `summary`
+   feature (which is model-generated) is not requested.
+   - `packages/qualify/src/verbs/contacts.ts`, `packages/qualify/src/verbs/brief.ts`
+2. **Wrong-business guard.** A page counts only if it matches the business
+   name (≥60% of distinctive tokens) *and* its city or ZIP. Directory hosts
+   are never taken as the website.
+3. **Individuals are not searched.** PPP sole-proprietor or self-employed
+   records and "LAST, FIRST" names are skipped (`isLikelyIndividual`).
+4. **Cost and abuse.** Lookups run for the top N leads only, at concurrency
+   3, with a 20 s timeout. Results are cached 30 days and failures aren't
+   cached. API keys come from env vars only and are never logged.
+5. **Provenance.** Every found value keeps its source URLs and is labeled
+   "verify".
+
+---
+
+## Threat 8: Local web app (`apps/web`)
+
+**Severity:** Medium. A local server that can spend LLM and web-search
+credits is a target for other websites open in the same browser.
+
+**Mitigations:**
+1. Binds to 127.0.0.1 only.
+2. **DNS-rebinding / cross-site guard.** Every request must carry
+   `Host: localhost:<port>` or `127.0.0.1:<port>`, or it gets a 403. Searches
+   require `Content-Type: application/json`, which forces a CORS preflight,
+   and the server sends no CORS headers, so cross-origin pages can't trigger
+   a search.
+3. One search at a time (429 otherwise), with a 10 KB body cap and
+   validated, length-capped fields.
+4. **XSS.** All registry and web strings are rendered with `textContent`;
+   `innerHTML` is never used with data. A strict CSP allows `'self'` only,
+   with no inline script. Website links must parse as http(s), and `tel:` /
+   `mailto:` values are sanitized.
+5. Static files come from an exact whitelist, so no path is built from the
+   URL.
+- `apps/web/src/server.ts`, `apps/web/public/app.js`
+
+---
+
 ## Changelog
 
 - v1.0 (2026-07-07, Phase 0): Initial threat model.
@@ -144,3 +193,8 @@ Every limitation below is surfaced in the output, not hidden:
   farm-financing records to the privacy policy, plus new integrity
   disclosures. Stale code pointers fixed (`soqlSafeLiteral` lives in
   `drivers/socrata.ts`; v2 `pipeline/verify.ts` no longer exists).
+- v3.1 (2026-10-22, ADR 0016): Added Threat 7 (web contact lookup: no web
+  text to the LLM, name+place match guard, individuals never searched,
+  provenance) and Threat 8 (local web app: localhost bind, Host check, JSON
+  content-type, one search at a time, textContent-only rendering, CSP).
+  Privacy now allows contacts a business published about itself on the web.

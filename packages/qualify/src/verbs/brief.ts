@@ -1,6 +1,6 @@
 import type { Entity } from "@registry-engine/registry-core";
 import type { LatLon } from "@registry-engine/registry-core";
-import { naicsLabel, entityPoint, milesBetween } from "@registry-engine/registry-core";
+import { naicsLabel, naicsRelated, entityPoint, milesBetween } from "@registry-engine/registry-core";
 import type { FoundContact } from "./contacts.js";
 import type { Llm } from "../llm/adapter.js";
 import type { MapResult } from "./map.js";
@@ -25,6 +25,10 @@ export interface RankContext {
 
 // Distance bands, nearest first. "" (no origin) sorts as one group.
 export const DISTANCE_BANDS = ["within 10 mi", "10–25 mi", "25–50 mi", "50–100 mi", "100+ mi", "distance unknown"] as const;
+
+// Heading for leads with no industry code related to the request (name
+// matches only). They trail every coded lead, whatever their distance.
+export const NAME_ONLY_BAND = "name matches only — lower confidence";
 
 function bandFor(distanceMi: number | null): string {
   if (distanceMi === null) return "distance unknown";
@@ -111,7 +115,7 @@ export function rankEntities(entities: Entity[], probes: Map<string, ProbeResult
   const origin = ctx.origin;
   const region = ctx.region ?? "";
   const bandOrder = (band: string): number => Math.max(0, DISTANCE_BANDS.indexOf(band as typeof DISTANCE_BANDS[number]));
-  return entities
+  const tiered = entities
     .map(entity => {
       const probe = probes.get(entity.id);
       const web = webPresence(entity, probe);
@@ -119,7 +123,10 @@ export function rankEntities(entities: Entity[], probes: Map<string, ProbeResult
       const distanceMi = origin === undefined || point === undefined
         ? null
         : Math.round(milesBetween(origin, point) * 10) / 10;
-      return {
+      // With codes to match, a lead whose codes are unrelated to them (or
+      // that has none) is tier 1: it sorts after every coded lead.
+      const tier = ctx.naics.length > 0 && !entity.naics.some(e => ctx.naics.some(q => naicsRelated(e, q))) ? 1 : 0;
+      const lead: Lead = {
         entity,
         score: scoreEntity(entity, ctx),
         probe,
@@ -128,15 +135,21 @@ export function rankEntities(entities: Entity[], probes: Map<string, ProbeResult
         opener: "",
         searchUrl: web === "verified" ? null : webSearchUrl(entity),
         distanceMi,
-        band: origin === undefined ? "" : bandFor(distanceMi),
+        band: tier === 1 ? NAME_ONLY_BAND : origin === undefined ? "" : bandFor(distanceMi),
       };
-    })
-    .sort((a, b) =>
-      bandOrder(a.band) - bandOrder(b.band)
+      return { lead, tier };
+    });
+  tiered.sort((x, y) => {
+    const a = x.lead;
+    const b = y.lead;
+    return x.tier - y.tier
+      || bandOrder(a.band) - bandOrder(b.band)
       || b.score - a.score
       || (a.distanceMi ?? Infinity) - (b.distanceMi ?? Infinity)
       || (b.entity.employees ?? -1) - (a.entity.employees ?? -1)
-      || a.entity.name.localeCompare(b.entity.name));
+      || a.entity.name.localeCompare(b.entity.name);
+  });
+  return tiered.map(t => t.lead);
 }
 
 // Takes the already-ranked list: every lead gets a template brief + opener;

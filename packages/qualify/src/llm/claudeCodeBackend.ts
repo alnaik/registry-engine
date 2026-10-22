@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { RawLlm, RawCompleteOptions } from "@registry-engine/qualify";
+import type { RawLlm, RawCompleteOptions } from "./adapter.js";
 
 // RawLlm backend that shells out to the Claude Code CLI in headless mode
 // (`claude -p --output-format json`). Bills the user's Claude subscription —

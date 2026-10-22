@@ -1,13 +1,8 @@
 import { writeFileSync } from "node:fs";
-import { search, MAX_LLM_CALLS_PER_SEARCH } from "@registry-engine/qualify";
+import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines } from "@registry-engine/qualify";
 import type { Lead, FoundContact } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, naicsIndex, naicsLabel } from "@registry-engine/registry-core";
+import { SOURCES, knownRegions, lookupCodes, naicsLabel } from "@registry-engine/registry-core";
 import type { Entity } from "@registry-engine/registry-core";
-import { ClaudeCodeBackend } from "./claudeCodeBackend.js";
-import { leadsToCsv } from "./csv.js";
-import { summaryLines } from "./summary.js";
-
-const MAX_CODE_RESULTS = 15;
 
 // Validation harness: the full pipeline, with LLM calls through the Claude
 // Code CLI (headless) — subscription-billed, no API key.
@@ -187,16 +182,7 @@ function cmdCodes(positional: string[]): void {
     printHelp();
     process.exit(1);
   }
-  const seen = new Set<string>();
-  const lines: string[] = [];
-  for (const [code, description] of naicsIndex()) {
-    if (seen.has(code)) continue;
-    const text = description.toLowerCase();
-    if (!words.every(w => text.includes(w))) continue;
-    seen.add(code);
-    lines.push(`${code}  ${naicsLabel(code) ?? ""}  — ${description}`);
-    if (lines.length >= MAX_CODE_RESULTS) break;
-  }
+  const lines = lookupCodes(words).map(r => `${r.code}  ${r.title}  — ${r.description}`);
   console.log(lines.length > 0 ? lines.join("\n") : `no NAICS index entry contains all of: ${words.join(" ")}`);
 }
 

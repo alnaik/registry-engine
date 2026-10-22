@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated } from "../../packages/registry-core/src/naics.js";
+import { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated, lookupCodes } from "../../packages/registry-core/src/naics.js";
 
 describe("naics lookup", () => {
   it("titles known codes at several levels", () => {
@@ -40,5 +40,24 @@ describe("naics lookup", () => {
     expect(naicsRelated("332312", "332")).toBe(true);
     expect(naicsRelated("332312", "332312")).toBe(true);
     expect(naicsRelated("332", "333")).toBe(false);
+  });
+});
+
+describe("lookupCodes", () => {
+  it("matches every word as a case-insensitive substring and dedupes by code", () => {
+    const hits = lookupCodes(["CANVAS", "bag"]);
+    expect(hits.map(h => h.code)).toContain("314910");
+    expect(new Set(hits.map(h => h.code)).size).toBe(hits.length);
+    for (const h of hits) {
+      expect(h.description.toLowerCase()).toContain("canvas");
+      expect(h.description.toLowerCase()).toContain("bag");
+      expect(h.title).not.toBe("");
+    }
+  });
+
+  it("honors max and returns [] for no words or no matches", () => {
+    expect(lookupCodes(["metal"], 3).length).toBeLessThanOrEqual(3);
+    expect(lookupCodes([])).toEqual([]);
+    expect(lookupCodes(["zzzzqqqq"])).toEqual([]);
   });
 });

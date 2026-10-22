@@ -10,3 +10,6 @@ export { briefLeads, rankEntities, DISTANCE_BANDS, scoreEntity, webPresence, tem
 export type { Lead, WebPresence, RankContext, BriefContext } from "./verbs/brief.js";
 export { exaProvider, parallelProvider, providerFromEnv, extractContact, isLikelyIndividual, fileContactCache, memoryContactCache, findContacts } from "./verbs/contacts.js";
 export type { WebResult, WebSearchProvider, FoundContact, ContactCache } from "./verbs/contacts.js";
+export { ClaudeCodeBackend } from "./llm/claudeCodeBackend.js";
+export { CSV_HEADER, csvCell, leadsToCsv } from "./csv.js";
+export { summaryLines, summaryCounts } from "./summary.js";

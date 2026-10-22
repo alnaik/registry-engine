@@ -1,5 +1,5 @@
 import { naicsLabel } from "@registry-engine/registry-core";
-import type { Lead } from "@registry-engine/qualify";
+import type { Lead } from "./verbs/brief.js";
 
 // CSV export of every ranked lead. Every cell is double-quoted. Registry
 // names are attacker-controllable text that ends up in a spreadsheet, so a

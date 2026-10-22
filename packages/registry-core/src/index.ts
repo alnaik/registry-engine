@@ -3,7 +3,7 @@ export { normalizeName, mergeEntities, localityCompatible } from "./entity.js";
 export type { Plane, DriverKind, SourceSpec, Intent, FetchRequest, Driver, DriverRegistry } from "./driver.js";
 export { loadManifest, ManifestError } from "./manifest.js";
 export { SOURCES } from "./sources/index.js";
-export { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated } from "./naics.js";
+export { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated, lookupCodes } from "./naics.js";
 export { route } from "./route.js";
 export { zipCentroid, placeCentroid, regionPlaces, milesBetween, resolveLocation, entityPoint } from "./geo.js";
 export type { LatLon } from "./geo.js";
