@@ -20,7 +20,9 @@ import { fileURLToPath } from "node:url";
 // Only the sectors the request's codes fall in are read; a missing sector
 // file just means no records there.
 
-const DEFAULT_LIMIT = 500;
+// Local data, no request cost: fetch generously and let ranking decide what
+// is shown.
+const DEFAULT_LIMIT = 5000;
 
 interface ShardFile {
   records: Record<string, unknown>[];
@@ -34,6 +36,8 @@ interface ShardQuirks {
   shardBy?: "naics2" | undefined;      // shard files per 2-digit NAICS sector
 }
 
+const REGION_PATTERN = /^[A-Z]{2}(-[A-Z0-9]{1,3})?$/;
+
 // staticShard.ts lives at packages/registry-core/src/drivers/.
 const REPO_ROOT = new URL("../../../../", import.meta.url);
 
@@ -41,6 +45,11 @@ export class StaticShardDriver implements Driver {
   readonly kind = "static_shard" as const;
 
   async fetch(source: SourceSpec, req: FetchRequest, opts: FetchRetryOptions = {}): Promise<Entity[]> {
+    // The region becomes part of a file path or URL: refuse anything that
+    // is not a plain region code ("../../x") before building either.
+    if (!REGION_PATTERN.test(req.region)) {
+      throw new Error(`source "${source.id}": invalid region "${req.region}"`);
+    }
     const quirks = (source.quirks ?? {}) as ShardQuirks;
     if (quirks.shardRegions !== undefined && !quirks.shardRegions.includes(req.region)) {
       return [];

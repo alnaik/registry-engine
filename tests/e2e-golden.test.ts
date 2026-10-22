@@ -52,14 +52,16 @@ function stubNetwork() {
   return fetchMock;
 }
 
-function countingBackend() {
+// Stub model: the map call (system prompt names NAICS) gets the test's JSON;
+// the brief call gets a valid brief + opener for every #index in the prompt.
+function countingBackend(mapJson: string) {
   let calls = 0;
   const backend: RawLlm = {
-    complete: async (prompt: string) => {
+    complete: async (prompt: string, opts) => {
       calls++;
-      // Echo a valid brief for every #index present in the prompt.
+      if (opts.system?.includes("NAICS 2017")) return mapJson;
       const ids = [...prompt.matchAll(/^#(\d+) /gm)].map(m => Number(m[1]));
-      return JSON.stringify(ids.map(i => ({ i, brief: `Lead ${i}: fits the category; flagged caveats apply.` })));
+      return JSON.stringify(ids.map(i => ({ i, brief: `Lead ${i}: fits the category; flagged caveats apply.`, opener: `Hi, lead ${i}.` })));
     },
   };
   return { backend, calls: () => calls };
@@ -68,16 +70,17 @@ function countingBackend() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("golden query (a): jewelers that need princess cut diamonds (Denver)", () => {
-  it("produces ranked co_sos leads with evidence, probes, and the proxy-inference caveat", async () => {
+  it("map (1 call) + brief (1 call): ranked leads with evidence, labels and openers", async () => {
     stubNetwork();
-    const { backend, calls } = countingBackend();
+    const { backend, calls } = countingBackend(
+      '{"direction":"buy","naics":["339910","423940"],"keywords":["jewel","diamond"],"cities":["Denver"],"caveats":["princess cut is not verifiable from registry data"]}');
     const out = await search("find jewelers that need princess cut diamonds in Denver", { sources, llm: { backend } });
 
-    // map: static table, no LLM; brief: one batched call. Budget respected.
-    expect(out.map.usedLlm).toBe(false);
-    expect(out.llmCalls).toBe(1);
-    expect(calls()).toBe(1);
-    expect(out.map.caveats.some(c => c.includes("proxy-inferred"))).toBe(true);
+    // map: one cheap call; brief: one batched call. Budget respected.
+    expect(out.map.usedLlm).toBe(true);
+    expect(out.map.via).toBe("llm");
+    expect(out.llmCalls).toBe(2);
+    expect(calls()).toBe(2);
     expect(out.map.caveats.some(c => c.includes("princess cut"))).toBe(true);
 
     // routed to the sources that take any code (no jewelry-specific source exists)
@@ -89,21 +92,32 @@ describe("golden query (a): jewelers that need princess cut diamonds (Denver)", 
     for (const lead of out.leads) {
       expect(lead.entity.evidence.length).toBeGreaterThan(0);
       expect(lead.brief.length).toBeGreaterThan(0);
+      expect(lead.opener.length).toBeGreaterThan(0);
     }
-    const scores = out.leads.map(l => l.score);
+    const scores = out.ranked.map(l => l.score);
     expect(scores).toEqual([...scores].sort((a, b) => b - a));
     expect(out.leads.some(l => l.probe !== undefined)).toBe(true);
+    expect(out.ranked.length).toBeGreaterThanOrEqual(out.leads.length);
+  });
+
+  it("with --naics, skips the map call entirely", async () => {
+    stubNetwork();
+    const { backend, calls } = countingBackend("SHOULD NOT BE CALLED");
+    const out = await search("find jewel shops in Denver", { sources, llm: { backend }, naics: ["339910"] });
+    expect(out.map.via).toBe("override");
+    expect(calls()).toBe(1); // the brief call only
   });
 });
 
 describe("golden query (b): yukon gold potato supplier near me (Colorado)", () => {
-  it("routes by NAICS to paca ∩ CO, joins co_sos existence, flags variety-level unverifiability", async () => {
+  it("routes by NAICS to paca ∩ CO, joins co_sos existence", async () => {
     stubNetwork();
-    const { backend, calls } = countingBackend();
+    const { backend, calls } = countingBackend(
+      '{"direction":"buy","naics":["111211","424480"],"keywords":["potato"],"cities":[],"caveats":["yukon gold is a variety no registry records"]}');
     const out = await search("yukon gold potato supplier near me", { sources, llm: { backend } });
 
-    expect(out.llmCalls).toBe(1);
-    expect(calls()).toBe(1);
+    expect(out.llmCalls).toBe(2);
+    expect(calls()).toBe(2);
     expect(out.routed.map(s => s.id).sort()).toEqual(["co_farm_products", "co_sos", "epa_echo", "paca", "ppp"]);
     expect(out.map.intent.direction).toBe("buy");
     expect(out.map.caveats.some(c => c.includes("yukon gold"))).toBe(true);
@@ -117,11 +131,11 @@ describe("golden query (b): yukon gold potato supplier near me (Colorado)", () =
     const withContacts = out.leads.filter(l => l.entity.contacts.length > 0);
     expect(withContacts.length).toBeGreaterThan(0);
 
-    // multi-plane joins outrank single-source name matches
+    // multi-plane joins outrank single-source matches
     expect(out.leads[0]!.entity.source_ids.length).toBeGreaterThanOrEqual(2);
 
-    // probe verified a published domain for at least one lead
-    expect(out.leads.some(l => l.probe?.published === true && l.probe.domain !== null)).toBe(true);
+    // probe verified a published domain for at least one lead, and it is labelled
+    expect(out.leads.some(l => l.probe?.published === true && l.probe.domain !== null && l.web === "verified")).toBe(true);
 
     // paca-only entities are flagged against the existence plane
     const pacaOnly = out.entities.find(e => e.source_ids.length === 1 && e.source_ids[0] === "paca");
@@ -130,10 +144,11 @@ describe("golden query (b): yukon gold potato supplier near me (Colorado)", () =
     }
   });
 
-  it("still works with zero LLM (template briefs, 0 calls)", async () => {
+  it("still works with zero LLM (static table, template briefs and openers, 0 calls)", async () => {
     stubNetwork();
     const out = await search("potato supplier in colorado springs", { sources });
     expect(out.llmCalls).toBe(0);
-    expect(out.leads.every(l => l.brief.length > 0)).toBe(true);
+    expect(out.map.via).toBe("table");
+    expect(out.leads.every(l => l.brief.length > 0 && l.opener.length > 0)).toBe(true);
   });
 });

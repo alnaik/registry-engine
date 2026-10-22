@@ -11,6 +11,17 @@ export function naicsTitle(code: string): string | undefined {
   return Object.hasOwn(TITLES, code) ? TITLES[code] : undefined;
 }
 
+// Title of the code, else of its longest prefix (>= 2 digits) that has one.
+// PPP uses some 2022 codes absent from the 2017 table ("323110" -> the title
+// of "32311"). Display only: routing and isNaicsCode stay strict.
+export function naicsLabel(code: string): string | undefined {
+  for (let len = code.length; len >= 2; len--) {
+    const title = naicsTitle(code.slice(0, len));
+    if (title !== undefined) return title;
+  }
+  return undefined;
+}
+
 // A real NAICS 2017 code at any level (2-6 digits), not just digit-shaped.
 export function isNaicsCode(code: string): boolean {
   return /^\d{2,6}$/.test(code) && Object.hasOwn(TITLES, code);

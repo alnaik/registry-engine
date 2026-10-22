@@ -6,5 +6,5 @@ export { mapQuery, parseMapResponse, MAP_SYSTEM } from "./verbs/map.js";
 export type { MapResult } from "./verbs/map.js";
 export { probeEntities, publishedDomain } from "./verbs/probe.js";
 export type { ProbeResult, ProbeOptions } from "./verbs/probe.js";
-export { briefLeads, rankEntities, scoreEntity, templateBrief, parseBriefResponse, webSearchUrl, BRIEF_SYSTEM } from "./verbs/brief.js";
-export type { Lead } from "./verbs/brief.js";
+export { briefLeads, rankEntities, scoreEntity, webPresence, templateBrief, templateOpener, parseBriefResponse, webSearchUrl, BRIEF_SYSTEM } from "./verbs/brief.js";
+export type { Lead, WebPresence, RankContext, BriefContext } from "./verbs/brief.js";

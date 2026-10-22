@@ -46,7 +46,7 @@ export async function probeEntities(entities: Entity[], opts: ProbeOptions = {})
           source: "probe",
           field: "existence",
           value: opts.existenceSourceId,
-          note: `no ${opts.existenceSourceId} match — may be registered under a different legal name`,
+          note: `not found in ${opts.existenceSourceId} — sole proprietors and DBAs often aren't registered there, or it's under another legal name`,
         });
       }
     })
