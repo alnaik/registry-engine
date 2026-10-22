@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { SocrataDriver, soqlSafeLiteral } from "../../packages/registry-core/src/drivers/socrata.js";
+import { SocrataDriver, soqlSafeLiteral, namePattern } from "../../packages/registry-core/src/drivers/socrata.js";
 import type { SourceSpec, FetchRequest } from "../../packages/registry-core/src/driver.js";
 
 const entityRows = JSON.parse(
@@ -278,9 +278,25 @@ describe("SocrataDriver.fetchByNames", () => {
       return { ok: true, status: 200, json: async () => [] } as unknown as Response;
     });
     vi.stubGlobal("fetch", fetchMock);
-    const names = Array.from({ length: 12 }, (_, i) => `DISTINCT ENTITY NUMBER ${i} INC`);
+    const names = Array.from({ length: 30 }, (_, i) => `DISTINCT ENTITY NUMBER ${i} INC`);
     await driver.fetchByNames(CO_SOS, names);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("builds patterns from the raw name so & and ' survive", async () => {
+    expect(namePattern("PAUL'S CUSTOM CANVAS INC")).toBe("%PAUL%S%CUSTOM%CANVAS%");
+    expect(namePattern("IRON & STEEL")).toBe("%IRON%STEEL%");
+    expect(namePattern("SMITH AND SONS")).toBe("%SMITH%SONS%");
+    expect(namePattern("Co")).toBeNull();
+
+    const fetchMock = vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await driver.fetchByNames(CO_SOS, ["PAUL'S CUSTOM CANVAS INC"]);
+    const where = decodeURIComponent(urls[0]!.split("$where=")[1]!.split("&")[0]!);
+    expect(where).toContain("PAUL%S%CUSTOM%CANVAS");
   });
 
   it("escapes injection attempts", async () => {
@@ -307,7 +323,7 @@ describe("SocrataDriver.fetchByNames", () => {
   });
 
   it("dedupes rows repeated across chunks by id", async () => {
-    const names = Array.from({ length: 12 }, (_, i) => `DISTINCT ENTITY NUMBER ${i} INC`);
+    const names = Array.from({ length: 30 }, (_, i) => `DISTINCT ENTITY NUMBER ${i} INC`);
     const row = { ...entityRows[0]! };
     vi.stubGlobal("fetch", vi.fn(async () => ({
       ok: true, status: 200, json: async () => [row],

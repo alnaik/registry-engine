@@ -1,9 +1,9 @@
 import type { Entity, SourceSpec, DriverRegistry, FetchRetryOptions, LatLon } from "@registry-engine/registry-core";
-import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities, regionPlaces, resolveLocation, normalizeName, localityCompatible } from "@registry-engine/registry-core";
+import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities, regionPlaces, resolveLocation, normalizeName, localityCompatible, naicsRelated } from "@registry-engine/registry-core";
 import { createLlm, type Llm, type LlmConfig } from "./llm/adapter.js";
 import { mapQuery, type MapResult } from "./verbs/map.js";
 import { probeEntities, type ProbeResult } from "./verbs/probe.js";
-import { briefLeads, rankEntities, type Lead, type RankContext } from "./verbs/brief.js";
+import { briefLeads, rankEntities, naicsFieldMap, type Lead, type RankContext } from "./verbs/brief.js";
 import { findContacts, fileContactCache, providerFromEnv, type ContactCache, type WebSearchProvider } from "./verbs/contacts.js";
 
 // The whole product: map -> route -> fetch -> probe -> brief.
@@ -164,6 +164,9 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
       }
     }
   }
+  // Name-only noise: an existence-registry record with no related industry
+  // code whose only keyword hits fall inside a word ("BAGELS" for "bag").
+  entities = entities.filter(e => !isInsideWordNoise(e, map.intent.naics, existenceIds));
   emit({ type: "merged", count: entities.length });
 
   // Probe in rank order so the request budget goes to the strongest
@@ -194,11 +197,18 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   }
 
   const sourceNames = Object.fromEntries(routed.map(s => [s.id, s.name]));
-  await briefLeads(ranked, map, llm, { maxLeads, sourceNames, existenceIds, query });
+  await briefLeads(ranked, map, llm, { maxLeads, sourceNames, naicsFields: naicsFieldMap(routed), existenceIds, query });
   const leads = ranked.slice(0, maxLeads);
   emit({ type: "done", leads });
 
   return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0, origin, contactLookups };
+}
+
+function isInsideWordNoise(e: Entity, codes: string[], existenceIds: string[]): boolean {
+  if (e.naics.some(c => codes.some(q => naicsRelated(c, q)))) return false;
+  if (!e.source_ids.every(id => existenceIds.includes(id))) return false;
+  const matches = e.evidence.filter(ev => ev.note?.startsWith("matched") === true);
+  return matches.length > 0 && matches.every(ev => ev.note!.includes("inside a word"));
 }
 
 function planeRank(s: SourceSpec): number {

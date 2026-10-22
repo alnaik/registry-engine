@@ -75,12 +75,38 @@ paths reject malformed regions. Validation numbers are in ADR 0015.
 - A Fable 5.1 (medium effort) audit of the product for correctness, honesty,
   UX and security issues. Fix confirmed high-severity findings and record the
   rest here.
+- Findings (2026-10-22). Fixed in this phase:
+  - **H1:** state-registry backfill missed names with `&` or `'` (~7% of PPP
+    records). Patterns are now built from raw-name tokens.
+  - **H2:** category fit was outranked by distance band and evidence
+    ("potato farm" listed hay farms first). Fit now sorts first inside each
+    band, and the generic `farm`→`111` table entry is gone.
+  - **M1:** briefs credited the SoS with NAICS codes it doesn't carry.
+  - **M2:** the `codes` helper missed "metal fabrication". It now stems words
+    and matches titles.
+  - **M3:** name-only noise was counted as "businesses found". The headline
+    is now the coded count, and PACA no longer routes on `311`.
+  - **M4:** backfill was slow. Chunks are larger, and the name cap is lower.
+  - **M5:** curated cities matched mid-phrase ("golden retriever").
+  - **M6:** "sells" in a request flipped the search to finding buyers.
+  - **M7:** individuals' records offered a search link on the person's name.
+  - **L1–L5:** a SECURITY.md pointer, CLI flag validation, "1 jobs", NY
+    status text, PPP being routed outside its shard states, and `HEAD /`.
+- Not fixed: none of the confirmed findings was deferred. The security review
+  found no gaps beyond L1.
 
 ## Known gaps (from live runs, 2026-10-22)
 - Most coded leads have no phone/email: PPP, ECHO and SoS publish none. The
-  call sheet gives the address, agent/principals and a search link.
-- City filters are exact: "near Denver" excludes Aurora/Englewood. Omit the
-  city for statewide results.
+  call sheet gives the address, agent/principals and a search link. With
+  `EXA_API_KEY`/`PARALLEL_API_KEY` the top leads get a web lookup, which has
+  not yet been exercised against the live APIs.
+- Distance is from ZIP or place centroids, so it's approximate to a mile or
+  two. Leads with no usable ZIP fall into "distance unknown".
+- Without the AI step, buyer searches need explicit `--naics` codes.
+- A business whose state-registry address differs from its PPP address
+  (e.g. ACME TENT & CANVAS: PPP Denver 80203, SoS Englewood 80110) isn't
+  joined, so it shows "not matched on state registry". The locality guard is
+  deliberate: it keeps same-named businesses in different towns apart.
 - PPP codes are self-reported: brands can appear under store codes. The
   brief prompt discloses this.
 - Sister LLCs at one address (same agent) show as separate leads.

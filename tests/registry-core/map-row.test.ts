@@ -99,3 +99,11 @@ describe("fieldEvidence", () => {
     expect(fieldEvidence(spec({}), { crop: "Corn" })).toEqual([]);
   });
 });
+
+describe("rowToEntity — statusDisplay", () => {
+  it("replaces the raw status field value when quirks.statusDisplay is set", () => {
+    const s = spec({ status: "juris" }, { statusDisplay: "Active (domestic)" });
+    expect(rowToEntity(s, { id: "1", name: "A", juris: "New York" }).status).toBe("Active (domestic)");
+    expect(rowToEntity(spec({ status: "juris" }), { id: "1", name: "A", juris: "New York" }).status).toBe("New York");
+  });
+});

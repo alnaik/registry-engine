@@ -111,7 +111,7 @@ footprint. Web presence is shown as a label, and `--hidden` filters on it.
   web-search key the top leads are looked up (website, phone and email from
   pages that match the business's name *and* town, each with its source).
   Otherwise you get the address, the registered agent or principals, and a
-  prefilled search link. Nothing is guessed.
+  prefilled search link (not for individuals' records). Nothing is guessed.
 - Distance is measured from ZIP centroids, so it's approximate to a mile or
   two.
 
@@ -152,4 +152,5 @@ Public records only, plus what a business published about itself on the web
 web lookup ever runs for an individual's record. Registry-published domains
 with MX may get a pattern email guess, always marked UNVERIFIED.
 PPP and farm-financing records name some individuals (sole proprietors,
-farm debtors). They are shown exactly as filed and never enriched.
+farm debtors). They are shown exactly as filed and never enriched. They get
+no web-search link, and the AI brief never sees the person's name.

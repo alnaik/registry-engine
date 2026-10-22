@@ -11,8 +11,10 @@ export function summaryCounts(ranked: Lead[], mapCodes: string[]): { total: numb
 
 export function summaryLines(ranked: Lead[], mapCodes: string[]): string[] {
   const { total, coded, nameOnly, noWebsite } = summaryCounts(ranked, mapCodes);
-  return [
-    `Found ${total} businesses: ${coded} with an industry code for this request, ${nameOnly} name matches only (lower confidence).`,
-    `${noWebsite} have no website listed in the records searched — each has a search link.`,
+  const lines = [
+    `Found ${coded} businesses with an industry code for this request${nameOnly > 0 ? ` (+${nameOnly} name matches, lower confidence)` : ""}`,
   ];
+  // Says nothing when it is true of every lead.
+  if (noWebsite < total) lines.push(`${noWebsite} have no website listed in the records searched — business records get a search link.`);
+  return lines;
 }

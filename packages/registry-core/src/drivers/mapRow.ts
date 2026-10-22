@@ -9,6 +9,8 @@ import type { SourceSpec } from "../driver.js";
 //                  tokens that aren't 2-6 digits are dropped. Falls back to
 //                  quirks.defaultNaics (string[]) when unmapped or empty.
 //   employees      headcount, parsed as an integer (>= 0)
+//   status         quirks.statusDisplay (string), when set, replaces the raw
+//                  field value in entity.status (filters still use the raw field)
 //   date           the record's date -> lastSeen; "YYYY-MM-DD..." or
 //                  "MM/DD/YYYY", anything else is ignored
 //   address_line   single-line "street, city, state, zip"; fills only the
@@ -57,7 +59,7 @@ export function rowToEntity(source: SourceSpec, row: Record<string, unknown>): E
     id: `${source.id}:${get("id")}`,
     name: get("name"),
     names: [],
-    status: get("status"),
+    status: typeof source.quirks?.["statusDisplay"] === "string" ? source.quirks["statusDisplay"] : get("status"),
     address: {
       ...(addr.street !== "" ? { street: addr.street } : {}),
       ...(addr.city !== "" ? { city: addr.city } : {}),

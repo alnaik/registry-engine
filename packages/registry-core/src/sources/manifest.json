@@ -88,6 +88,7 @@
       "quirks": {
         "datasetId": "n9v6-gdp6",
         "statusValue": "New York",
+        "statusDisplay": "Active (domestic)",
         "cities": [
           "New York", "Brooklyn", "Albany", "Bronx", "Staten Island",
           "Flushing", "Buffalo", "Rochester", "Jamaica", "Astoria",
@@ -103,7 +104,7 @@
       "name": "USDA PACA produce license registry",
       "plane": "category",
       "driver": "static_shard",
-      "coverage": { "geo": ["US"], "naics": ["111", "4244", "445", "311"] },
+      "coverage": { "geo": ["US"], "naics": ["111", "4244", "445"] },
       "endpoint": "repo:shards/paca",
       "fields": {
         "id": "license_number",

@@ -23,12 +23,11 @@ const STATIC_LEADS: Record<string, { naics: string[]; keywords: string[] }> = {
   jewelry:    { naics: ["339910", "423940", "448310"], keywords: ["jewel", "gem", "diamond", "goldsmith"] },
   diamond:    { naics: ["339910", "423940", "448310"], keywords: ["jewel", "gem", "diamond"] },
   gem:        { naics: ["339910", "423940", "448310"], keywords: ["jewel", "gem"] },
-  produce:    { naics: ["4244", "111", "445230"], keywords: ["produce", "farm", "fruit", "vegetable"] },
-  grocer:     { naics: ["4244", "111", "445230"], keywords: ["grocer", "market", "food"] },
-  grocery:    { naics: ["4244", "111", "445230"], keywords: ["grocer", "market", "food"] },
-  fruit:      { naics: ["4244", "111", "445230"], keywords: ["fruit", "produce", "orchard"] },
-  vegetable:  { naics: ["4244", "111", "445230"], keywords: ["vegetable", "produce", "farm"] },
-  farm:       { naics: ["4244", "111", "445230"], keywords: ["farm", "ranch", "produce"] },
+  produce:    { naics: ["424480", "1112", "1113", "445230"], keywords: ["produce", "farm", "fruit", "vegetable"] },
+  grocer:     { naics: ["4244", "445110"], keywords: ["grocer", "market", "food"] },
+  grocery:    { naics: ["4244", "445110"], keywords: ["grocer", "market", "food"] },
+  fruit:      { naics: ["1113", "424480"], keywords: ["fruit", "produce", "orchard"] },
+  vegetable:  { naics: ["1112", "424480"], keywords: ["vegetable", "produce", "farm"] },
   restaurant: { naics: ["7225"], keywords: ["restaurant", "grill", "kitchen", "cafe", "bistro"] },
   coffee:     { naics: ["311920", "722515"], keywords: ["coffee", "espresso", "roast"] },
   cafe:       { naics: ["311920", "722515"], keywords: ["cafe", "coffee", "espresso"] },
@@ -86,7 +85,7 @@ const STATIC_LEADS: Record<string, { naics: string[]; keywords: string[] }> = {
   roaster:    { naics: ["311920"], keywords: ["roast", "coffee"] },
 };
 
-const SELL_PATTERN = /\b(sell|selling|sells|customers?|clients?|buyers?|who (would|will|might|could) buy|buy my|buys my|that buys?|wholesale accounts?)\b/;
+const SELL_PATTERN = /\b(i|we)\s+(sell|make|produce|grow|bake|roast|brew|manufacture|offer)\b|\b(sell|selling)\s+(my|our)\b|\bbuy\s+(my|our)\b|\b(my|our)\s+(products?|goods|line)\b|\bcustomers?\b|\bclients?\b|\bbuyers?\b|\bwho\s+(would|will|might|could)\s+buy\b|\b(that|who)\s+buys?\b|\bwholesale\s+accounts?\b/;
 
 const STOPWORDS = new Set([
   "find", "me", "near", "nearby", "local", "that", "who", "which", "the", "a", "an", "in", "of",
@@ -135,7 +134,7 @@ export async function mapQuery(
   llm: Llm | null,
   opts: {
     region: string;
-    cities?: string[] | undefined;   // curated list (manifest quirks), matched anywhere in the query
+    cities?: string[] | undefined;   // curated list (manifest quirks), matched after a locative or at the end of the query
     places?: string[] | undefined;   // gazetteer place names, matched only after a locative ("near castle rock")
     naics?: string[] | undefined;
     locationHint?: string | undefined;   // the user's stated location; shown to the LLM so it doesn't caveat a "missing" one
@@ -149,22 +148,22 @@ export async function mapQuery(
   // a stray "springs" match.
   const cityTable = (opts.cities ?? []).map(c => c.toLowerCase()).sort((a, b) => b.length - a.length);
   const found: Array<{ city: string; at: number }> = [];
-  for (const c of cityTable) {
-    const at = q.indexOf(c);
-    if (at >= 0) found.push({ city: c, at });
-  }
-  // Any place in the region, but only after a locative: "golden retriever
-  // groomer" is not a search near Golden.
-  const places = [...(opts.places ?? [])].sort((a, b) => b.length - a.length);
   const matchedPlaces: string[] = [];
-  for (const place of places) {
-    if (matchedPlaces.some(m => m.includes(place))) continue;   // "springs" inside "colorado springs"
-    const re = new RegExp(`\\b(?:${LOCATIVES})\\s+${escapeRegex(place)}\\b`);
-    const m = re.exec(q);
-    if (m === null) continue;
+  // A place only counts after a locative ("golden retriever groomer" is not
+  // a search near Golden). Curated cities also count at the very end of the
+  // query ("produce suppliers denver").
+  const matchPlace = (place: string, atEnd: boolean): void => {
+    if (matchedPlaces.some(m => m.includes(place))) return;   // "springs" inside "colorado springs"
+    const loc = new RegExp(`\\b(?:${LOCATIVES})\\s+${escapeRegex(place)}\\b`).exec(q);
+    const end = loc === null && atEnd ? new RegExp(`\\b${escapeRegex(place)}\\s*$`).exec(q) : null;
+    if (loc === null && end === null) return;
     matchedPlaces.push(place);
-    found.push({ city: place, at: m.index + m[0].length - place.length });
-  }
+    found.push({ city: place, at: loc !== null ? loc.index + loc[0].length - place.length : end!.index });
+  };
+  for (const c of cityTable) matchPlace(c, true);
+  // Any place in the region, same guard.
+  const places = [...(opts.places ?? [])].sort((a, b) => b.length - a.length);
+  for (const place of places) matchPlace(place, false);
   found.sort((a, b) => a.at - b.at);
   const cities: string[] = [];
   for (const f of found) if (!cities.includes(f.city)) cities.push(f.city);

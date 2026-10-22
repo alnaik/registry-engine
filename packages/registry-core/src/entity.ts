@@ -34,7 +34,7 @@ export interface Entity {
 
 // Trailing org-form tokens stripped before comparing names. Repeated pops
 // handle "ACME HOLDINGS CO LLC" -> "ACME HOLDINGS".
-const ORG_SUFFIXES = new Set([
+export const ORG_SUFFIXES = new Set([
   "LLC", "LC", "INC", "INCORPORATED", "CORP", "CORPORATION",
   "LTD", "LIMITED", "CO", "COMPANY", "LLP", "LP", "PLLC", "PC", "PLC",
 ]);

@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ClaudeCodeBackend, leadsToCsv, summaryCounts } from "@registry-engine/qualify";
+import { ClaudeCodeBackend, leadsToCsv, summaryCounts, codeSourceIds, naicsFieldMap } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome } from "@registry-engine/qualify";
 import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel } from "@registry-engine/registry-core";
 
@@ -60,6 +60,7 @@ export interface LeadView {
   employees: number | null;
   lastSeen: string | null;
   sources: { id: string; name: string }[];
+  codeSources: { id: string; name: string }[];   // the sources that carry the industry code
   onStateRegistry: boolean;
   status: string;
   contacts: string[];
@@ -92,7 +93,9 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
     const path = url.pathname;
     const method = req.method ?? "GET";
 
-    if (method === "GET" && Object.hasOwn(STATIC_FILES, path)) {
+    // HEAD gets the headers of the GET response, no body.
+    const head = method === "HEAD";
+    if ((method === "GET" || head) && Object.hasOwn(STATIC_FILES, path)) {
       const entry = STATIC_FILES[path]!;
       let body: Buffer;
       try {
@@ -106,17 +109,17 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         "Cache-Control": "no-store",
         ...(path === "/" ? { "Content-Security-Policy": HTML_CSP } : {}),
       });
-      res.end(body);
+      res.end(head ? undefined : body);
       return;
     }
 
-    if (method === "GET" && path === "/api/status") {
+    if ((method === "GET" || head) && path === "/api/status") {
       sendJson(res, 200, {
         llm: await deps.llmAvailable(),
         contactsProvider: deps.contactsProvider(),
         regions: knownRegions(SOURCES),
         defaultRegion: defaultRegion(SOURCES),
-      });
+      }, head);
       return;
     }
 
@@ -214,9 +217,9 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
   };
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
+function sendJson(res: ServerResponse, status: number, body: unknown, headOnly = false): void {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
-  res.end(JSON.stringify(body));
+  res.end(headOnly ? undefined : JSON.stringify(body));
 }
 
 // Reads at most MAX_BODY_BYTES; a larger body is discarded and rejected.
@@ -337,7 +340,8 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
 function buildResult(outcome: SearchOutcome, existenceIds: string[], topN: number, sourceNames: Map<string, string>): Record<string, unknown> {
   const names = new Map(sourceNames);
   for (const s of outcome.routed) names.set(s.id, s.name);
-  const view = (lead: Lead, i: number, withEvidence: boolean): LeadView => leadView(lead, i + 1, existenceIds, names, withEvidence);
+  const naicsFields = naicsFieldMap(outcome.routed);
+  const view = (lead: Lead, i: number, withEvidence: boolean): LeadView => leadView(lead, i + 1, existenceIds, names, naicsFields, withEvidence);
   return {
     type: "result",
     origin: outcome.origin,
@@ -349,7 +353,7 @@ function buildResult(outcome: SearchOutcome, existenceIds: string[], topN: numbe
   };
 }
 
-function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<string, string>, withEvidence: boolean): LeadView {
+function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<string, string>, naicsFields: Record<string, string>, withEvidence: boolean): LeadView {
   const e = lead.entity;
   const a = e.address;
   const address = { street: a.street ?? "", city: a.city ?? "", state: a.state ?? "", zip: a.zip ?? "" };
@@ -367,6 +371,7 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
     employees: e.employees ?? null,
     lastSeen: e.lastSeen ?? null,
     sources: e.source_ids.map(id => ({ id, name: names.get(id) ?? id })),
+    codeSources: codeSourceIds(e, naicsFields).map(id => ({ id, name: names.get(id) ?? id })),
     onStateRegistry: e.source_ids.some(id => existenceIds.includes(id)),
     status: e.status,
     contacts: e.contacts,

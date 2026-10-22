@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
-import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines } from "@registry-engine/qualify";
+import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { Lead, FoundContact } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, lookupCodes, naicsLabel } from "@registry-engine/registry-core";
+import { SOURCES, knownRegions, lookupCodes, naicsLabel, isNaicsCode } from "@registry-engine/registry-core";
 import type { Entity } from "@registry-engine/registry-core";
 
 // Validation harness: the full pipeline, with LLM calls through the Claude
@@ -44,6 +44,29 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
 
   const naics = flags["naics"] === undefined ? undefined
     : flags["naics"].split(",").map(c => c.trim()).filter(c => c.length > 0);
+  const fail = (message: string): never => {
+    console.error(message);
+    process.exit(1);
+  };
+  const positiveInt = (name: string): number | undefined => {
+    const raw = flags[name];
+    if (raw === undefined) return undefined;
+    if (!/^\d+$/.test(raw) || parseInt(raw, 10) < 1) return fail(`--${name} must be a positive whole number (got "${raw}")`);
+    return parseInt(raw, 10);
+  };
+  const limit = positiveInt("limit");
+  const leads = positiveInt("leads");
+  let radiusMi: number | undefined;
+  if (flags["radius"] !== undefined) {
+    radiusMi = /^\d+(\.\d+)?$/.test(flags["radius"]) ? parseFloat(flags["radius"]) : NaN;
+    if (!(radiusMi > 0)) fail(`--radius must be a positive number of miles (got "${flags["radius"]}")`);
+  }
+  if (naics !== undefined) {
+    const bad = naics.filter(c => !isNaicsCode(c));
+    if (naics.length === 0 || bad.length > 0) {
+      fail(`--naics needs valid NAICS codes, comma-separated${bad.length > 0 ? ` (not a code: ${bad.join(", ")})` : ""} — run "codes <words>" to look them up`);
+    }
+  }
   const fetchedCounts: string[] = [];
 
   const out = await search(query, {
@@ -51,12 +74,12 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     ...(flags["no-llm"] === "true" ? {} : { llm: { backend: new ClaudeCodeBackend(flags["model"]) } }),
     sources,
     region: flags["region"],
-    limit: flags["limit"] !== undefined ? parseInt(flags["limit"], 10) : undefined,
-    maxLeads: flags["leads"] !== undefined ? parseInt(flags["leads"], 10) : undefined,
+    limit,
+    maxLeads: leads,
     naics,
     hiddenOnly: flags["hidden"] === "true",
     near: flags["near"] !== undefined && flags["near"] !== "true" ? flags["near"] : undefined,
-    radiusMi: flags["radius"] !== undefined ? parseFloat(flags["radius"]) : undefined,
+    radiusMi,
     ...(flags["no-contacts"] === "true" ? { contacts: null } : {}),
     onEvent: event => {
       switch (event.type) {
@@ -100,6 +123,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   });
 
   const existenceIds = out.routed.filter(r => r.plane === "existence").map(r => r.id);
+  const naicsFields = naicsFieldMap(out.routed);
   console.log(`\n${"═".repeat(64)}`);
   for (const line of summaryLines(out.ranked, out.map.intent.naics)) console.log(line);
   if (out.contactLookups !== null) {
@@ -115,7 +139,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
       band = lead.band;
       console.log(`── ${band} ──\n`);
     }
-    printLead(lead, i + 1, existenceIds, flags["verbose"] === "true");
+    printLead(lead, i + 1, existenceIds, naicsFields, flags["verbose"] === "true");
   });
 
   if (flags["csv"] !== undefined && flags["csv"] !== "true") {
@@ -124,14 +148,17 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   }
 }
 
-function printLead(lead: Lead, rank: number, existenceIds: string[], verbose: boolean): void {
+function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields: Record<string, string>, verbose: boolean): void {
   const e = lead.entity;
   const place = [e.address.city, e.address.zip].filter(v => v !== undefined && v !== "").join(" ");
   const head = [place, e.employees !== undefined ? `${e.employees} ${e.employees === 1 ? "job" : "jobs"}` : ""].filter(Boolean).join(" · ");
   console.log(`${String(rank).padStart(2)}. [${String(lead.score).padStart(3)}] ${e.name}${head !== "" ? ` — ${head}` : ""}${lead.distanceMi !== null ? ` · ${lead.distanceMi} mi` : ""}`);
 
   const codes = e.naics.slice(0, 2).map(c => `${c} ${naicsLabel(c) ?? ""}`.trim()).join(", ");
-  console.log(`      what   ${[codes || "name match only", e.source_ids.join(" + ")].join(" · ")}`);
+  const codeSrc = codeSourceIds(e, naicsFields);
+  console.log(`      what   ${codes !== ""
+    ? `${codes}${codeSrc.length > 0 ? ` per ${codeSrc.join(" + ")}` : ""}`
+    : `name match only · ${e.source_ids.join(" + ")}`}`);
 
   const alive = [
     existenceIds.length === 0 ? "" : e.source_ids.some(id => existenceIds.includes(id)) ? "on state registry ✓" : "not matched on state registry",
@@ -151,7 +178,9 @@ function printLead(lead: Lead, rank: number, existenceIds: string[], verbose: bo
     ? `domain ✓${lead.probe?.domain != null ? ` ${lead.probe.domain}` : ""}`
     : lead.web === "unresolved"
       ? `published domain did not resolve → ${lead.searchUrl ?? ""}`
-      : `none listed in these records → ${lead.searchUrl ?? ""}`;
+      : lead.searchUrl === null && isLikelyIndividual(e)
+        ? "Individual's record — no web search offered"
+        : `none listed in these records → ${lead.searchUrl ?? ""}`;
   console.log(`      web    ${web}`);
   if (lead.found !== undefined) console.log(`      found   ${foundLine(lead.found)}`);
   if (lead.brief !== "") console.log(`      brief  ${lead.brief}`);

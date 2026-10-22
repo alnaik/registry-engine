@@ -199,8 +199,40 @@ describe("mapQuery — gazetteer places", () => {
     expect(r.intent.geo.cities).toEqual(["Colorado Springs", "Denver"]);
   });
 
-  it("curated cities still match anywhere", async () => {
-    const r = await mapQuery("boulder bakeries", null, { ...CO, places: PLACES });
+  it("curated cities need a locative or the end of the query", async () => {
+    const r = await mapQuery("bakeries near boulder", null, { ...CO, places: PLACES });
     expect(r.intent.geo.cities).toEqual(["Boulder"]);
+    const none = await mapQuery("boulder bakeries", null, { ...CO, places: PLACES });
+    expect(none.intent.geo.cities).toEqual([]);
+  });
+
+  it("a curated city that is also an ordinary word needs the guard (M5)", async () => {
+    const r = await mapQuery("golden retriever groomer", null, { region: "US-CO", cities: ["Golden", "Denver"], places: PLACES });
+    expect(r.intent.geo.cities).toEqual([]);
+    const a = await mapQuery("produce supplier in denver", null, { region: "US-CO", cities: ["Golden", "Denver"], places: PLACES });
+    expect(a.intent.geo.cities).toEqual(["Denver"]);
+    const b = await mapQuery("produce suppliers denver", null, { region: "US-CO", cities: ["Golden", "Denver"], places: PLACES });
+    expect(b.intent.geo.cities).toEqual(["Denver"]);
+  });
+});
+
+describe("mapQuery — static table and direction (H2, M6)", () => {
+  const CO2 = { region: "US-CO", cities: ["Denver"] };
+
+  it("potato farm maps to exactly the potato crop and wholesaler codes", async () => {
+    const r = await mapQuery("potato farm", null, CO2);
+    expect(r.intent.naics).toEqual(["111211", "424480"]);
+  });
+
+  it("produce supplier prefers the produce wholesaler, then vegetable and fruit farms", async () => {
+    const r = await mapQuery("produce supplier", null, CO2);
+    expect(r.intent.naics).toEqual(["424480", "1112", "1113", "445230"]);
+  });
+
+  it("sell detection does not fire on 'sells' alone", async () => {
+    expect((await mapQuery("a store that sells fabric near Denver", null, CO2)).intent.direction).toBe("buy");
+    expect((await mapQuery("who would buy my hot sauce", null, CO2)).intent.direction).toBe("sell");
+    expect((await mapQuery("restaurants that buy produce", null, CO2)).intent.direction).toBe("sell");
+    expect((await mapQuery("I make candles, find me buyers", null, CO2)).intent.direction).toBe("sell");
   });
 });

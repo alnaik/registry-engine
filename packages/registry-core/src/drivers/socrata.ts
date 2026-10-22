@@ -1,6 +1,6 @@
 import type { Driver, SourceSpec, FetchRequest } from "../driver.js";
 import type { Entity } from "../entity.js";
-import { normalizeName } from "../entity.js";
+import { ORG_SUFFIXES } from "../entity.js";
 import { buildSoqlUrl, fetchWithRetry, Limiter, type FetchRetryOptions } from "../util/http.js";
 import { rowToEntity, keywordEvidence, fieldEvidence, str } from "./mapRow.js";
 
@@ -9,8 +9,8 @@ const DEFAULT_LIMIT = 500;
 const MAX_KEYWORDS = 8;
 const ID_CHUNK = 100;
 const CONCURRENCY = 4;
-const MAX_BACKFILL_NAMES = 150;   // cap on distinct name patterns per call
-const NAME_CHUNK = 10;            // OR'd LIKE patterns per request
+const MAX_BACKFILL_NAMES = 80;    // cap on distinct name patterns per call
+const NAME_CHUNK = 25;            // OR'd LIKE patterns per request
 const BACKFILL_PAGE_LIMIT = 200;  // row cap per chunk request
 
 // Socrata quirks carried by the manifest entry. The optional tradeNames block
@@ -34,6 +34,18 @@ interface SocrataQuirks {
 // that could break out of the string literal or act as a wildcard.
 export function soqlSafeLiteral(v: string): string {
   return v.toUpperCase().replace(/[%_']/g, "").replace(/\s+/g, " ").trim();
+}
+
+// LIKE pattern for an existence-registry name lookup, built from the RAW name
+// (registries keep "&" and "'" that normalizeName rewrites): every
+// non-alphanumeric run becomes a wildcard, AND and trailing org suffixes are
+// dropped. "PAUL'S CUSTOM CANVAS INC" -> "%PAUL%S%CUSTOM%CANVAS%".
+export function namePattern(name: string): string | null {
+  const tokens = name.toUpperCase().split(/[^A-Z0-9]+/).filter(t => t.length > 0 && t !== "AND");
+  while (tokens.length > 1 && ORG_SUFFIXES.has(tokens[tokens.length - 1]!)) tokens.pop();
+  const safe = soqlSafeLiteral(tokens.join(" ")).split(" ").filter(t => t.length > 0);
+  if (safe.join("").length < 4) return null;
+  return `%${safe.join("%")}%`;
 }
 
 function likeClause(field: string, values: string[]): string {
@@ -155,10 +167,8 @@ export class SocrataDriver implements Driver {
     const quirks = readQuirks(source);
     const patterns: string[] = [];
     for (const name of names) {
-      const tokens = soqlSafeLiteral(normalizeName(name)).split(" ").filter(t => t.length > 0);
-      if (tokens.join("").length < 4) continue;
-      const pattern = `%${tokens.join("%")}%`;
-      if (!patterns.includes(pattern)) patterns.push(pattern);
+      const pattern = namePattern(name);
+      if (pattern !== null && !patterns.includes(pattern)) patterns.push(pattern);
     }
     const capped = patterns.slice(0, MAX_BACKFILL_NAMES);
     if (capped.length === 0) return [];
