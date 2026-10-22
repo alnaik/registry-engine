@@ -1,11 +1,12 @@
 export type { Entity, EntityAddress, Evidence } from "./entity.js";
-export { normalizeName, mergeEntities } from "./entity.js";
+export { normalizeName, mergeEntities, localityCompatible } from "./entity.js";
 export type { Plane, DriverKind, SourceSpec, Intent, FetchRequest, Driver, DriverRegistry } from "./driver.js";
 export { loadManifest, ManifestError } from "./manifest.js";
 export { SOURCES } from "./sources/index.js";
+export { naicsTitle, isNaicsCode, naicsIndex, naicsRelated } from "./naics.js";
 export { route } from "./route.js";
 export { knownRegions, defaultRegion, regionCities } from "./regions.js";
-export { defaultDrivers, SocrataDriver, StaticShardDriver, soqlSafeLiteral, rowToEntity } from "./drivers/index.js";
+export { defaultDrivers, SocrataDriver, StaticShardDriver, EchoDriver, soqlSafeLiteral, rowToEntity } from "./drivers/index.js";
 export { MemoryCache } from "./util/cache.js";
 export type { KVCache } from "./util/cache.js";
 export { Limiter, fetchWithRetry, buildSoqlUrl } from "./util/http.js";

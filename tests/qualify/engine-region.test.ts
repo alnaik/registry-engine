@@ -13,7 +13,7 @@ const MOCKLAND_MANIFEST = {
       name: "Mockland Secretary of State",
       plane: "existence",
       driver: "socrata",
-      coverage: { geo: ["US-XX"], categories: ["*"] },
+      coverage: { geo: ["US-XX"], naics: ["*"] },
       endpoint: "https://data.mockland.gov/resource",
       fields: {
         id: "biz_number",

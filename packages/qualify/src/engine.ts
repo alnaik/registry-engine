@@ -77,7 +77,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
         keywords: map.keywords,
         region: map.intent.geo.region,
         cities: map.intent.geo.cities,
-        categories: map.intent.categories,
+        naics: map.intent.naics,
         limit: cfg.limit,
       }, cfg.fetchOpts);
       emit({ type: "fetched", sourceId: spec.id, count: entities.length });

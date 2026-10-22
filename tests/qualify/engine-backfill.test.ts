@@ -15,7 +15,7 @@ const MOCKLAND_MANIFEST = {
       name: "Mockland Secretary of State",
       plane: "existence",
       driver: "socrata",
-      coverage: { geo: ["US-XX"], categories: ["*"] },
+      coverage: { geo: ["US-XX"], naics: ["*"] },
       endpoint: "https://data.example.gov/resource",
       fields: {
         id: "biz_number",
@@ -30,7 +30,7 @@ const MOCKLAND_MANIFEST = {
       name: "Mockland Produce Category Shard",
       plane: "category",
       driver: "static_shard",
-      coverage: { geo: ["US-XX"], categories: ["produce"] },
+      coverage: { geo: ["US-XX"], naics: ["4244"] },
       endpoint: "https://shards.example/xx_cat",
       fields: {
         id: "biz_id",

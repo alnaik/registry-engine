@@ -2,7 +2,7 @@ import type { Driver, SourceSpec, FetchRequest } from "../driver.js";
 import type { Entity } from "../entity.js";
 import { normalizeName } from "../entity.js";
 import { buildSoqlUrl, fetchWithRetry, Limiter, type FetchRetryOptions } from "../util/http.js";
-import { rowToEntity, keywordEvidence, str } from "./mapRow.js";
+import { rowToEntity, keywordEvidence, fieldEvidence, str } from "./mapRow.js";
 
 const PAGE_SIZE = 1000;
 const DEFAULT_LIMIT = 500;
@@ -25,7 +25,8 @@ interface TradeNameQuirks {
 
 interface SocrataQuirks {
   datasetId: string;
-  statusValue: string;
+  statusValue?: string | undefined;       // absent = no status filter anywhere
+  keywordFields?: string[] | undefined;   // source fields keywords are LIKE'd against; default [fields.name]
   tradeNames?: TradeNameQuirks | undefined;
 }
 
@@ -38,6 +39,13 @@ export function soqlSafeLiteral(v: string): string {
 function likeClause(field: string, values: string[]): string {
   const parts = values.map(v => `upper(${field}) LIKE '%${v}%'`);
   return `(${parts.join(" OR ")})`;
+}
+
+// Keywords may hit any of several fields (a farm filing lists its crops in
+// three); the clauses are OR'd.
+function keywordClause(fields: string[], values: string[]): string {
+  if (fields.length === 1) return likeClause(fields[0]!, values);
+  return `(${fields.map(field => likeClause(field, values)).join(" OR ")})`;
 }
 
 export class SocrataDriver implements Driver {
@@ -54,14 +62,18 @@ export class SocrataDriver implements Driver {
     const limiter = new Limiter(CONCURRENCY);
 
     const f = source.fields;
-    const statusWhere = `${f["status"]}='${quirks.statusValue}'`;
-    const cityWhere = (cityField: string) => (cities.length > 0 ? [likeClause(cityField, cities)] : []);
+    const statusWhere = statusClause(source, quirks);
+    const keywordFields = quirks.keywordFields ?? [f["name"]!];
+    // Sources with only a one-line address are city-filtered against that.
+    const entityCityField = f["city"] ?? f["address_line"];
+    const cityWhere = (cityField: string | undefined) =>
+      (cities.length > 0 && cityField !== undefined ? [likeClause(cityField, cities)] : []);
 
-    // 1) Entities whose legal name matches a keyword.
+    // 1) Entities whose keyword fields (default: legal name) match a keyword.
     const entityWhere = [
-      statusWhere,
-      likeClause(f["name"]!, keywords),
-      ...cityWhere(f["city"] ?? ""),
+      ...statusWhere,
+      keywordClause(keywordFields, keywords),
+      ...cityWhere(entityCityField),
     ].join(" AND ");
     const nameRows = await this.pages(source, quirks.datasetId, entityWhere, limit, limiter, opts);
 
@@ -87,7 +99,7 @@ export class SocrataDriver implements Driver {
     for (const chunk of chunks(missingIds, ID_CHUNK)) {
       const where = [
         `${idField} IN (${chunk.map(id => `'${soqlSafeLiteral(id)}'`).join(",")})`,
-        statusWhere,
+        ...statusWhere,
       ].join(" AND ");
       for (const row of await this.pages(source, quirks.datasetId, where, limit, limiter, opts)) {
         byId.set(str(row[idField]), row);
@@ -115,7 +127,9 @@ export class SocrataDriver implements Driver {
     const entities: Entity[] = [];
     for (const [id, row] of byId) {
       const entity = rowToEntity(source, row);
-      entity.evidence.push(...keywordEvidence(source, f["name"]!, entity.name, keywords));
+      for (const kf of keywordFields) {
+        entity.evidence.push(...keywordEvidence(source, kf, str(row[kf]), keywords));
+      }
       // The trade dataset repeats descriptions across filings — dedupe per entity.
       const seenDescs = new Set<string>();
       for (const tr of tradeNamesByEntity.get(id) ?? []) {
@@ -127,6 +141,7 @@ export class SocrataDriver implements Driver {
           entity.evidence.push(...keywordEvidence(source, tn.fields.description, desc, keywords));
         }
       }
+      entity.evidence.push(...fieldEvidence(source, row));
       entities.push(entity);
       if (entities.length >= limit) break;
     }
@@ -149,11 +164,11 @@ export class SocrataDriver implements Driver {
     if (capped.length === 0) return [];
 
     const f = source.fields;
-    const statusWhere = `${f["status"]}='${quirks.statusValue}'`;
+    const statusWhere = statusClause(source, quirks);
     const limiter = new Limiter(CONCURRENCY);
 
     const chunkResults = await Promise.all(chunks(capped, NAME_CHUNK).map(chunk => {
-      const where = [statusWhere, likeClause(f["name"]!, chunk)].join(" AND ");
+      const where = [...statusWhere, likeClause(f["name"]!, chunk)].join(" AND ");
       return this.pages(source, quirks.datasetId, where, BACKFILL_PAGE_LIMIT, limiter, opts);
     }));
 
@@ -171,6 +186,7 @@ export class SocrataDriver implements Driver {
         source: source.id, field: f["name"]!, value: entity.name,
         note: "existence backfill — name match from another plane",
       });
+      entity.evidence.push(...fieldEvidence(source, row));
       entities.push(entity);
     }
     return entities;
@@ -205,10 +221,13 @@ export class SocrataDriver implements Driver {
 function readQuirks(source: SourceSpec): SocrataQuirks {
   const q = source.quirks ?? {};
   const datasetId = q["datasetId"];
-  const statusValue = q["statusValue"];
-  if (typeof datasetId !== "string" || typeof statusValue !== "string") {
-    throw new Error(`source "${source.id}": socrata driver needs quirks.datasetId and quirks.statusValue`);
+  const statusValue = typeof q["statusValue"] === "string" ? q["statusValue"] : undefined;
+  if (typeof datasetId !== "string") {
+    throw new Error(`source "${source.id}": socrata driver needs quirks.datasetId`);
   }
+  const kf = q["keywordFields"];
+  const keywordFields = Array.isArray(kf) && kf.length > 0 && kf.every(x => typeof x === "string")
+    ? (kf as string[]) : undefined;
   let tradeNames: TradeNameQuirks | undefined;
   const tn = q["tradeNames"];
   if (tn !== undefined) {
@@ -217,7 +236,14 @@ function readQuirks(source: SourceSpec): SocrataQuirks {
       throw new Error(`source "${source.id}": quirks.tradeNames needs datasetId, statusValue, fields`);
     }
   }
-  return { datasetId, statusValue, tradeNames };
+  return { datasetId, statusValue, keywordFields, tradeNames };
+}
+
+// The existence-status filter, or nothing when the source has no status.
+function statusClause(source: SourceSpec, quirks: SocrataQuirks): string[] {
+  const statusField = source.fields["status"];
+  return quirks.statusValue !== undefined && statusField !== undefined
+    ? [`${statusField}='${quirks.statusValue}'`] : [];
 }
 
 function chunks<T>(arr: T[], size: number): T[][] {
