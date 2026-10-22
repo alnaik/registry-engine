@@ -6,31 +6,50 @@ does, how big it is, whether it's still operating, and how to reach it.
 
 ```bash
 npm install
-npm run --workspace apps/cli start -- search "I need someone to sew 500 custom tote bags near Denver"
-npm run --workspace apps/cli start -- search "who would buy my small-batch hot sauce in Boulder" --csv=leads.csv
+npm start            # opens the app at http://localhost:4317  (add -- --open to launch the browser)
 ```
 
-The default path makes two LLM calls per search through the Claude Code CLI
-(`claude -p`), so it needs Claude Code installed and logged in. No API key.
-`--no-llm` runs with zero calls: supplier searches use a small built-in
-table, and buyer searches need `--naics=<codes>`. Look codes up with
-`codes <words>`:
+Type what you need ("someone to sew 500 custom tote bags") or what you sell
+("who would buy my small-batch hot sauce"), add your ZIP or town, and get the
+whole state's matching businesses grouped by distance (within 10 mi, 10–25,
+25–50 …). Each comes as a card with what it does, size, whether it's still
+operating, how to reach it, call notes, an opener you can copy, and a
+tracker (New / Called / Interested / Not a fit, plus notes, saved in your
+browser). Export everything to CSV, export just your tracked list, or print
+a call sheet.
+
+**AI.** Two LLM calls per search, run through your Claude Code login
+(`claude -p`), with no API key. Without Claude Code, tick "Skip AI".
+Supplier searches still work from a built-in table, and buyer searches need
+industry codes (the app's "Find codes" helper looks them up).
+
+**Contacts.** Most of these businesses publish no phone or website in any
+record. Set `EXA_API_KEY` (or `PARALLEL_API_KEY`) before `npm start` and the
+top results get a web lookup for website, phone and email. Each value comes
+with its source page and a "verify" label. The lookup is cached for 30 days
+and never runs for an individual's record. Without a key, every card gets a
+ready-made search link.
+
+### CLI
 
 ```bash
-npm run --workspace apps/cli start -- codes tote bag
-npm run --workspace apps/cli start -- search "metal fabrication in denver" --no-llm --naics=332
+npm run --workspace apps/cli start -- search "I need someone to sew 500 custom tote bags near Denver"
+npm run --workspace apps/cli start -- search "who would buy my small-batch hot sauce" --near=80302 --csv=leads.csv
+npm run --workspace apps/cli start -- search "metal fabrication" --near="Castle Rock" --radius=25 --no-llm --naics=332
+npm run --workspace apps/cli start -- codes canvas bag
 ```
 
 Flags:
+- `--near=<ZIP|town>`: center for distance grouping. Default: a town named in the request.
+- `--radius=<mi>`: drop leads farther away than this.
 - `--naics=<c1,c2>`: use these industry codes instead of inferring them.
 - `--hidden`: only leads with no website listed in any record.
-- `--csv=<path>`: write every ranked lead, not just the top N.
-- `--leads=<n>`: number of briefed leads (default 12).
-- `--verbose`: show the raw evidence behind each lead.
+- `--csv=<path>`: write every ranked lead.
+- `--leads=<n>`: number of briefed and looked-up leads (default 12).
+- `--no-contacts`: skip the web lookup.
+- `--verbose`: show the raw evidence.
 - `--region=<US-XX>`: region to search (default US-CO).
-- `--limit=<n>`: per-source fetch cap.
-- `--model=<m>`: Claude model for the headless calls.
-- `--shards=<url>`: alternate shard host.
+- `--no-llm`, `--limit=<n>`, `--model=<m>`, `--shards=<url>`.
 
 > `node --experimental-strip-types apps/cli/src/index.ts` does **not** work.
 > The source uses `.js`-suffixed ESM imports. Use the `vite-node` script above.
@@ -88,9 +107,13 @@ footprint. Web presence is shown as a label, and `--hidden` filters on it.
 - PPP is a 2020–21 snapshot. A lead confirmed by the state registry or a
   recent EPA inspection is more likely still operating, and each brief says
   which applies.
-- Most of these businesses publish no phone or email. You get the address,
-  the registered agent or principals, and a prefilled search link. Nothing is
-  guessed.
+- Most of these businesses publish no phone or email in any record. With a
+  web-search key the top leads are looked up (website, phone and email from
+  pages that match the business's name *and* town, each with its source).
+  Otherwise you get the address, the registered agent or principals, and a
+  prefilled search link. Nothing is guessed.
+- Distance is measured from ZIP centroids, so it's approximate to a mile or
+  two.
 
 ## Adding a source or a state
 
@@ -110,8 +133,10 @@ Rebuild data:
 ```
 packages/registry-core/   MIT. Entity, NAICS lookup, drivers, manifest, route().
 packages/qualify/         LLM adapter, map/probe/brief verbs, engine.
-apps/cli/                 The delivery surface (LLM via headless claude -p).
+apps/web/                 Local web app (npm start): server.ts + vanilla public/ UI.
+apps/cli/                 CLI harness (LLM via headless claude -p).
 shards/                   PPP (per region/sector) and PACA (per region) data.
+packages/registry-core/src/geo/  Census ZIP + place centroids (build_geo.py).
 scripts/data/             Rebuild NAICS and PPP data from the public sources.
 ```
 
@@ -122,7 +147,9 @@ npm run typecheck     # strict TS across the workspace
 
 ## Privacy
 
-Public records only. Contacts are only those a registry publishes, plus a
-pattern email guess when that domain has MX (always marked UNVERIFIED).
+Public records only, plus what a business published about itself on the web
+(found by searching its name, labeled "verify", with sources; ADR 0016). No
+web lookup ever runs for an individual's record. Registry-published domains
+with MX may get a pattern email guess, always marked UNVERIFIED.
 PPP and farm-financing records name some individuals (sole proprietors,
 farm debtors). They are shown exactly as filed and never enriched.

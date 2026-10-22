@@ -73,7 +73,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   }
 
   const region = cfg.region ?? defaultRegion(sources);
-  const map = await mapQuery(query, llm, { region, cities: regionCities(sources, region), places: regionPlaces(region), naics: cfg.naics });
+  const map = await mapQuery(query, llm, { region, cities: regionCities(sources, region), places: regionPlaces(region), naics: cfg.naics, locationHint: cfg.near });
   emit({ type: "map", map });
 
   // The origin is the user's location: --near, else the first city named in

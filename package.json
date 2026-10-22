@@ -4,6 +4,7 @@
   "type": "module",
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
+    "start": "npm run --workspace apps/web start",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc"

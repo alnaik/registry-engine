@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { csvCell, leadsToCsv, CSV_HEADER } from "../../apps/cli/src/csv.js";
+import { csvCell, leadsToCsv, CSV_HEADER } from "../../packages/qualify/src/csv.js";
 import type { Lead } from "../../packages/qualify/src/verbs/brief.js";
 
 describe("csvCell", () => {

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registry Engine</title>
+  <meta name="description" content="Find the local businesses search engines miss, from public records.">
+  <link rel="stylesheet" href="/app.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="brand">Registry Engine</h1>
+      <p class="tagline">Find the local businesses search engines miss &mdash; from the public records every business leaves behind.</p>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    <section class="card search-card" aria-labelledby="search-heading">
+      <h2 id="search-heading" class="visually-hidden">Search</h2>
+      <form id="search-form" novalidate>
+        <div class="field">
+          <label for="query" class="field-label big">What do you need, or what do you sell?</label>
+          <input id="query" name="query" type="text" class="input big" maxlength="300" autocomplete="off"
+                 placeholder="e.g. Someone to sew 500 custom tote bags" aria-describedby="query-error">
+          <p id="query-error" class="field-error" role="alert" hidden></p>
+          <div class="chips examples" aria-label="Examples">
+            <button type="button" class="chip-button example">Someone to sew 500 custom tote bags</button>
+            <button type="button" class="chip-button example">Who would buy my small-batch hot sauce?</button>
+            <button type="button" class="chip-button example">Metal fabrication shop for brackets</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="near" class="field-label">Your location</label>
+          <input id="near" name="near" type="text" class="input" maxlength="60" autocomplete="postal-code"
+                 placeholder="ZIP or town, e.g. 80202 or Castle Rock">
+          <p class="hint">Results are sorted by distance from here.</p>
+        </div>
+
+        <details id="options" class="options">
+          <summary>More options</summary>
+          <div class="options-grid">
+            <div class="field" id="region-field" hidden>
+              <label for="region" class="field-label">State</label>
+              <select id="region" class="input"></select>
+            </div>
+
+            <div class="field">
+              <label for="radius" class="field-label">How far</label>
+              <select id="radius" class="input">
+                <option value="">Anywhere in the state</option>
+                <option value="10">Within 10 miles</option>
+                <option value="25">Within 25 miles</option>
+                <option value="50">Within 50 miles</option>
+                <option value="100">Within 100 miles</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="leads" class="field-label">Detailed results</label>
+              <select id="leads" class="input">
+                <option value="12">Top 12 (fastest)</option>
+                <option value="25">Top 25</option>
+                <option value="50">Top 50</option>
+              </select>
+            </div>
+
+            <div class="field wide">
+              <label class="check"><input type="checkbox" id="hidden-only"> <span>Only businesses with no website on record</span></label>
+            </div>
+
+            <div class="field wide">
+              <label class="check"><input type="checkbox" id="find-contacts" checked> <span>Look up websites &amp; phones for the top results <span class="muted">(uses your Exa/Parallel credits)</span></span></label>
+              <p class="hint" id="contacts-hint" hidden>Set EXA_API_KEY or PARALLEL_API_KEY to enable</p>
+            </div>
+
+            <div class="field wide">
+              <label class="check"><input type="checkbox" id="no-llm"> <span>Skip AI <span class="muted">(faster; supplier searches only)</span></span></label>
+              <p class="hint" id="llm-hint" hidden>Claude Code isn&rsquo;t available on this computer, so AI is off.</p>
+            </div>
+
+            <div class="field wide">
+              <label for="naics" class="field-label">Industry codes (optional)</label>
+              <input id="naics" type="text" class="input" maxlength="100" autocomplete="off" placeholder="e.g. 314910, 315210">
+              <div class="code-finder">
+                <label for="code-q" class="visually-hidden">Find industry codes by words</label>
+                <input id="code-q" type="text" class="input" maxlength="100" autocomplete="off" placeholder="Find codes: e.g. metal fabrication">
+                <button type="button" id="code-search" class="button secondary">Find codes</button>
+              </div>
+              <p id="code-status" class="hint" aria-live="polite"></p>
+              <ul id="code-results" class="code-results"></ul>
+            </div>
+          </div>
+        </details>
+
+        <div class="actions">
+          <button type="submit" id="go" class="button primary">Find businesses</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="how" class="how" aria-label="How it works">
+      <ol>
+        <li><strong>Tell us what you need.</strong> We work out which kinds of business do it.</li>
+        <li><strong>We search public records.</strong> Every business that is legally registered, not just the ones that advertise.</li>
+        <li><strong>You get a call sheet.</strong> Sorted by distance, with phone numbers, what to say, and a place to track your calls.</li>
+      </ol>
+    </section>
+
+    <section id="interp" class="interp" aria-label="How we read your request" hidden></section>
+
+    <section id="progress" class="card progress" aria-live="polite" aria-labelledby="progress-title" hidden>
+      <h2 id="progress-title" class="section-title">Working on it&hellip;</h2>
+      <ol id="steps" class="steps"></ol>
+      <ul id="warnings" class="warnings"></ul>
+    </section>
+
+    <section id="error-box" class="card notice error" role="alert" hidden>
+      <h2 class="section-title">Something went wrong</h2>
+      <p id="error-text"></p>
+      <button type="button" id="retry" class="button secondary">Try again</button>
+    </section>
+
+    <section id="summary" class="summary" aria-label="Summary" hidden></section>
+
+    <nav id="filters" class="filters" aria-label="Filter results" hidden></nav>
+
+    <p id="toast" class="toast" role="status" aria-live="polite"></p>
+
+    <section id="empty" class="card notice" hidden>
+      <h2 class="section-title">No businesses found</h2>
+      <p>We searched the public records and nothing matched. A few things to try:</p>
+      <ul id="empty-tips" class="tips"></ul>
+    </section>
+
+    <section id="results" class="results" aria-label="Results"></section>
+    <p id="filter-empty" class="muted center" hidden>No loaded results match this filter.</p>
+    <div id="more-wrap" class="more-wrap" hidden></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Public records only. Phone numbers and websites marked &ldquo;verify&rdquo; were found on the web, not in a registry &mdash; check them before you rely on them.</p>
+    </div>
+  </footer>
+</body>
+</html>

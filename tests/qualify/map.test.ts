@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapQuery, parseMapResponse } from "../../packages/qualify/src/verbs/map.js";
+import { mapQuery, parseMapResponse, MAP_SYSTEM } from "../../packages/qualify/src/verbs/map.js";
 import { createLlm, type RawLlm } from "../../packages/qualify/src/llm/adapter.js";
 
 const CO = { region: "US-CO", cities: ["Colorado Springs", "Denver", "Boulder"] };
@@ -101,6 +101,16 @@ describe("mapQuery — LLM", () => {
     expect(r.intent.direction).toBe("sell");
     expect(r.caveats).toContain("titanium spec unverifiable");
     expect(r.caveats.some(c => c.includes("never what it currently buys"))).toBe(true);
+  });
+
+  it("passes the user's location to the model, and only when given", async () => {
+    const prompts: string[] = [];
+    const backend: RawLlm = { complete: async prompt => { prompts.push(prompt); return '{"naics":["332312"]}'; } };
+    await mapQuery("metal fabrication shop", createLlm({ backend }), { ...CO, locationHint: "Castle Rock" });
+    await mapQuery("metal fabrication shop", createLlm({ backend }), CO);
+    expect(prompts[0]).toBe("metal fabrication shop\n\nUser's location: Castle Rock");
+    expect(prompts[1]).toBe("metal fabrication shop");
+    expect(MAP_SYSTEM).toContain("never add a caveat about a missing location");
   });
 
   it("all codes invalid -> falls back to the no-LLM path", async () => {

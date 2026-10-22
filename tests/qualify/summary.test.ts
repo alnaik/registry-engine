@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { summaryLines } from "../../apps/cli/src/summary.js";
+import { summaryLines } from "../../packages/qualify/src/summary.js";
 import type { Lead } from "../../packages/qualify/src/verbs/brief.js";
 
 function lead(naics: string[], web: Lead["web"]): Lead {

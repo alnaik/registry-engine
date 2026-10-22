@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  briefLeads, BRIEF_SYSTEM, rankEntities, scoreEntity, webPresence, parseBriefResponse, templateBrief, templateOpener,
+  briefLeads, BRIEF_SYSTEM, NAME_ONLY_BAND, rankEntities, scoreEntity, webPresence, parseBriefResponse, templateBrief, templateOpener,
   type Lead, type RankContext,
 } from "../../packages/qualify/src/verbs/brief.js";
 import { createLlm, type RawLlm, type RawCompleteOptions } from "../../packages/qualify/src/llm/adapter.js";
@@ -296,7 +296,7 @@ describe("rankEntities — distance", () => {
   const origin = { lat: 39.7392, lon: -104.9903 };   // downtown Denver
 
   it("bands and orders by distance before score; no origin keeps the plain order", () => {
-    const near = entity({ id: "x:1", name: "Near", address: { zip: "80202" }, naics: ["722511"] });
+    const near = entity({ id: "x:1", name: "Near", address: { zip: "80202" }, naics: ["332312"] });
     const far = entity({ id: "x:2", name: "Far", address: { zip: "80903" }, naics: ["332312"] });
     const lost = entity({ id: "x:3", name: "Lost", address: { city: "Atlantis" }, naics: ["332312"] });
     const ranked = rankEntities([lost, far, near], new Map(), { ...CTX, origin, region: "US-CO" });
@@ -309,6 +309,27 @@ describe("rankEntities — distance", () => {
     expect(plain.map(l => l.band)).toEqual(["", "", ""]);
     expect(plain.every(l => l.distanceMi === null)).toBe(true);
     expect(plain[2]!.entity.name).toBe("Near");   // lowest score last, as before
+  });
+
+  it("coded leads rank before name-only matches however far away; name-only share one trailing band", () => {
+    const nameOnly = entity({ id: "x:1", name: "Steele Energy", address: { zip: "80202" }, naics: [] });
+    const wrongCode = entity({ id: "x:2", name: "Pizza Place", address: { zip: "80202" }, naics: ["722511"] });
+    const farCoded = entity({ id: "x:3", name: "Far Shop", address: { zip: "80903" }, naics: ["332312"] });
+    const nearCoded = entity({ id: "x:4", name: "Near Shop", address: { zip: "80202" }, naics: ["332999"] });
+    const ranked = rankEntities([nameOnly, wrongCode, farCoded, nearCoded], new Map(), { ...CTX, origin, region: "US-CO" });
+    expect(ranked.slice(0, 2).map(l => l.entity.name)).toEqual(["Near Shop", "Far Shop"]);
+    expect(ranked.slice(2).map(l => l.entity.name).sort()).toEqual(["Pizza Place", "Steele Energy"]);
+    expect(ranked.slice(0, 2).map(l => l.band)).toEqual(["within 10 mi", "50–100 mi"]);
+    expect(ranked.slice(2).map(l => l.band)).toEqual([NAME_ONLY_BAND, NAME_ONLY_BAND]);
+    expect(ranked[2]!.distanceMi).not.toBeNull();   // distance is kept
+
+    // No origin: still tiered, and the name-only band is set.
+    const plain = rankEntities([nameOnly, farCoded], new Map(), CTX);
+    expect(plain.map(l => l.band)).toEqual(["", NAME_ONLY_BAND]);
+
+    // No codes to match: no tiers, behavior unchanged.
+    const noCodes = rankEntities([nameOnly, farCoded], new Map(), { ...CTX, naics: [], origin, region: "US-CO" });
+    expect(noCodes.some(l => l.band === NAME_ONLY_BAND)).toBe(false);
   });
 });
 

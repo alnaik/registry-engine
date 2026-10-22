@@ -95,7 +95,12 @@ describe("golden query (a): jewelers that need princess cut diamonds (Denver)", 
       expect(lead.opener.length).toBeGreaterThan(0);
     }
     // Denver is the origin, so leads are grouped by distance band; score
-    // descends within each band.
+    // descends within each band. Name-only matches trail every coded lead
+    // under their own band.
+    const firstNameOnly = out.ranked.findIndex(l => l.band === "name matches only — lower confidence");
+    if (firstNameOnly >= 0) {
+      expect(out.ranked.slice(firstNameOnly).every(l => l.band === "name matches only — lower confidence")).toBe(true);
+    }
     for (const band of new Set(out.ranked.map(l => l.band))) {
       const scores = out.ranked.filter(l => l.band === band).map(l => l.score);
       expect(scores).toEqual([...scores].sort((a, b) => b - a));
