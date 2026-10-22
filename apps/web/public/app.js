@@ -630,7 +630,11 @@ function renderEmpty() {
   if (p.hiddenOnly) tips.append(h("li", { text: "Untick \"Only businesses with no website on record\"." }));
   tips.append(h("li", { text: "Try different words. Describe the kind of business, like \"metal fabrication shop\"." }));
   tips.append(h("li", { text: "Enter industry codes under More options. \"Find codes\" will look them up for you." }));
-  if (p.noLlm) tips.append(h("li", { text: "Selling something? Turn off \"Skip AI\" so we can work out who would buy it." }));
+  if (p.noLlm && app.map && app.map.direction === "sell") {
+    tips.prepend(h("li", { text: "Finding buyers needs the AI step (it decides which industries use your product). Turn off 'Skip AI', or enter industry codes in More options." }));
+  } else if (p.noLlm) {
+    tips.append(h("li", { text: "Selling something? Turn off \"Skip AI\" so we can work out who would buy it." }));
+  }
   $("empty").hidden = false;
   scrollTo($("empty"));
 }
@@ -640,16 +644,17 @@ function renderSummary(result) {
   clear(box);
   const s = result.summary;
   const stat = (value, name) => h("div", { class: "stat" }, h("span", { class: "value", text: value }), h("span", { class: "name", text: name }));
-  const stats = [
-    stat(s.total.toLocaleString(), "businesses found"),
-    stat(s.coded.toLocaleString(), "with an industry code"),
-    stat(s.nameOnly.toLocaleString(), "name matches only"),
-    stat(s.noWebsite.toLocaleString(), "no website on record"),
-  ];
   const c = result.contactLookups;
-  stats.push(c
-    ? stat(`${c.found} of ${c.looked}`, `contacts found via ${c.provider} (~$${Number(c.costDollars).toFixed(2)})`)
-    : stat("Off", "web contact lookup"));
+  const stats = [
+    stat(s.coded.toLocaleString(), "matching businesses"),
+    stat(s.nameOnly.toLocaleString(), "name matches only"),
+  ];
+  // "No website on record" says nothing when it is true of everyone.
+  if (c) stats.push(stat(`${c.found}/${c.looked}`, `found online via ${c.provider} (~$${Number(c.costDollars).toFixed(2)})`));
+  else {
+    if (s.noWebsite < s.total) stats.push(stat(s.noWebsite.toLocaleString(), "no website on record"));
+    stats.push(stat("Off", "web contact lookup"));
+  }
   box.append(h("div", { class: "stats" }, stats));
 
   const csv = h("a", { class: "button small primary", href: "/api/csv", download: "leads.csv", text: "Download CSV (all results)" });
@@ -844,6 +849,11 @@ function addressText(lead) {
   return [a.street, cityLine].filter(Boolean).join(", ");
 }
 
+// No search link and no verified website means the record is an individual's.
+function noSearchNote(lead) {
+  return lead.web !== "verified" ? h("span", { text: "Individual's record — no web search offered" }) : null;
+}
+
 function industryText(lead, max) {
   const titles = [...new Set(lead.naics.map(n => n.title || n.code))].slice(0, max);
   return titles.join(", ");
@@ -857,7 +867,7 @@ function compactRow(lead) {
     lead.address.city ? h("span", { text: lead.address.city }) : null,
     sizeText(lead) ? h("span", { text: sizeText(lead) }) : null,
     h("span", { text: chip.text }),
-    lead.searchUrl ? extLink("Search the web", lead.searchUrl) : null);
+    lead.searchUrl ? extLink("Search the web", lead.searchUrl) : noSearchNote(lead));
   return h("div", { class: "row" }, h("div", { class: "row-name", text: lead.name }), meta);
 }
 
@@ -944,6 +954,8 @@ function reachSection(lead) {
   }
   if (lead.searchUrl) {
     sec.append(h("p", { class: "small" }, extLink("Search the web", lead.searchUrl)));
+  } else if (lead.web !== "verified") {
+    sec.append(h("p", { class: "muted small", text: "Individual's record — no web search offered" }));
   }
   return sec;
 }
@@ -1081,7 +1093,7 @@ function leadCard(lead) {
 
   const what = h("section", { class: "sec-what" }, h("h4", { class: "sec-title", text: "What they do" }));
   if (lead.naics.length > 0) {
-    const sources = lead.sources.map(s => s.name).join(", ");
+    const sources = (lead.codeSources || []).map(s => s.name).join(", ");
     what.append(h("p", { text: industryText(lead, 3) }), h("p", { class: "muted small", text: sources ? `per ${sources}` : "" }));
   } else {
     what.append(h("p", { text: "Name match only." }), h("p", { class: "muted small", text: "No industry code on record, so this is lower confidence." }));

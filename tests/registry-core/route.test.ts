@@ -36,9 +36,15 @@ describe("route over the shipped manifest", () => {
     expect(picked.map(s => s.id).sort()).toEqual(["co_sos", "epa_echo", "ppp"]);
   });
 
-  it("produce query outside CO routes to paca, ppp and epa_echo only", () => {
+  it("produce query outside the shard regions routes to epa_echo only (no PACA/PPP shards there)", () => {
     const picked = route(intent({ naics: ["424480"], geo: { region: "US-WA", cities: [] } }), SOURCES);
-    expect(picked.map(s => s.id).sort()).toEqual(["epa_echo", "paca", "ppp"]);
+    expect(picked.map(s => s.id).sort()).toEqual(["epa_echo"]);
+  });
+
+  it("a source whose quirks.shardRegions excludes the region is not routed", () => {
+    const sharded: SourceSpec = { ...source("s", ["*"], ["US"]), quirks: { shardRegions: ["US-CO"] } };
+    expect(route(intent({ geo: { region: "US-CO", cities: [] } }), [sharded])).toHaveLength(1);
+    expect(route(intent({ geo: { region: "US-NY", cities: [] } }), [sharded])).toEqual([]);
   });
 
   it("US coverage covers subregions but not the other way around", () => {
@@ -46,9 +52,9 @@ describe("route over the shipped manifest", () => {
     expect(route(intent({ geo: { region: "US", cities: [] } }), [usOnly])).toEqual([]);
   });
 
-  it("produce query in NY routes to ny_dos, paca, ppp and epa_echo", () => {
+  it("produce query in NY routes to ny_dos, paca and epa_echo (PPP ships CO only)", () => {
     const picked = route(intent({ naics: ["424480"], geo: { region: "US-NY", cities: [] } }), SOURCES);
-    expect(picked.map(s => s.id).sort()).toEqual(["epa_echo", "ny_dos", "paca", "ppp"]);
+    expect(picked.map(s => s.id).sort()).toEqual(["epa_echo", "ny_dos", "paca"]);
   });
 });
 

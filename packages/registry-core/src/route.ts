@@ -6,8 +6,16 @@ import { naicsRelated } from "./naics.js";
 export function route(intent: Intent, sources: SourceSpec[]): SourceSpec[] {
   return sources.filter(s =>
     geoCovers(s.coverage.geo, intent.geo.region) &&
+    shardRegionsCover(s, intent.geo.region) &&
     naicsCovers(s.coverage.naics, intent.naics)
   );
+}
+
+// A sharded source that only ships some regions (PPP: CO) is not searched
+// elsewhere — it would report 0 rather than "not covered".
+function shardRegionsCover(s: SourceSpec, region: string): boolean {
+  const regions = s.quirks?.["shardRegions"];
+  return !Array.isArray(regions) || regions.includes(region);
 }
 
 // "US" covers "US-CO"; "US-CO" covers only itself.

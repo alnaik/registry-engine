@@ -37,20 +37,44 @@ export function naicsRelated(a: string, b: string): boolean {
   return a.startsWith(b) || b.startsWith(a);
 }
 
-// Index entries whose description contains every word (case-insensitive
-// substring), deduped by code, at most `max`. Backs the "codes" lookups.
+// Lowercase a query word and strip a common suffix when >= 4 letters remain,
+// so "fabrication" finds "fabricating" and "bags" finds "bag".
+function stem(word: string): string {
+  const w = word.toLowerCase();
+  const m = /(ication|ation|ing|ers|er|ed|es|s)$/.exec(w);
+  return m !== null && w.length - m[0].length >= 4 ? w.slice(0, -m[0].length) : w;
+}
+
+// 6-digit codes ranked by how many distinct query stems their index
+// descriptions or title contain (a title hit counts an extra 0.5), best first,
+// ties by code. Entries matching all stems therefore sort first. Deduped by
+// code, at most `max`. Backs the "codes" lookups.
 export function lookupCodes(words: string[], max = 15): { code: string; title: string; description: string }[] {
-  const needles = words.map(w => w.toLowerCase()).filter(w => w.length > 0);
-  if (needles.length === 0) return [];
-  const seen = new Set<string>();
-  const out: { code: string; title: string; description: string }[] = [];
+  const stems = [...new Set(words.map(stem).filter(w => w.length > 0))];
+  if (stems.length === 0) return [];
+  const matched = (text: string): string[] => {
+    const t = text.toLowerCase();
+    return stems.filter(s => t.includes(s));
+  };
+
+  const best = new Map<string, { description: string; hits: string[] }>();
   for (const [code, description] of INDEX) {
-    if (seen.has(code)) continue;
-    const text = description.toLowerCase();
-    if (!needles.every(w => text.includes(w))) continue;
-    seen.add(code);
-    out.push({ code, title: naicsLabel(code) ?? "", description });
-    if (out.length >= max) break;
+    const hits = matched(description);
+    const prev = best.get(code);
+    if (prev === undefined || hits.length > prev.hits.length) best.set(code, { description, hits });
   }
-  return out;
+  for (const code of Object.keys(TITLES)) {
+    if (code.length === 6 && !best.has(code)) best.set(code, { description: TITLES[code]!, hits: [] });
+  }
+
+  const scored: { code: string; title: string; description: string; score: number }[] = [];
+  for (const [code, { description, hits }] of best) {
+    const title = naicsLabel(code) ?? "";
+    const titleHits = matched(title);
+    const score = new Set([...hits, ...titleHits]).size + titleHits.length * 0.5;
+    if (score < 1) continue;
+    scored.push({ code, title, description: hits.length > 0 ? description : title, score });
+  }
+  scored.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
+  return scored.slice(0, max).map(({ code, title, description }) => ({ code, title, description }));
 }

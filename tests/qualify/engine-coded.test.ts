@@ -164,3 +164,25 @@ describe("engine — activity-coded discovery", () => {
     expect(out.leads.every(l => l.brief.length > 0)).toBe(true);
   });
 });
+
+describe("engine — inside-word name noise (M3)", () => {
+  it("drops existence-only leads with no related code whose only keyword hits are inside a word", async () => {
+    const sos = (id: string, name: string, note: string) =>
+      ent("co_sos", id, name, { status: "Good Standing", evidence: [{ source: "co_sos", field: "entityname", value: name, note }] });
+    const socrata: Driver = {
+      kind: "socrata",
+      fetch: async () => [
+        sos("1", "BAGELS AND MORE LLC", 'matched "bag" inside a word'),
+        sos("2", "BAG LADY LLC", 'matched "bag"'),
+      ],
+    };
+    const empty: Driver = { kind: "echo", fetch: async () => [] };
+    const out = await search("tote bags", {
+      sources: SOURCES, drivers: { socrata, echo: empty, static_shard: { kind: "static_shard", fetch: async () => [] } },
+      region: "US-CO", naics: ["314910"], contacts: null,
+    });
+    const names = out.ranked.map(l => l.entity.name);
+    expect(names).toContain("BAG LADY LLC");
+    expect(names).not.toContain("BAGELS AND MORE LLC");
+  });
+});

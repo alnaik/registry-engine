@@ -44,15 +44,21 @@ describe("naics lookup", () => {
 });
 
 describe("lookupCodes", () => {
-  it("matches every word as a case-insensitive substring and dedupes by code", () => {
+  it("ranks entries matching every stem first and dedupes by code", () => {
     const hits = lookupCodes(["CANVAS", "bag"]);
     expect(hits.map(h => h.code)).toContain("314910");
     expect(new Set(hits.map(h => h.code)).size).toBe(hits.length);
-    for (const h of hits) {
-      expect(h.description.toLowerCase()).toContain("canvas");
-      expect(h.description.toLowerCase()).toContain("bag");
-      expect(h.title).not.toBe("");
-    }
+    const top = hits[0]!;
+    expect(`${top.description} ${top.title}`.toLowerCase()).toContain("canva");
+    expect(`${top.description} ${top.title}`.toLowerCase()).toContain("bag");
+    for (const h of hits) expect(h.title).not.toBe("");
+  });
+
+  it("stems query words so its own examples work", () => {
+    const fab = lookupCodes(["metal", "fabrication"]).slice(0, 5).map(h => h.code);
+    expect(fab.some(c => c === "332312" || c === "332322")).toBe(true);
+    expect(lookupCodes(["hot", "sauce"]).map(h => h.code)).toContain("311941");
+    expect(lookupCodes(["canvas", "bag"]).map(h => h.code)).toContain("314910");
   });
 
   it("honors max and returns [] for no words or no matches", () => {

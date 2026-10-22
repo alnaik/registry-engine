@@ -11,7 +11,7 @@ import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/s
 
 const LEAD_VIEW_KEYS = [
   "id", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "employees", "lastSeen",
-  "sources", "onStateRegistry", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
+  "sources", "codeSources", "onStateRegistry", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
 function makeLead(i: number): Lead {
@@ -20,7 +20,10 @@ function makeLead(i: number): Lead {
       id: `ppp:${i}`, name: `ACME ${i} FABRICATION`, names: ["ACME"], status: "Good Standing",
       address: { street: `${i} Main St`, city: "Denver", state: "CO", zip: "80202" },
       officers: ["JANE DOE"], naics: ["332312"], contacts: ["(303) 555-0100"],
-      source_ids: ["co_sos", "ppp"], evidence: [{ source: "ppp", field: "naics", value: "332312", note: "matched" }],
+      source_ids: ["co_sos", "ppp"], evidence: [
+        { source: "ppp", field: "naics", value: "332312", note: "matched" },
+        { source: "ppp", field: "registry", value: "PPP loans", note: "NAICS 332312" },
+      ],
       employees: 10, lastSeen: "2024-05-01",
     },
     score: 90 - i, probe: undefined, web: "none", brief: "Brief", opener: "Hello", searchUrl: "https://duckduckgo.com/?q=x",
@@ -180,6 +183,7 @@ describe("web app server", () => {
       expect(top[0]).toMatchObject({
         rank: 1, onStateRegistry: true, found: null, employees: 10,
         sources: [{ id: "co_sos", name: "Colorado SoS" }, { id: "ppp", name: "PPP loans" }],
+        codeSources: [{ id: "ppp", name: "PPP loans" }],
       });
       expect(String(top[0]?.["mapsUrl"])).toBe(
         `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("ACME 0 FABRICATION 0 Main St Denver CO 80202")}`);
@@ -246,6 +250,17 @@ describe("web app server", () => {
       const hits = JSON.parse(r.text) as { code: string; title: string; description: string }[];
       expect(hits.map(h => h.code)).toContain("314910");
       expect(JSON.parse((await send({ path: "/api/codes?q=" })).text)).toEqual([]);
+    });
+
+    it("answers HEAD for static routes and /api/status with headers and no body", async () => {
+      const page = await send({ method: "HEAD", path: "/" });
+      expect(page.status).toBe(200);
+      expect(String(page.headers["content-type"])).toContain("text/html");
+      expect(page.text).toBe("");
+      const status = await send({ method: "HEAD", path: "/api/status" });
+      expect(status.status).toBe(200);
+      expect(String(status.headers["content-type"])).toContain("application/json");
+      expect(status.text).toBe("");
     });
 
     it("reports status", async () => {

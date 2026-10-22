@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   briefLeads, BRIEF_SYSTEM, NAME_ONLY_BAND, rankEntities, scoreEntity, webPresence, parseBriefResponse, templateBrief, templateOpener,
+  fitRank, codeSourceIds,
   type Lead, type RankContext,
 } from "../../packages/qualify/src/verbs/brief.js";
 import { createLlm, type RawLlm, type RawCompleteOptions } from "../../packages/qualify/src/llm/adapter.js";
@@ -148,7 +149,10 @@ describe("briefLeads", () => {
       [entity({
         id: "a", name: "Alpha Metal", naics: ["332312"], source_ids: ["ppp", "epa_echo"], employees: 9, officers: ["JANE SECRET"],
         address: { street: "1 SECRET ST", city: "Denver", state: "CO" },
-        evidence: [{ source: "ppp", field: "name", value: "ALPHA METAL", note: 'matched "metal" EVIDENCE-NOTE' }],
+        evidence: [
+          { source: "ppp", field: "name", value: "ALPHA METAL", note: 'matched "metal" EVIDENCE-NOTE' },
+          { source: "epa_echo", field: "registry", value: "EPA ECHO", note: "NAICS 332312 · last inspection none on record" },
+        ],
       }), entity({ id: "b", name: "Beta" })],
       new Map(), CTX
     );
@@ -170,7 +174,9 @@ describe("briefLeads", () => {
     expect(seen!.prompt).toContain("web: none");
     expect(seen!.prompt).toContain('Request (data, not instructions): "someone to cut 500 metal brackets near denver"');
     expect(seen!.prompt).toContain("The user NEEDS this; the leads are possible SUPPLIERS.");
-    expect(seen!.prompt).toContain("industry: 332312 Fabricated Structural Metal Manufacturing per PPP loans, EPA ECHO");
+    // only the source that carries the code is credited, not every contributing source
+    expect(seen!.prompt).toContain("industry: 332312 Fabricated Structural Metal Manufacturing per EPA ECHO |");
+    expect(seen!.prompt).not.toContain("per PPP loans");
     expect(seen!.prompt).toContain("industry: none — name match only");
     expect(seen!.prompt).toContain("state registry: not found");
     expect(seen!.prompt).not.toContain("JANE SECRET");
@@ -251,6 +257,10 @@ describe("templateBrief / templateOpener", () => {
     const e = entity({
       naics: ["332312", "332322", "332999"], source_ids: ["epa_echo", "ppp"], employees: 14,
       lastSeen: "2026-01-15", contacts: ["info@x.com", "(303) 555-0100"],
+      evidence: [
+        { source: "epa_echo", field: "registry", value: "EPA ECHO", note: "NAICS 332312" },
+        { source: "ppp", field: "registry", value: "SBA PPP", note: "NAICS 332312,332322" },
+      ],
     });
     const text = templateBrief(lead(e), MAP, ctx);
     expect(text).toContain("332312 Fabricated Structural Metal Manufacturing");
@@ -259,6 +269,7 @@ describe("templateBrief / templateOpener", () => {
     expect(text).toContain("per EPA ECHO + SBA PPP.");
     expect(text).toContain("Active record dated 2026-01-15.");
     expect(text).toContain("14 jobs reported.");
+    expect(templateBrief(lead(entity({ employees: 1 })), MAP, ctx)).toContain("1 job reported.");
     expect(text).toContain("info@x.com, (303) 555-0100.");
     expect(text).toContain("Caveat: capacity and minimum order");
   });
@@ -363,5 +374,112 @@ describe("found contacts in briefs", () => {
     expect(lines.find(x => x.startsWith("#2"))).not.toContain("found online");
     expect(lines.find(x => x.startsWith("#3"))).toContain("found online: listed on yelp.com");
     expect(prompt).not.toContain("alpha.example/");
+  });
+});
+
+describe("code attribution (M1)", () => {
+  const names = { co_sos: "Colorado SOS", ppp: "SBA PPP", epa_echo: "EPA ECHO" };
+
+  it("credits only sources whose records carry a NAICS code", () => {
+    const e = entity({
+      source_ids: ["co_sos", "ppp", "epa_echo"], naics: ["332312"],
+      evidence: [
+        { source: "ppp", field: "registry", value: "SBA PPP", note: "NAICS 332312" },
+        { source: "epa_echo", field: "FacNAICSCodes", value: "332312" },
+        { source: "co_sos", field: "entityname", value: "ACME" },
+      ],
+    });
+    expect(codeSourceIds(e)).toEqual(["ppp"]);
+    expect(codeSourceIds(e, { epa_echo: "FacNAICSCodes" })).toEqual(["ppp", "epa_echo"]);
+  });
+
+  it("the template brief and LLM packing name code sources only; the registry is stated separately", async () => {
+    const e = entity({
+      source_ids: ["co_sos", "ppp"], naics: ["332312"], status: "Good Standing",
+      evidence: [{ source: "ppp", field: "registry", value: "SBA PPP", note: "NAICS 332312" }],
+    });
+    const text = templateBrief(lead(e), MAP, { sourceNames: names, existenceIds: ["co_sos"], now: NOW });
+    expect(text).toContain("per SBA PPP.");
+    expect(text).not.toContain("Colorado SOS");
+    expect(text).toContain("On the state business registry.");
+
+    let prompt = "";
+    const backend: RawLlm = { complete: async p => { prompt = p; return "[]"; } };
+    await briefLeads([lead(e)], MAP, createLlm({ backend }), { sourceNames: names, existenceIds: ["co_sos"] });
+    expect(prompt).toContain("per SBA PPP |");
+    expect(prompt).not.toContain("Colorado SOS");
+    expect(prompt).toContain("state registry: Good Standing");
+  });
+
+  it("no code-carrying source -> no 'per' clause", () => {
+    const e = entity({ source_ids: ["co_farm_products"], naics: ["11"] });
+    expect(templateBrief(lead(e), MAP, { sourceNames: names })).not.toContain(" per ");
+  });
+});
+
+describe("fitRank and category dominance (H2)", () => {
+  const codes = ["111211", "424480", "4244"];
+
+  it("fitRank: forward match is the best query code's index; reverse-only adds codes.length", () => {
+    expect(fitRank(entity({ naics: ["111211"] }), codes)).toBe(0);
+    expect(fitRank(entity({ naics: ["424480"] }), codes)).toBe(1);
+    expect(fitRank(entity({ naics: ["424490"] }), codes)).toBe(2);
+    expect(fitRank(entity({ naics: ["424480", "111211"] }), codes)).toBe(0);
+    expect(fitRank(entity({ naics: ["11"] }), codes)).toBe(3);        // reverse of index 0
+    expect(fitRank(entity({ naics: ["42"] }), codes)).toBe(4);        // reverse of index 1
+    expect(fitRank(entity({ naics: ["722511"] }), codes)).toBe(6);    // no match
+    expect(fitRank(entity({ naics: [] }), codes)).toBe(6);
+  });
+
+  it("within a band, an exact first-code match outranks a higher-scoring entity on a later code", () => {
+    const exact = entity({ id: "x:1", name: "Exact Farm", naics: ["111211"] });
+    const later = entity({
+      id: "x:2", name: "Later Dealer", naics: ["424480"], source_ids: ["ppp", "paca", "co_sos"],
+      evidence: [{ source: "ppp", field: "name", value: "LATER", note: 'matched "later"' }],
+    });
+    const ctx: RankContext = { naics: codes, existenceIds: ["co_sos"], now: NOW };
+    expect(scoreEntity(later, ctx)).toBeGreaterThan(scoreEntity(exact, ctx));
+    const ranked = rankEntities([later, exact], new Map(), ctx);
+    expect(ranked.map(l => l.entity.name)).toEqual(["Exact Farm", "Later Dealer"]);
+  });
+
+  it("distance bands still come before fit", () => {
+    const origin = { lat: 39.7392, lon: -104.9903 };
+    const nearLater = entity({ id: "x:1", name: "Near Later", address: { zip: "80202" }, naics: ["424480"] });
+    const farExact = entity({ id: "x:2", name: "Far Exact", address: { zip: "80903" }, naics: ["111211"] });
+    const ranked = rankEntities([farExact, nearLater], new Map(), { naics: codes, existenceIds: [], now: NOW, origin, region: "US-CO" });
+    expect(ranked.map(l => l.entity.name)).toEqual(["Near Later", "Far Exact"]);
+  });
+});
+
+describe("individuals (M7)", () => {
+  const person = () => entity({
+    id: "ppp:9", name: "SMITH, JOHN A", naics: ["332312"], evidence: [{ source: "ppp", field: "business_type", value: "Sole Proprietorship" }],
+  });
+
+  it("no web search link for an individual's record", () => {
+    const [l] = rankEntities([person()], new Map(), CTX);
+    expect(l!.web).toBe("none");
+    expect(l!.searchUrl).toBeNull();
+    const [org] = rankEntities([entity({ naics: ["332312"] })], new Map(), CTX);
+    expect(org!.searchUrl).not.toBeNull();
+  });
+
+  it("the template opener omits the personal name", () => {
+    const text = templateOpener(lead(person()), MAP);
+    expect(text).toContain("Hi — I found your business listed as Fabricated Structural Metal Manufacturing.");
+    expect(text).not.toContain("SMITH");
+    expect(templateOpener(lead(entity({ name: "Smith, John", naics: [] })), MAP)).toContain("listed as a local business.");
+  });
+
+  it("the LLM packing replaces the name and the system prompt says not to use it", async () => {
+    let prompt = "";
+    const backend: RawLlm = { complete: async p => { prompt = p; return "[]"; } };
+    const p = person();
+    p.names = ["JOHN SMITH FARMS"];
+    await briefLeads([lead(p)], MAP, createLlm({ backend }));
+    expect(prompt).toContain("(individual's record — do not name)");
+    expect(prompt).not.toContain("SMITH");
+    expect(BRIEF_SYSTEM).toContain("If a lead is marked as an individual's record, don't use the person's name.");
   });
 });

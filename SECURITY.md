@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.1 (v5, activity-coded discovery + web app)
+Version: 3.2 (v5, activity-coded discovery + web app)
 Last updated: 2026-10-22
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -65,12 +65,14 @@ data damage.
 
 ## Threat 3: CSV injection
 
-**Severity:** Low. `--csv` writes registry-derived text that users open in
-spreadsheets.
+**Severity:** Low. The CLI's `--csv` and the web app's exports write
+registry-derived text that users open in spreadsheets.
 
 **Mitigation:** every cell is double-quoted with embedded quotes doubled. A
 cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
-- `apps/cli/src/csv.ts`, tested in `tests/cli/csv.test.ts`
+- `packages/qualify/src/csv.ts`, tested in `tests/qualify/csv.test.ts`
+- The browser-side "my list" export uses the same rules (`csvCell` in
+  `apps/web/public/app.js`).
 
 ---
 
@@ -198,3 +200,7 @@ credits is a target for other websites open in the same browser.
   provenance) and Threat 8 (local web app: localhost bind, Host check, JSON
   content-type, one search at a time, textContent-only rendering, CSP).
   Privacy now allows contacts a business published about itself on the web.
+- v3.2 (2026-10-22, Phase 6 audit): Fixed the CSV code pointer
+  (`packages/qualify/src/csv.ts`) and listed the browser-side export.
+  Individuals' records no longer get a name-search link, and their names are
+  withheld from the LLM brief.
