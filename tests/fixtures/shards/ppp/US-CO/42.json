@@ -1,0 +1,3 @@
+{"source":"ppp","region":"US-CO","sector":"42","generated":"2026-10-22","protocol_note":"Test fixture in the PPP shard shape (not real loan data).","records":[
+{"loan_number":"2001","name":"NOT REAL PRODUCE LLC","address":"400 Dock St","city":"Denver","state":"CO","zip":"80216","naics":"424480","jobs":14,"business_type":"Limited Liability Company(LLC)","business_age":"New Business or 2 years or less","date_approved":"2021-01-22"}
+]}

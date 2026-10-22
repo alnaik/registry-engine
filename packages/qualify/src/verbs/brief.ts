@@ -31,7 +31,7 @@ export function scoreEntity(entity: Entity, probe: ProbeResult | undefined): num
   score += Math.min(strong.length * 10, 20) + Math.min((matches.length - strong.length) * 2, 4);
   if (probe?.mx === true) score += 15;
   else if (probe?.a === true) score += 5;
-  if (entity.categories.length > 0) score += 10;
+  if (entity.naics.length > 0) score += 10;
   return score;
 }
 
@@ -73,7 +73,7 @@ export async function briefLeads(
       `#${i}`, e.name,
       e.names.length > 0 ? `aka ${e.names.join("; ")}` : "",
       `${e.address.city ?? ""} ${e.address.state ?? ""}`.trim(),
-      e.status, e.categories.join(","),
+      e.status, e.naics.join(","),
       `sources:${e.source_ids.join("+")}`,
       e.contacts.length > 0 ? `contacts:${e.contacts.join(" ")}` : "no contacts",
       `evidence:${e.evidence.map(ev => ev.note ?? ev.value).join("; ")}`,
@@ -138,7 +138,7 @@ export function templateBrief(lead: Lead, map: MapResult): string {
   const e = lead.entity;
   const parts = [
     `${e.name} (${e.status}${e.address.city !== undefined ? `, ${e.address.city}` : ""})`,
-    e.categories.length > 0 ? `Registry-confirmed: ${e.categories.join(", ")} (${e.source_ids.join(" + ")}).` : `Matched by name in ${e.source_ids.join(" + ")}.`,
+    e.naics.length > 0 ? `Registry-confirmed: ${e.naics.join(", ")} (${e.source_ids.join(" + ")}).` : `Matched by name in ${e.source_ids.join(" + ")}.`,
     e.contacts.length > 0 ? `Contact: ${e.contacts.join(", ")}.` : "No contact found yet.",
     ...map.caveats.map(c => `Caveat: ${c}.`),
   ];

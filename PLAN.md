@@ -1,100 +1,55 @@
-# v4 Plan — cleanup, multi-state socket, probe rework
+# v5 Plan — activity-coded discovery
 
-Working branch: `v4-cleanup-and-states`. Orchestrated per the protocol below.
+Working branch: `v5-activity-coded`. Rationale: ADR 0015. v4 phases (artifact
+removal, `--region`, existence backfill, CT/NY) are done and in git history.
 
-## Orchestration protocol (Fable plans, Sonnet codes)
+## Goal
 
-- **Roles.** The Fable model is planner/orchestrator/reviewer and owns git.
-  All code changes are implemented by the `coder` subagent
-  (`.claude/agents/coder.md`, model: sonnet), which receives a written spec
-  per phase.
-- **Spec discipline.** The coder implements exactly the spec. Any needed
-  change not covered by the spec is returned as a DEVIATION REQUEST and must
-  be approved by the orchestrator before implementation. The coder never
-  improvises.
-- **Review.** The orchestrator diffs the result against the spec, re-runs
-  `npm test` + `npm run typecheck` itself, and only then commits.
-- **Context discipline.** No long runs: one phase (or less) per turn. Coding
-  happens inside subagents so orchestrator context stays small. At each
-  checkpoint: commit first, then the user runs `/compact` (compact is a
-  user command — the orchestrator ends its turn and asks for it).
-- **State.** Progress lives in the session task list and this file, both of
-  which survive `/compact`. On resume, read PLAN.md before acting.
+A small business owner types what they need ("someone to sew 500 tote bags
+near Denver") or what they sell ("who would buy my hot sauce in Boulder") and
+gets real local businesses that search engines under-show, as a call sheet
+they can act on today.
+
+## Orchestration protocol
+
+- The orchestrator plans, specs, reviews, and owns git. Code changes go to
+  the `coder` subagent (`.claude/agents/coder.md`), one written spec per
+  phase. The coder implements exactly the spec or returns a DEVIATION
+  REQUEST.
+- The orchestrator re-runs `npm test` + `npm run typecheck` itself before
+  each commit.
+- Progress lives in this file. On resume, read it before acting.
 
 ## Phases
 
-### Phase 0 — README quickstart + orchestration setup ✅ (this checkpoint)
-Verified CLI run instructions at the top of README (vite-node; the old
-`--experimental-strip-types` command fails on `.js`-suffixed ESM imports).
-`vite-node` promoted to an explicit root devDependency. This file and the
-coder agent created.
+### Phase 1 — registry-core: NAICS routing + new sources
+- NAICS 2017 lookup module (`naics2017.json` built from the Census code
+  list + index file by `scripts/data/build_naics.py`).
+- `Intent.naics`, `SourceSpec.coverage.naics`, `Entity.naics/employees/lastSeen`
+  replace category slugs; `route()` matches by code prefix.
+- Field-map additions: `naics`, `employees`, `date`, `address_line`;
+  `quirks.defaultNaics`, `quirks.evidenceFields`.
+- socrata: optional status filter, `quirks.keywordFields`.
+- static_shard: `repo:` endpoints, `quirks.shardBy: "naics2"`, code filter.
+- New `echo` driver (EPA ECHO REST).
+- Merge: same normalized name only joins when locality is compatible.
+- Manifest: `ppp`, `epa_echo`, `co_farm_products`; PACA served from the repo.
+- `scripts/data/build_ppp_shards.py` + Colorado shards.
 
-### Phase 1 — remove the artifact app ✅ (this checkpoint)
-The pasted-into-chat artifact is a dead end (ADR 0011: sandbox blocks all
-outbound fetch). Remove `apps/artifact/`, `scripts/bundle-artifact.mjs`,
-`dist/`, the root `bundle` script, and all references (README, SECURITY.md
-stale component paths, comment-only mentions). `windowClaudeBackend()` in
-`packages/qualify/src/llm/adapter.ts` needs care — it is the default backend
-fallback in `createLlm`. Record the removal as ADR 0012; git history keeps
-the code if a standalone search page is ever revisited (that page would need
-a real API for the search agent — out of scope, deliberately deferred).
+### Phase 2 — qualify + CLI: map, rank, call sheet
+- `map`: LLM → validated NAICS codes for the *leads* (direction-aware);
+  no-LLM fallback via the index matcher; `--naics` override; region words
+  never become keywords.
+- Ranking: fit + operating evidence; web presence is a label, not points.
+- Brief: actionable (why, what's verified vs. not, how to reach, opener).
+- CLI: compact lead cards, `--hidden`, `--csv=<path>`, `--verbose`, summary line.
 
-### Phase 2 — `--region` flag + manifest-driven regions ✅
-`SearchConfig.region` exists (`packages/qualify/src/engine.ts`) but the CLI
-never sets it, and `map.ts` hardcodes `DEFAULT_REGION = "US-CO"` plus a
-Colorado-only city list. Work: add `--region=US-XX` to the CLI; derive the
-valid-region set (and a sensible default) from the manifest
-(`coverage.geo` ∪ `quirks.shardRegions`); move city lists into manifest
-quirks or drop city inference to a generic mechanism. Acceptance:
-`zero-code-state.test.ts` still proves manifest-only state adds, and a
-fictional state is reachable end-to-end via `--region`.
+### Phase 3 — docs + measured validation
+- README, CLAUDE.md, SECURITY.md (new URL/SoQL surfaces, individuals' data).
+- One recall check vs Census County Business Patterns (bulk file) for a
+  manufacturing query, recorded in ADR 0015's follow-up section.
 
-### Phase 3 — probe/web-check rework ✅ (this checkpoint)
-Investigation result: the merge logic was correct — the existence fetch is
-keyword-only, so category-plane entities whose legal names carry no search
-keyword were never fetched at all. Fixed by `Driver.fetchByNames` existence
-backfill (ADR 0013); slug guessing removed; web-search URLs on unverified
-leads. Live run: 21/21 former misses now join; zero "no co_sos match" flags.
-Live-run findings (2026-07-17): DNS/MX **works** for registry-published
-domains (multiple `A:yes MX:yes`); name-slug `.com` guesses essentially
-never hit; and the `co_sos` existence cross-match failed for **every**
-entity ("no co_sos match") — investigate the merge-on-normalized-name logic
-first; that silent existence-join failure is the primary suspect for "the
-whole check feels wasted." Then: keep DNS/MX for published domains, demote
-or drop slug guessing (LLC/INC tokens are currently kept in slugs), and for
-each lead without a verified domain emit a ready-to-open web-search URL in the
-CLI/brief output — the manual post-list search flow.
-
-### Phase 4 — more states in the socket ✅ (this checkpoint)
-Survey (2026-07-18): CT clean (data.ct.gov `n7gp-d28j`); NY viable with a
-documented quirk (`n9v6-gdp6` has no status column → status maps to
-`jurisdiction='New York'`, drops ~8% foreign entities); WA definitively not
-on Socrata (Data Extract discontinued, CCFS bot-guarded) — deferred. Added
-`ct_sos` + `ny_dos` manifest entries and recorded PACA shards US-CT (115
-active) / US-NY (1,324 active). Zero code changes held: only manifest.json,
-two shipped-manifest test expectations, ADR 0014, README. Live runs joined
-both planes in Hartford and Brooklyn with the Phase 3 backfill working.
-**Open item: gist upload of US-CT.json / US-NY.json was permission-blocked
-(publishing recorded contact data needs explicit user approval) — shards
-verified via a local host + `--shards`; run
-`cd shards/paca && gh gist edit 48d13eb9b5f428e547e99ab4b49b4a85 --add
-US-CT.json` (and US-NY.json) once approved.**
-
-## Next iteration (v5) — new category planes
-
-Access research (2026-07-17):
-
-- **FMCSA — free.** QCMobile API (self-serve WebKey via Login.gov) for
-  on-demand checks; daily "Entities with a USDOT Number" census + Licensing
-  & Insurance bulk files (Socrata-hosted, so same driver family) for base
-  ingestion. Zero cost.
-- **SAM.gov — free.** Entity Management API (system account = 1,000
-  req/day) + monthly public entity extract (first Sunday, CSV/.dat). Public
-  tier excludes some sensitive/contact fields.
-- **Customs (AMS bills of lading) — the only paid item.** Raw CBP feed is
-  purchasable at production cost (19 CFR 103.31; ocean vessel only, call CBP
-  for quote) but needs a homegrown AMS parser + entity resolution. Practical
-  entry: ImportGenius USA tier ~$229–449/mo, cleaned + exportable. Panjiva
-  is enterprise-priced; ImportYeti is free web search but no licensed API.
-  Recommendation: start ImportGenius monthly, graduate to raw CBP only if
-  the pipeline is worth owning.
+## Later (only if Phase 3 numbers justify it)
+- Liveness for PPP-only leads in Denver: city business licenses (`s9wt-dsfz`).
+- Relationship edges: UCC secured parties, PACA claims, federal subawards.
+- FMCSA (trucking, has phones) and SAM.gov entity extract (has POCs).

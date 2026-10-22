@@ -5,7 +5,7 @@
       "name": "Colorado Secretary of State",
       "plane": "existence",
       "driver": "socrata",
-      "coverage": { "geo": ["US-CO"], "categories": ["*"] },
+      "coverage": { "geo": ["US-CO"], "naics": ["*"] },
       "endpoint": "https://data.colorado.gov/resource",
       "fields": {
         "id": "entityid",
@@ -45,7 +45,7 @@
       "name": "Connecticut Secretary of the State business registry",
       "plane": "existence",
       "driver": "socrata",
-      "coverage": { "geo": ["US-CT"], "categories": ["*"] },
+      "coverage": { "geo": ["US-CT"], "naics": ["*"] },
       "endpoint": "https://data.ct.gov/resource",
       "fields": {
         "id": "id",
@@ -73,7 +73,7 @@
       "name": "New York Department of State corporations registry",
       "plane": "existence",
       "driver": "socrata",
-      "coverage": { "geo": ["US-NY"], "categories": ["*"] },
+      "coverage": { "geo": ["US-NY"], "naics": ["*"] },
       "endpoint": "https://data.ny.gov/resource",
       "fields": {
         "id": "dos_id",
@@ -103,8 +103,8 @@
       "name": "USDA PACA produce license registry",
       "plane": "category",
       "driver": "static_shard",
-      "coverage": { "geo": ["US"], "categories": ["produce"] },
-      "endpoint": "https://gist.githubusercontent.com/alnaik/48d13eb9b5f428e547e99ab4b49b4a85/raw",
+      "coverage": { "geo": ["US"], "naics": ["111", "4244", "445", "311"] },
+      "endpoint": "repo:shards/paca",
       "fields": {
         "id": "license_number",
         "name": "name_of_business",
@@ -118,7 +118,70 @@
         "statusValue": "Active",
         "namesField": "trade_names",
         "officersField": "principals",
-        "shardRegions": ["US-CO", "US-CT", "US-NY"]
+        "shardRegions": ["US-CO", "US-CT", "US-NY"],
+        "defaultNaics": ["424480"]
+      }
+    },
+    {
+      "id": "ppp",
+      "name": "SBA Paycheck Protection Program loan records (2020–21)",
+      "plane": "category",
+      "driver": "static_shard",
+      "coverage": { "geo": ["US"], "naics": ["*"] },
+      "endpoint": "repo:shards/ppp",
+      "fields": {
+        "id": "loan_number",
+        "name": "name",
+        "street": "address",
+        "city": "city",
+        "state": "state",
+        "zip": "zip",
+        "naics": "naics",
+        "employees": "jobs",
+        "date": "date_approved"
+      },
+      "quirks": {
+        "shardBy": "naics2",
+        "shardRegions": ["US-CO"],
+        "evidenceFields": ["business_type", "business_age"]
+      }
+    },
+    {
+      "id": "epa_echo",
+      "name": "EPA ECHO regulated facilities",
+      "plane": "category",
+      "driver": "echo",
+      "coverage": { "geo": ["US"], "naics": ["*"] },
+      "endpoint": "https://echodata.epa.gov/echo",
+      "fields": {
+        "id": "RegistryID",
+        "name": "FacName",
+        "street": "FacStreet",
+        "city": "FacCity",
+        "state": "FacState",
+        "zip": "FacZip",
+        "naics": "FacNAICSCodes",
+        "date": "FacDateLastInspection"
+      }
+    },
+    {
+      "id": "co_farm_products",
+      "name": "Colorado farm-products financing statements (Food Security Act central filing)",
+      "plane": "category",
+      "driver": "socrata",
+      "coverage": { "geo": ["US-CO"], "naics": ["11"] },
+      "endpoint": "https://data.colorado.gov/resource",
+      "fields": {
+        "id": "debtorid",
+        "name": "debtorname",
+        "address_line": "debtoraddress",
+        "date": "recordiddate"
+      },
+      "quirks": {
+        "datasetId": "ej2c-jkvh",
+        "keywordFields": ["farmproduct", "additionalfarmproduct", "farmproductdescription"],
+        "evidenceFields": ["farmproduct", "additionalfarmproduct", "securedparty"],
+        "defaultNaics": ["11"]
       }
     }
   ]

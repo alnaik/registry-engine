@@ -8,7 +8,7 @@ import type { ProbeResult } from "../../packages/qualify/src/verbs/probe.js";
 function entity(overrides: Partial<Entity>): Entity {
   return {
     id: "co_sos:1", name: "Acme LLC", names: [], status: "Good Standing",
-    address: { city: "Denver" }, officers: [], categories: [], contacts: [],
+    address: { city: "Denver" }, officers: [], naics: [], contacts: [],
     source_ids: ["co_sos"], evidence: [], ...overrides,
   };
 }
@@ -18,7 +18,7 @@ function probeResult(id: string, overrides: Partial<ProbeResult> = {}): ProbeRes
 }
 
 const MAP: MapResult = {
-  intent: { categories: ["produce"], geo: { region: "US-CO", cities: [] }, direction: "buy" },
+  intent: { naics: ["424480"], geo: { region: "US-CO", cities: [] }, direction: "buy" },
   keywords: ["potato"],
   caveats: ['"yukon gold" is not verifiable from registry data — leads match the category, not this specific detail'],
   usedLlm: false,
@@ -26,7 +26,7 @@ const MAP: MapResult = {
 
 describe("rankEntities", () => {
   it("multi-plane joins with contacts outrank single-source name matches", () => {
-    const strong = entity({ id: "x:1", name: "Strong", source_ids: ["co_sos", "paca"], contacts: ["a@b.com"], categories: ["produce"] });
+    const strong = entity({ id: "x:1", name: "Strong", source_ids: ["co_sos", "paca"], contacts: ["a@b.com"], naics: ["424480"] });
     const weak = entity({ id: "x:2", name: "Weak" });
     const probes = new Map([["x:1", probeResult("x:1", { mx: true })]]);
     const ranked = rankEntities([weak, strong], probes);
@@ -110,10 +110,10 @@ describe("parseBriefResponse hardening", () => {
 });
 
 describe("templateBrief", () => {
-  it("carries category, sources, contacts and caveats", () => {
-    const lead = { entity: entity({ categories: ["produce"], source_ids: ["co_sos", "paca"], contacts: ["info@x.com"] }), score: 0, probe: undefined, brief: "", searchUrl: null };
+  it("carries NAICS codes, sources, contacts and caveats", () => {
+    const lead = { entity: entity({ naics: ["424480"], source_ids: ["co_sos", "paca"], contacts: ["info@x.com"] }), score: 0, probe: undefined, brief: "", searchUrl: null };
     const text = templateBrief(lead, MAP);
-    expect(text).toContain("produce");
+    expect(text).toContain("424480");
     expect(text).toContain("co_sos + paca");
     expect(text).toContain("info@x.com");
     expect(text).toContain("yukon gold");

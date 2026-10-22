@@ -5,7 +5,7 @@ import type { Entity } from "../../packages/registry-core/src/entity.js";
 function entity(overrides: Partial<Entity>): Entity {
   return {
     id: "co_sos:1", name: "Acme Jewelers LLC", names: [], status: "Good Standing",
-    address: { city: "Denver" }, officers: [], categories: [], contacts: [],
+    address: { city: "Denver" }, officers: [], naics: [], contacts: [],
     source_ids: ["co_sos"], evidence: [], ...overrides,
   };
 }

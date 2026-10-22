@@ -4,7 +4,15 @@ import type { SourceSpec } from "../driver.js";
 // Shared row -> canonical Entity mapping, driven entirely by the manifest
 // field map. Recognized canonical keys in spec.fields:
 //   id, name, status, street, city, state, zip,
-//   officer, officer_first, officer_last, officer_org
+//   officer, officer_first, officer_last, officer_org,
+//   naics          one or more NAICS codes separated by whitespace/commas;
+//                  tokens that aren't 2-6 digits are dropped. Falls back to
+//                  quirks.defaultNaics (string[]) when unmapped or empty.
+//   employees      headcount, parsed as an integer (>= 0)
+//   date           the record's date -> lastSeen; "YYYY-MM-DD..." or
+//                  "MM/DD/YYYY", anything else is ignored
+//   address_line   single-line "street, city, state, zip"; fills only the
+//                  street/city/state/zip keys not mapped on their own
 // Any field listed in spec.contact_fields lands in contacts[].
 export function rowToEntity(source: SourceSpec, row: Record<string, unknown>): Entity {
   const f = source.fields;
@@ -30,25 +38,84 @@ export function rowToEntity(source: SourceSpec, row: Record<string, unknown>): E
     if (v !== "") contacts.push(v);
   }
 
-  const categories = source.coverage.categories.filter(c => c !== "*");
+  const naicsCodes = get("naics").split(/[\s,]+/).filter(t => /^\d{2,6}$/.test(t));
+  const defaults = source.quirks?.["defaultNaics"];
+  const naics = naicsCodes.length > 0 ? naicsCodes
+    : Array.isArray(defaults) ? defaults.filter((c): c is string => typeof c === "string") : [];
 
-  return {
+  const employees = parseInt(get("employees"), 10);
+  const lastSeen = parseDate(get("date"));
+  const line = parseAddressLine(get("address_line"));
+  const addr = {
+    street: get("street") || line.street || "",
+    city: get("city") || line.city || "",
+    state: get("state") || line.state || "",
+    zip: get("zip") || line.zip || "",
+  };
+
+  const entity: Entity = {
     id: `${source.id}:${get("id")}`,
     name: get("name"),
     names: [],
     status: get("status"),
     address: {
-      ...(get("street") !== "" ? { street: get("street") } : {}),
-      ...(get("city") !== "" ? { city: get("city") } : {}),
-      ...(get("state") !== "" ? { state: get("state") } : {}),
-      ...(get("zip") !== "" ? { zip: get("zip") } : {}),
+      ...(addr.street !== "" ? { street: addr.street } : {}),
+      ...(addr.city !== "" ? { city: addr.city } : {}),
+      ...(addr.state !== "" ? { state: addr.state } : {}),
+      ...(addr.zip !== "" ? { zip: addr.zip } : {}),
     },
     officers,
-    categories,
+    naics,
     contacts,
     source_ids: [source.id],
     evidence: [],
   };
+  if (Number.isFinite(employees) && employees >= 0) entity.employees = employees;
+  if (lastSeen !== undefined) entity.lastSeen = lastSeen;
+  return entity;
+}
+
+function parseDate(v: string): string | undefined {
+  const iso = /^(\d{4}-\d{2}-\d{2})/.exec(v);
+  if (iso !== null) return iso[1];
+  const us = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v);
+  if (us !== null) return `${us[3]}-${us[1]}-${us[2]}`;
+  return undefined;
+}
+
+// "15030 US Highway 50, Las Animas, CO, 81054" -> street/city/state/zip.
+// Needs a trailing ZIP to anchor the positions; without one nothing is
+// guessed. Registry placeholders ("NO ADDRESS", "NO CITY") are dropped.
+function parseAddressLine(v: string): { street?: string; city?: string; state?: string; zip?: string } {
+  const parts = v.split(",").map(p => p.trim()).filter(p => p !== "");
+  const last = parts.pop();
+  if (last === undefined || !/^\d{5}/.test(last)) return {};
+  const zip = last.slice(0, 5);
+  let state: string | undefined;
+  if (parts.length > 0 && /^[A-Z]{2}$/i.test(parts[parts.length - 1]!)) state = parts.pop();
+  const city = parts.pop();
+  const street = parts.join(", ");
+  const real = (p: string | undefined) => (p === undefined || p === "" || /^NO\s/i.test(p) ? undefined : p);
+  const out: { street?: string; city?: string; state?: string; zip?: string } = { zip };
+  const parsed = { street: real(street), city: real(city), state: real(state) };
+  if (parsed.street !== undefined) out.street = parsed.street;
+  if (parsed.city !== undefined) out.city = parsed.city;
+  if (parsed.state !== undefined) out.state = parsed.state;
+  return out;
+}
+
+// Raw values of the manifest's quirks.evidenceFields, one Evidence each, so
+// a brief can quote what the registry itself says (crop lists, business type).
+export function fieldEvidence(source: SourceSpec, row: Record<string, unknown>): Evidence[] {
+  const names = source.quirks?.["evidenceFields"];
+  if (!Array.isArray(names)) return [];
+  const out: Evidence[] = [];
+  for (const field of names) {
+    if (typeof field !== "string") continue;
+    const value = str(row[field]).trim().slice(0, 200);
+    if (value !== "") out.push({ source: source.id, field, value });
+  }
+  return out;
 }
 
 // A hit at a word start ("JEWEL" in "GLAMLY JEWELRY") is real signal; a hit

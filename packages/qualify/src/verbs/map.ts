@@ -1,4 +1,4 @@
-import type { Intent } from "@registry-engine/registry-core";
+import { isNaicsCode, type Intent } from "@registry-engine/registry-core";
 import type { Llm } from "../llm/adapter.js";
 
 // map(query): the only place a search may spend its first LLM call — and
@@ -13,43 +13,43 @@ export interface MapResult {
   usedLlm: boolean;
 }
 
-// token -> category + registry-name keywords. Lean on purpose. Extend
+// token -> NAICS codes + registry-name keywords. Lean on purpose. Extend
 // freely; unknown tokens fall through to the LLM.
-const STATIC_CATEGORIES: Record<string, { category: string; keywords: string[] }> = {
-  jeweler:    { category: "jewelry", keywords: ["jewel", "gem", "diamond", "goldsmith"] },
-  jewelry:    { category: "jewelry", keywords: ["jewel", "gem", "diamond", "goldsmith"] },
-  diamond:    { category: "jewelry", keywords: ["jewel", "gem", "diamond"] },
-  gem:        { category: "jewelry", keywords: ["jewel", "gem"] },
-  potato:     { category: "produce", keywords: ["potato", "produce", "farm"] },
-  produce:    { category: "produce", keywords: ["produce", "farm", "fruit", "vegetable"] },
-  grocer:     { category: "produce", keywords: ["grocer", "market", "food"] },
-  grocery:    { category: "produce", keywords: ["grocer", "market", "food"] },
-  fruit:      { category: "produce", keywords: ["fruit", "produce", "orchard"] },
-  vegetable:  { category: "produce", keywords: ["vegetable", "produce", "farm"] },
-  farm:       { category: "produce", keywords: ["farm", "ranch", "produce"] },
-  restaurant: { category: "restaurant", keywords: ["restaurant", "grill", "kitchen", "cafe", "bistro"] },
-  coffee:     { category: "coffee", keywords: ["coffee", "espresso", "roast"] },
-  cafe:       { category: "coffee", keywords: ["cafe", "coffee", "espresso"] },
-  bakery:     { category: "bakery", keywords: ["bakery", "baking", "bread", "pastry"] },
-  baker:      { category: "bakery", keywords: ["bakery", "baking", "bread"] },
-  brewery:    { category: "brewery", keywords: ["brew", "beer", "ale"] },
-  brewer:     { category: "brewery", keywords: ["brew", "beer", "ale"] },
-  florist:    { category: "florist", keywords: ["florist", "flower", "floral"] },
-  flower:     { category: "florist", keywords: ["florist", "flower", "floral"] },
-  salon:      { category: "beauty", keywords: ["salon", "hair", "beauty", "spa"] },
-  barber:     { category: "beauty", keywords: ["barber", "hair"] },
-  plumber:    { category: "plumbing", keywords: ["plumb"] },
-  plumbing:   { category: "plumbing", keywords: ["plumb"] },
-  roofer:     { category: "roofing", keywords: ["roof"] },
-  roofing:    { category: "roofing", keywords: ["roof"] },
-  landscaper: { category: "landscaping", keywords: ["landscap", "lawn", "garden"] },
-  landscaping:{ category: "landscaping", keywords: ["landscap", "lawn", "garden"] },
-  contractor: { category: "construction", keywords: ["construction", "builder", "contracting"] },
-  construction:{ category: "construction", keywords: ["construction", "builder", "contracting"] },
-  dentist:    { category: "dental", keywords: ["dental", "dentistry", "orthodont"] },
-  dental:     { category: "dental", keywords: ["dental", "dentistry", "orthodont"] },
-  veterinary: { category: "veterinary", keywords: ["veterinar", "animal", "pet"] },
-  vet:        { category: "veterinary", keywords: ["veterinar", "animal", "pet"] },
+const STATIC_CATEGORIES: Record<string, { naics: string[]; keywords: string[] }> = {
+  jeweler:    { naics: ["339910", "423940", "448310"], keywords: ["jewel", "gem", "diamond", "goldsmith"] },
+  jewelry:    { naics: ["339910", "423940", "448310"], keywords: ["jewel", "gem", "diamond", "goldsmith"] },
+  diamond:    { naics: ["339910", "423940", "448310"], keywords: ["jewel", "gem", "diamond"] },
+  gem:        { naics: ["339910", "423940", "448310"], keywords: ["jewel", "gem"] },
+  potato:     { naics: ["4244", "111", "445230"], keywords: ["potato", "produce", "farm"] },
+  produce:    { naics: ["4244", "111", "445230"], keywords: ["produce", "farm", "fruit", "vegetable"] },
+  grocer:     { naics: ["4244", "111", "445230"], keywords: ["grocer", "market", "food"] },
+  grocery:    { naics: ["4244", "111", "445230"], keywords: ["grocer", "market", "food"] },
+  fruit:      { naics: ["4244", "111", "445230"], keywords: ["fruit", "produce", "orchard"] },
+  vegetable:  { naics: ["4244", "111", "445230"], keywords: ["vegetable", "produce", "farm"] },
+  farm:       { naics: ["4244", "111", "445230"], keywords: ["farm", "ranch", "produce"] },
+  restaurant: { naics: ["7225"], keywords: ["restaurant", "grill", "kitchen", "cafe", "bistro"] },
+  coffee:     { naics: ["311920", "722515"], keywords: ["coffee", "espresso", "roast"] },
+  cafe:       { naics: ["311920", "722515"], keywords: ["cafe", "coffee", "espresso"] },
+  bakery:     { naics: ["311811", "311812"], keywords: ["bakery", "baking", "bread", "pastry"] },
+  baker:      { naics: ["311811", "311812"], keywords: ["bakery", "baking", "bread"] },
+  brewery:    { naics: ["312120"], keywords: ["brew", "beer", "ale"] },
+  brewer:     { naics: ["312120"], keywords: ["brew", "beer", "ale"] },
+  florist:    { naics: ["453110", "424930"], keywords: ["florist", "flower", "floral"] },
+  flower:     { naics: ["453110", "424930"], keywords: ["florist", "flower", "floral"] },
+  salon:      { naics: ["812111", "812112"], keywords: ["salon", "hair", "beauty", "spa"] },
+  barber:     { naics: ["812111", "812112"], keywords: ["barber", "hair"] },
+  plumber:    { naics: ["238220"], keywords: ["plumb"] },
+  plumbing:   { naics: ["238220"], keywords: ["plumb"] },
+  roofer:     { naics: ["238160"], keywords: ["roof"] },
+  roofing:    { naics: ["238160"], keywords: ["roof"] },
+  landscaper: { naics: ["561730"], keywords: ["landscap", "lawn", "garden"] },
+  landscaping:{ naics: ["561730"], keywords: ["landscap", "lawn", "garden"] },
+  contractor: { naics: ["236", "238"], keywords: ["construction", "builder", "contracting"] },
+  construction:{ naics: ["236", "238"], keywords: ["construction", "builder", "contracting"] },
+  dentist:    { naics: ["621210"], keywords: ["dental", "dentistry", "orthodont"] },
+  dental:     { naics: ["621210"], keywords: ["dental", "dentistry", "orthodont"] },
+  veterinary: { naics: ["541940"], keywords: ["veterinar", "animal", "pet"] },
+  vet:        { naics: ["541940"], keywords: ["veterinar", "animal", "pet"] },
 };
 
 const BUY_WORDS = new Set(["supplier", "suppliers", "wholesaler", "wholesalers", "distributor", "distributors", "vendor", "vendors", "source", "sourcing"]);
@@ -75,7 +75,7 @@ export async function mapQuery(
   const cities: string[] = cityTable.filter(c => q.includes(c));
   const tokens = q.replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
 
-  const categories: string[] = [];
+  const naics: string[] = [];
   const keywords: string[] = [];
   const matchedTokens = new Set<string>();
   for (const t of tokens) {
@@ -85,7 +85,7 @@ export async function mapQuery(
       ?? STATIC_CATEGORIES[t.replace(/s$/, "")];
     if (entry === undefined) continue;
     matchedTokens.add(t);
-    if (!categories.includes(entry.category)) categories.push(entry.category);
+    for (const code of entry.naics) if (!naics.includes(code)) naics.push(code);
     for (const kw of entry.keywords) if (!keywords.includes(kw)) keywords.push(kw);
   }
 
@@ -100,13 +100,13 @@ export async function mapQuery(
     !matchedTokens.has(t) && !STOPWORDS.has(t) && !BUY_WORDS.has(t) &&
     !DEMAND_WORDS.has(t) && !cityWords.has(t) && t.length >= 3
   );
-  if (residue.length > 0 && categories.length > 0) {
+  if (residue.length > 0 && naics.length > 0) {
     caveats.push(`"${residue.join(" ")}" is not verifiable from registry data — leads match the category, not this specific detail`);
   }
 
-  if (categories.length > 0) {
+  if (naics.length > 0) {
     return {
-      intent: { categories, geo: { region, cities: cities.map(titleCase) }, direction },
+      intent: { naics, geo: { region, cities: cities.map(titleCase) }, direction },
       keywords: keywords.slice(0, 8),
       caveats,
       usedLlm: false,
@@ -123,10 +123,10 @@ export async function mapQuery(
     }
   }
 
-  // Last resort: content words become keywords; no category, so route()
+  // Last resort: content words become keywords; no NAICS codes, so route()
   // will only pick existence-plane sources.
   return {
-    intent: { categories: [], geo: { region, cities: cities.map(titleCase) }, direction },
+    intent: { naics: [], geo: { region, cities: cities.map(titleCase) }, direction },
     keywords: residue.slice(0, 8),
     caveats,
     usedLlm: false,
@@ -136,9 +136,9 @@ export async function mapQuery(
 export const MAP_SYSTEM = `You turn a plain-English business search into a routing decision over government registries. Registries only contain business names, trade-name descriptions, and license categories.
 
 Output ONLY a JSON object:
-{"categories":["produce"],"keywords":["potato","farm"],"cities":["Denver"],"direction":"buy","caveats":["..."]}
+{"naics":["424480"],"keywords":["potato","farm"],"cities":["Denver"],"direction":"buy","caveats":["..."]}
 
-categories: 1-3 lowercase category slugs for what kind of business is sought.
+naics: 1-3 NAICS 2017 codes (2-6 digits) of the businesses the user should contact.
 keywords: 3-8 lowercase fragments likely to appear in business NAMES.
 cities: city names mentioned in the query, else [].
 direction: "buy" if the user wants to buy FROM the leads, "sell" if the user wants to sell TO them.
@@ -157,13 +157,13 @@ export function parseMapResponse(
   const candidate = cleaned.startsWith("{") ? cleaned : (cleaned.match(/\{[\s\S]*\}/)?.[0] ?? cleaned);
   try {
     const parsed = JSON.parse(candidate) as Record<string, unknown>;
-    const categories = strings(parsed["categories"], 3);
+    const naics = strings(parsed["naics"], 6, 6).filter(isNaicsCode);
     const keywords = strings(parsed["keywords"], 8);
     if (keywords.length === 0) return null;
     const direction = parsed["direction"] === "buy" || parsed["direction"] === "sell"
       ? parsed["direction"] : fallbackDirection;
     return {
-      intent: { categories, geo: { region, cities: strings(parsed["cities"], 5).map(titleCase) }, direction },
+      intent: { naics, geo: { region, cities: strings(parsed["cities"], 5).map(titleCase) }, direction },
       keywords,
       caveats: [...staticCaveats, ...strings(parsed["caveats"], 4, 200)],
       usedLlm: true,

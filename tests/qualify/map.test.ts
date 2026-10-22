@@ -16,7 +16,7 @@ describe("mapQuery — static table (zero LLM calls)", () => {
     const r = await mapQuery("find jewelers that need princess cut diamonds in Denver", llm, CO);
     expect(calls()).toBe(0);
     expect(r.usedLlm).toBe(false);
-    expect(r.intent.categories).toContain("jewelry");
+    expect(r.intent.naics).toContain("339910");
     expect(r.keywords).toContain("jewel");
     expect(r.intent.geo).toEqual({ region: "US-CO", cities: ["Denver"] });
     expect(r.intent.direction).toBe("sell");
@@ -29,7 +29,7 @@ describe("mapQuery — static table (zero LLM calls)", () => {
     const { llm, calls } = countingLlm("SHOULD NOT BE CALLED");
     const r = await mapQuery("yukon gold potato supplier near me", llm, CO);
     expect(calls()).toBe(0);
-    expect(r.intent.categories).toContain("produce");
+    expect(r.intent.naics).toContain("4244");
     expect(r.keywords).toContain("potato");
     expect(r.intent.direction).toBe("buy");
     expect(r.intent.geo.cities).toEqual([]); // "near me" -> whole region
@@ -39,19 +39,19 @@ describe("mapQuery — static table (zero LLM calls)", () => {
   it("resolves multi-word cities", async () => {
     const r = await mapQuery("bakeries in colorado springs", null, CO);
     expect(r.intent.geo.cities).toEqual(["Colorado Springs"]);
-    expect(r.intent.categories).toContain("bakery");
+    expect(r.intent.naics).toContain("311811");
   });
 });
 
 describe("mapQuery — LLM fallback", () => {
-  it("spends exactly one cheap call on unknown categories", async () => {
+  it("spends exactly one cheap call on unknown industries", async () => {
     const { llm, calls } = countingLlm(
-      '{"categories":["aerospace"],"keywords":["aero","space"],"cities":["Boulder"],"direction":"sell","caveats":["titanium spec unverifiable"]}'
+      '{"naics":["336413","999999","aerospace"],"keywords":["aero","space"],"cities":["Boulder"],"direction":"sell","caveats":["titanium spec unverifiable"]}'
     );
     const r = await mapQuery("titanium fastener buyers in aerospace, Boulder", llm, CO);
     expect(calls()).toBe(1);
     expect(r.usedLlm).toBe(true);
-    expect(r.intent.categories).toEqual(["aerospace"]);
+    expect(r.intent.naics).toEqual(["336413"]); // invalid codes are dropped
     expect(r.keywords).toEqual(["aero", "space"]);
     expect(r.intent.geo.cities).toEqual(["Boulder"]);
     expect(r.caveats).toContain("titanium spec unverifiable");
@@ -61,7 +61,7 @@ describe("mapQuery — LLM fallback", () => {
     const { llm } = countingLlm("I think you should try searching for... maybe?");
     const r = await mapQuery("quantum widget makers", llm, CO);
     expect(r.usedLlm).toBe(false);
-    expect(r.intent.categories).toEqual([]);
+    expect(r.intent.naics).toEqual([]);
     expect(r.keywords).toContain("quantum");
   });
 
@@ -73,12 +73,12 @@ describe("mapQuery — LLM fallback", () => {
 
 describe("parseMapResponse hardening", () => {
   it("strips code fences and prose around the JSON", () => {
-    const r = parseMapResponse('Here you go!\n```json\n{"keywords":["potato"],"categories":["produce"]}\n```', "US-CO", "sell", []);
+    const r = parseMapResponse('Here you go!\n```json\n{"keywords":["potato"],"naics":["424480"]}\n```', "US-CO", "sell", []);
     expect(r?.keywords).toEqual(["potato"]);
   });
 
   it("rejects responses without keywords", () => {
-    expect(parseMapResponse('{"categories":["x"]}', "US-CO", "sell", [])).toBeNull();
+    expect(parseMapResponse('{"naics":["424480"]}', "US-CO", "sell", [])).toBeNull();
   });
 
   it("caps list sizes and string lengths", () => {

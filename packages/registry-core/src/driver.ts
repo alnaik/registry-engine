@@ -1,12 +1,12 @@
 import type { Entity } from "./entity.js";
 import type { FetchRetryOptions } from "./util/http.js";
 
-// The three planes a source can serve. Category membership comes from
-// federal registries whose category signal is inherent to the registry
-// (a PACA license IS produce) — never from per-candidate LLM verification.
+// The three planes a source can serve. The category plane is sources whose
+// records carry what a business does (a license class or an industry code) —
+// never per-candidate LLM verification.
 export type Plane = "existence" | "category" | "contact";
 
-export type DriverKind = "socrata" | "rest" | "static_shard";
+export type DriverKind = "socrata" | "rest" | "static_shard" | "echo";
 
 // One manifest entry per government registry. Adding a source or a state
 // must require zero code changes — only a config entry.
@@ -17,7 +17,7 @@ export interface SourceSpec {
   driver: DriverKind;
   coverage: {
     geo: string[];                 // region codes: "US" or "US-CO"
-    categories: string[];          // canonical slugs; ["*"] = all (existence plane)
+    naics: string[];               // NAICS codes/prefixes the source carries; ["*"] = any
   };
   endpoint: string;                // base URL ("" allowed for static_shard stubs)
   fields: Record<string, string>;  // canonical field -> source field
@@ -27,7 +27,7 @@ export interface SourceSpec {
 
 // What map(query) produces and route(intent) consumes.
 export interface Intent {
-  categories: string[];            // canonical slugs, e.g. ["produce"]
+  naics: string[];                 // NAICS codes/prefixes of the leads, e.g. ["424480"]
   geo: { region: string; cities: string[] };  // cities empty = whole region
   direction: "buy" | "sell";       // is the user buying from or selling to the leads
 }
@@ -36,7 +36,7 @@ export interface FetchRequest {
   keywords: string[];   // fragments matched against names / descriptions
   region: string;       // "US-CO" — picks shard files, scopes contact probes
   cities: string[];     // geo filter within the region; empty = whole region
-  categories: string[]; // canonical slugs, for category-plane sources
+  naics: string[];      // NAICS codes/prefixes, for category-plane sources
   limit?: number | undefined;
 }
 

@@ -16,7 +16,7 @@ const CO_SOS: SourceSpec = {
   name: "Colorado Secretary of State",
   plane: "existence",
   driver: "socrata",
-  coverage: { geo: ["US-CO"], categories: ["*"] },
+  coverage: { geo: ["US-CO"], naics: ["*"] },
   endpoint: "https://data.colorado.gov/resource",
   fields: {
     id: "entityid", name: "entityname", status: "entitystatus",
@@ -35,7 +35,7 @@ const CO_SOS: SourceSpec = {
 };
 
 function req(overrides: Partial<FetchRequest> = {}): FetchRequest {
-  return { keywords: ["jewel"], region: "US-CO", cities: ["Denver"], categories: [], ...overrides };
+  return { keywords: ["jewel"], region: "US-CO", cities: ["Denver"], naics: [], ...overrides };
 }
 
 // Recorded-fixture fetch: answers each SoQL request from the fixture rows the
@@ -130,6 +130,119 @@ describe("SocrataDriver", () => {
     vi.stubGlobal("fetch", fixtureFetch(entityRows, []));
     const results = await driver.fetch(CO_SOS, req({ keywords: ["a e i o u llc inc".slice(0, 3)], limit: 1, cities: [] }));
     expect(results.length).toBeLessThanOrEqual(1);
+  });
+});
+
+// A category-plane source like the Colorado farm-products filings: no status
+// field, keywords searched across several fields, one-line address.
+const FARMS: SourceSpec = {
+  id: "co_farm_products",
+  name: "Colorado farm-products financing statements",
+  plane: "category",
+  driver: "socrata",
+  coverage: { geo: ["US-CO"], naics: ["11"] },
+  endpoint: "https://data.colorado.gov/resource",
+  fields: { id: "debtorid", name: "debtorname", address_line: "debtoraddress", date: "recordiddate" },
+  quirks: {
+    datasetId: "ej2c-jkvh",
+    keywordFields: ["farmproduct", "additionalfarmproduct"],
+    evidenceFields: ["farmproduct", "securedparty"],
+    defaultNaics: ["11"],
+  },
+};
+
+const FARM_ROW = {
+  farmproduct: "All Field Crops",
+  debtorname: "17 SQUARED LLC",
+  debtorid: "5179196033",
+  debtoraddress: "15030 US Highway 50, Las Animas, CO, 81054",
+  securedparty: "McClave State Bank, PO Box 3",
+  additionalfarmproduct: "Corn; Cotton (Field Or Row Crop); Hay; Oats",
+  recordiddate: "2024-06-26T00:00:00.000",
+};
+
+describe("SocrataDriver — keywordFields, optional status, address_line cities", () => {
+  const driver = new SocrataDriver();
+
+  function whereOf(): string {
+    return decodeURIComponent(urls[0]!.split("$where=")[1]!.split("&")[0]!);
+  }
+
+  it("ORs the keyword clause across every keyword field", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    }));
+    await driver.fetch(FARMS, req({ keywords: ["corn", "hay"], cities: [] }));
+    expect(whereOf()).toBe(
+      "((upper(farmproduct) LIKE '%CORN%' OR upper(farmproduct) LIKE '%HAY%')" +
+      " OR (upper(additionalfarmproduct) LIKE '%CORN%' OR upper(additionalfarmproduct) LIKE '%HAY%'))"
+    );
+  });
+
+  it("adds no status clause when quirks.statusValue is absent", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    }));
+    await driver.fetch(FARMS, req({ keywords: ["corn"], cities: [] }));
+    expect(whereOf()).not.toContain("=");   // LIKE clauses only, no status equality
+    expect(urls).toHaveLength(1);
+  });
+
+  it("falls back to address_line for the city filter, and ignores cities when neither is mapped", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    }));
+    await driver.fetch(FARMS, req({ keywords: ["corn"], cities: ["Las Animas"] }));
+    expect(whereOf()).toContain("upper(debtoraddress) LIKE '%LAS ANIMAS%'");
+
+    urls = [];
+    const noAddress: SourceSpec = { ...FARMS, fields: { id: "debtorid", name: "debtorname" } };
+    await driver.fetch(noAddress, req({ keywords: ["corn"], cities: ["Las Animas"] }));
+    expect(whereOf()).not.toContain("LAS ANIMAS");
+  });
+
+  it("keeps the single-field default: keywords against fields.name only", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    }));
+    const plain: SourceSpec = { ...FARMS, quirks: { datasetId: "ej2c-jkvh" } };
+    await driver.fetch(plain, req({ keywords: ["corn"], cities: [] }));
+    expect(whereOf()).toBe("(upper(debtorname) LIKE '%CORN%')");
+  });
+
+  it("maps address_line, naics default, lastSeen, and keyword + field evidence", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => (
+      { ok: true, status: 200, json: async () => [FARM_ROW] } as unknown as Response)));
+    const [e] = await driver.fetch(FARMS, req({ keywords: ["corn"], cities: [] }));
+    expect(e!.id).toBe("co_farm_products:5179196033");
+    expect(e!.address).toEqual({ street: "15030 US Highway 50", city: "Las Animas", state: "CO", zip: "81054" });
+    expect(e!.naics).toEqual(["11"]);
+    expect(e!.lastSeen).toBe("2024-06-26");
+    // keyword evidence runs over each keyword field's value
+    expect(e!.evidence.some(ev => ev.field === "additionalfarmproduct" && ev.note === 'matched "corn"')).toBe(true);
+    expect(e!.evidence.some(ev => ev.field === "farmproduct" && ev.note?.startsWith("matched"))).toBe(false);
+    // evidenceFields land as plain evidence
+    expect(e!.evidence).toContainEqual({ source: "co_farm_products", field: "securedparty", value: "McClave State Bank, PO Box 3" });
+    expect(e!.evidence).toContainEqual({ source: "co_farm_products", field: "farmproduct", value: "All Field Crops" });
+  });
+
+  it("fetchByNames also drops the status clause when absent", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    }));
+    await driver.fetchByNames(FARMS, ["17 SQUARED LLC"]);
+    expect(whereOf()).toContain("LIKE '%%17%SQUARED%%'");
+    expect(whereOf()).not.toContain("=");
+  });
+
+  it("requires only quirks.datasetId", async () => {
+    const bad: SourceSpec = { ...FARMS, quirks: {} };
+    await expect(driver.fetch(bad, req({ keywords: ["corn"] }))).rejects.toThrow(/quirks\.datasetId/);
   });
 });
 
