@@ -1,11 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { naicsTitle, isNaicsCode, naicsIndex, naicsRelated } from "../../packages/registry-core/src/naics.js";
+import { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated } from "../../packages/registry-core/src/naics.js";
 
 describe("naics lookup", () => {
   it("titles known codes at several levels", () => {
     expect(naicsTitle("332312")).toBe("Fabricated Structural Metal Manufacturing");
     expect(naicsTitle("332")).toBe("Fabricated Metal Product Manufacturing");
     expect(naicsTitle("999999")).toBeUndefined();
+  });
+
+  it("naicsLabel falls back to the longest prefix with a title", () => {
+    expect(naicsLabel("332312")).toBe("Fabricated Structural Metal Manufacturing");
+    expect(naicsTitle("323110")).toBeUndefined();   // a 2022 code, absent from the 2017 table
+    expect(naicsLabel("323110")).toBe("Printing");
+    expect(naicsLabel("99")).toBeUndefined();
+    expect(isNaicsCode("323110")).toBe(false);
   });
 
   it("expands sector ranges like 31-33", () => {

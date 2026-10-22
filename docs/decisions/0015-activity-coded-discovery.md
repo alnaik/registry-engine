@@ -81,3 +81,36 @@ their v4 entries unchanged.
 - Recall can be measured against Census County Business Patterns
   establishment counts per NAICS × county (bulk files; the API now needs a
   key).
+
+## Validation (2026-10-22)
+
+Census CBP 2022 (`cbp22co.txt`, employer establishments, Denver County)
+against PPP borrowers whose project county is Denver (deduped on name+zip):
+
+| NAICS | Industry | CBP establishments | PPP borrowers |
+|---|---|---|---|
+| 332 | Fabricated metal products | 79 | 94 |
+| 314 | Textile product mills | 16 | 16 |
+| 315 | Apparel manufacturing | 16 | 39 |
+| 311 | Food manufacturing | 114 | 138 |
+
+PPP matches or exceeds the Census count in every row (it also includes
+non-employers and businesses that have closed since 2021), so for small
+businesses the coded universe is essentially complete as of 2020–21. The
+counts can't be joined record by record (CBP is aggregate), so this shows
+coverage, not per-record precision.
+
+Name search is what v4 relied on, and it would have missed most of them: of
+the 105 Denver-city PPP borrowers coded 332, 28 (27%) have metal, fab,
+weld, steel or iron in their name.
+
+Live runs:
+- "I need someone to sew 500 custom tote bags near Denver" → LLM codes
+  315210 + 314910; top leads were canvas and cut-and-sew shops (2–10 jobs),
+  none with a website in any record.
+- "who would buy my small-batch hot sauce in Boulder" → specialty food
+  stores, restaurants, grocery wholesalers, supermarkets.
+
+These runs found three problems, fixed in Phase 3: briefs never saw the
+user's words, ranking ignored the map's best-first code order, and generic
+words ("custom") became name keywords.

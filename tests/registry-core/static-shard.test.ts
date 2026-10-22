@@ -207,4 +207,19 @@ describe("StaticShardDriver — repo: endpoints and sector shards", () => {
     expect(results.map(e => e.name)).toEqual(["NOT REAL PRODUCE LLC"]);
     expect(fetchMock).toHaveBeenCalledWith("https://example.com/shards/ppp/US-CO/33.json", expect.anything());
   });
+
+  it("rejects a region that is not a plain region code, for repo: and http endpoints, reading nothing", async () => {
+    const fetchMock = stubShardFetch();
+    const httpPpp: SourceSpec = { ...PPP, endpoint: "https://example.com/shards/ppp" };
+    for (const spec of [PPP, httpPpp, { ...PPP, quirks: {} }]) {
+      for (const region of ["../../etc", "us-co", "US-COLO", ""]) {
+        await expect(driver.fetch(spec, req({ region, naics: ["33"] })))
+          .rejects.toThrow(`source "ppp": invalid region "${region}"`);
+      }
+    }
+    expect(vi.mocked(readFile)).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    // a valid region still works
+    expect((await driver.fetch(PPP, req({ region: "US-CO", naics: ["33"] }))).length).toBeGreaterThan(0);
+  });
 });

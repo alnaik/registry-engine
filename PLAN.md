@@ -22,7 +22,7 @@ they can act on today.
 
 ## Phases
 
-### Phase 1 — registry-core: NAICS routing + new sources
+### Phase 1 — registry-core: NAICS routing + new sources ✅
 - NAICS 2017 lookup module (`naics2017.json` built from the Census code
   list + index file by `scripts/data/build_naics.py`).
 - `Intent.naics`, `SourceSpec.coverage.naics`, `Entity.naics/employees/lastSeen`
@@ -36,7 +36,7 @@ they can act on today.
 - Manifest: `ppp`, `epa_echo`, `co_farm_products`; PACA served from the repo.
 - `scripts/data/build_ppp_shards.py` + Colorado shards.
 
-### Phase 2 — qualify + CLI: map, rank, call sheet
+### Phase 2 — qualify + CLI: map, rank, call sheet ✅
 - `map`: LLM → validated NAICS codes for the *leads* (direction-aware);
   no-LLM fallback via the index matcher; `--naics` override; region words
   never become keywords.
@@ -44,12 +44,29 @@ they can act on today.
 - Brief: actionable (why, what's verified vs. not, how to reach, opener).
 - CLI: compact lead cards, `--hidden`, `--csv=<path>`, `--verbose`, summary line.
 
-### Phase 3 — docs + measured validation
+### Phase 3 — docs + measured validation ✅
 - README, CLAUDE.md, SECURITY.md (new URL/SoQL surfaces, individuals' data).
 - One recall check vs Census County Business Patterns (bulk file) for a
   manufacturing query, recorded in ADR 0015's follow-up section.
 
-## Later (only if Phase 3 numbers justify it)
+Phase 3 also fixed what the live runs exposed: briefs now see the request and
+plain facts (no raw evidence notes), fit follows the map's best-first code
+order, generic words never become keywords, NAICS 2022 codes get a parent
+title, the summary separates coded matches from name-only ones, and shard
+paths reject malformed regions. Validation numbers are in ADR 0015.
+
+## Known gaps (from live runs, 2026-10-22)
+- Most coded leads have no phone/email: PPP, ECHO and SoS publish none. The
+  call sheet gives the address, agent/principals and a search link.
+- City filters are exact: "near Denver" excludes Aurora/Englewood. Omit the
+  city for statewide results.
+- PPP codes are self-reported: brands can appear under store codes. The
+  brief prompt discloses this.
+- Sister LLCs at one address (same agent) show as separate leads.
+
+## Later (only if these gaps hurt real use)
+- Metro-area expansion for "near <city>" (zip/county lists in manifest quirks).
+- Phones: FMCSA (trucking) and SAM.gov entity POCs as contact-plane sources.
 - Liveness for PPP-only leads in Denver: city business licenses (`s9wt-dsfz`).
 - Relationship edges: UCC secured parties, PACA claims, federal subawards.
 - FMCSA (trucking, has phones) and SAM.gov entity extract (has POCs).

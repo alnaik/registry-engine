@@ -97,12 +97,12 @@ describe("engine — existence backfill by name, zero-token path", () => {
     expect(mock).toBeDefined();
     expect(mock!.source_ids).toEqual(expect.arrayContaining(["xx_sos", "xx_cat"]));
     expect(mock!.name).toBe("MOCK TRADING, LLC");
-    expect(mock!.evidence.some(ev => ev.note?.startsWith("no xx_sos match"))).toBe(false);
+    expect(mock!.evidence.some(ev => ev.note?.startsWith("not found in xx_sos"))).toBe(false);
 
     const ghost = out.entities.find(e => e.name === "GHOST VENTURES LLC");
     expect(ghost).toBeDefined();
     expect(ghost!.source_ids).toEqual(["xx_cat"]);
-    expect(ghost!.evidence.some(ev => ev.note?.startsWith("no xx_sos match"))).toBe(true);
+    expect(ghost!.evidence.some(ev => ev.note?.startsWith("not found in xx_sos"))).toBe(true);
 
     expect(out.leads.length).toBeGreaterThan(0);
     for (const lead of out.leads) {

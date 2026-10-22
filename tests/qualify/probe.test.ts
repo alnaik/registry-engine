@@ -76,7 +76,7 @@ describe("probeEntities", () => {
   it("flags entities missing the existence source", async () => {
     const e = entity({ id: "paca:1", source_ids: ["paca"] });
     await probeEntities([e], { fetchImpl: dohFetch({}), existenceSourceId: "co_sos" });
-    expect(e.evidence.some(ev => ev.field === "existence" && ev.note?.includes("no co_sos match"))).toBe(true);
+    expect(e.evidence.some(ev => ev.field === "existence" && ev.note?.includes("not found in co_sos"))).toBe(true);
   });
 
   it("respects the probe limit", async () => {
