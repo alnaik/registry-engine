@@ -1,22 +1,27 @@
-import type { Entity, SourceSpec, DriverRegistry, FetchRetryOptions } from "@registry-engine/registry-core";
-import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities, normalizeName, localityCompatible } from "@registry-engine/registry-core";
+import type { Entity, SourceSpec, DriverRegistry, FetchRetryOptions, LatLon } from "@registry-engine/registry-core";
+import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities, regionPlaces, resolveLocation, normalizeName, localityCompatible } from "@registry-engine/registry-core";
 import { createLlm, type Llm, type LlmConfig } from "./llm/adapter.js";
 import { mapQuery, type MapResult } from "./verbs/map.js";
 import { probeEntities, type ProbeResult } from "./verbs/probe.js";
 import { briefLeads, rankEntities, type Lead, type RankContext } from "./verbs/brief.js";
+import { findContacts, fileContactCache, providerFromEnv, type ContactCache, type WebSearchProvider } from "./verbs/contacts.js";
 
 // The whole product: map -> route -> fetch -> probe -> brief.
 // Hard budget: at most 2 LLM calls per search (map may be 0), enforced by
 // the adapter's call counter — a per-candidate call anywhere throws.
 
+export interface Origin { label: string; lat: number; lon: number }
+
 export type EngineEvent =
   | { type: "map"; map: MapResult }
+  | { type: "origin"; origin: Origin | null }
   | { type: "routed"; sources: SourceSpec[] }
   | { type: "fetched"; sourceId: string; count: number }
   | { type: "source_error"; sourceId: string; message: string }
   | { type: "merged"; count: number }
   | { type: "backfilled"; sourceId: string; count: number }
   | { type: "probed"; count: number }
+  | { type: "contacts"; provider: string; looked: number; found: number; costDollars: number }
   | { type: "done"; leads: Lead[] };
 
 export interface SearchConfig {
@@ -29,6 +34,10 @@ export interface SearchConfig {
   maxLeads?: number | undefined;
   naics?: string[] | undefined;     // user-supplied lead codes; skips the map LLM call
   hiddenOnly?: boolean | undefined; // keep only leads with no website on any public record
+  near?: string | undefined;        // ZIP or place name the leads are measured from
+  radiusMi?: number | undefined;    // drop leads farther than this from the origin
+  contacts?: WebSearchProvider | null | undefined;  // web contact lookup; undefined -> from env keys, null -> off
+  contactCache?: ContactCache | undefined;          // default: ~/.cache/registry-engine/contacts.json
   fetchOpts?: FetchRetryOptions | undefined;
   onEvent?: ((e: EngineEvent) => void) | undefined;
 }
@@ -40,6 +49,8 @@ export interface SearchOutcome {
   leads: Lead[];     // the top-N briefed slice of `ranked`
   ranked: Lead[];    // every ranked lead (template briefs beyond the top N)
   llmCalls: number;
+  origin: Origin | null;   // where distances are measured from, if anywhere
+  contactLookups: { provider: string; looked: number; found: number; costDollars: number } | null;
 }
 
 export const MAX_LLM_CALLS_PER_SEARCH = 2;
@@ -62,8 +73,19 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   }
 
   const region = cfg.region ?? defaultRegion(sources);
-  const map = await mapQuery(query, llm, { region, cities: regionCities(sources, region), naics: cfg.naics });
+  const map = await mapQuery(query, llm, { region, cities: regionCities(sources, region), places: regionPlaces(region), naics: cfg.naics });
   emit({ type: "map", map });
+
+  // The origin is the user's location: --near, else the first city named in
+  // the request. With an origin the whole region is fetched and the city
+  // only centers the distance bands; without one, city filtering stays.
+  const originInput = cfg.near ?? map.intent.geo.cities[0];
+  const resolved = originInput === undefined ? undefined : resolveLocation(region, originInput);
+  const originPoint: LatLon | undefined = resolved?.point;
+  const origin: Origin | null = resolved === undefined
+    ? null
+    : { label: resolved.label, lat: resolved.point.lat, lon: resolved.point.lon };
+  emit({ type: "origin", origin });
 
   const routed = route(map.intent, sources);
   emit({ type: "routed", sources: routed });
@@ -82,7 +104,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
       const entities = await driver.fetch(spec, {
         keywords: map.keywords,
         region: map.intent.geo.region,
-        cities: map.intent.geo.cities,
+        cities: origin === null ? map.intent.geo.cities : [],
         naics: map.intent.naics,
         limit: cfg.limit,
       }, cfg.fetchOpts);
@@ -99,7 +121,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // Preliminary rank (no probes yet): decides whose names are worth an
   // existence lookup, and later who gets the probe budget.
   const existenceIds = routed.filter(s => s.plane === "existence").map(s => s.id);
-  const ctx: RankContext = { naics: map.intent.naics, existenceIds };
+  const ctx: RankContext = { naics: map.intent.naics, existenceIds, origin: originPoint, region };
   let entities = mergeEntities(fetched);
   const preliminary = rankEntities(entities, new Map(), ctx).map(l => l.entity);
 
@@ -156,13 +178,27 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
 
   let ranked = rankEntities(entities, probes, ctx);
   if (cfg.hiddenOnly === true) ranked = ranked.filter(l => l.web === "none");
+  if (cfg.radiusMi !== undefined && origin !== null) {
+    const radius = cfg.radiusMi;
+    ranked = ranked.filter(l => l.distanceMi !== null && l.distanceMi <= radius);
+  }
+
+  // Web contact lookup for the top leads: not an LLM call, capped by
+  // maxLeads and cached. Ranking above never saw it.
+  const provider = cfg.contacts === undefined ? providerFromEnv() : cfg.contacts;
+  let contactLookups: SearchOutcome["contactLookups"] = null;
+  if (provider !== null) {
+    const stats = await findContacts(ranked, provider, { limit: maxLeads, cache: cfg.contactCache ?? fileContactCache() });
+    contactLookups = { provider: provider.name, ...stats };
+    emit({ type: "contacts", ...contactLookups });
+  }
 
   const sourceNames = Object.fromEntries(routed.map(s => [s.id, s.name]));
   await briefLeads(ranked, map, llm, { maxLeads, sourceNames, existenceIds, query });
   const leads = ranked.slice(0, maxLeads);
   emit({ type: "done", leads });
 
-  return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0 };
+  return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0, origin, contactLookups };
 }
 
 function planeRank(s: SourceSpec): number {

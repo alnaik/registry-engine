@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { search, MAX_LLM_CALLS_PER_SEARCH } from "@registry-engine/qualify";
-import type { Lead } from "@registry-engine/qualify";
+import type { Lead, FoundContact } from "@registry-engine/qualify";
 import { SOURCES, knownRegions, naicsIndex, naicsLabel } from "@registry-engine/registry-core";
 import type { Entity } from "@registry-engine/registry-core";
 import { ClaudeCodeBackend } from "./claudeCodeBackend.js";
@@ -60,6 +60,9 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     maxLeads: flags["leads"] !== undefined ? parseInt(flags["leads"], 10) : undefined,
     naics,
     hiddenOnly: flags["hidden"] === "true",
+    near: flags["near"] !== undefined && flags["near"] !== "true" ? flags["near"] : undefined,
+    radiusMi: flags["radius"] !== undefined ? parseFloat(flags["radius"]) : undefined,
+    ...(flags["no-contacts"] === "true" ? { contacts: null } : {}),
     onEvent: event => {
       switch (event.type) {
         case "map":
@@ -67,6 +70,11 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
           console.log(`        via=${event.map.via}`);
           console.log(`        lead codes: ${event.map.intent.naics.map(c => `${c} ${naicsLabel(c) ?? ""}`.trim()).join("; ") || "none"}`);
           for (const c of event.map.caveats) console.log(`        ⚠ ${c}`);
+          break;
+        case "origin":
+          console.log(event.origin === null
+            ? "origin  none — results not grouped by distance"
+            : `origin  ${event.origin.label}`);
           break;
         case "routed":
           console.log(`route   ${event.sources.map(s => `${s.id}(${s.plane})`).join(" + ") || "no sources for this category∩geo"}`);
@@ -87,6 +95,9 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
         case "probed":
           console.log(`probe   ${event.count} entities checked (DNS A+MX)`);
           break;
+        case "contacts":
+          console.log(`contacts ${event.provider}: ${event.looked} looked up, ${event.found} found`);
+          break;
         default:
           break;
       }
@@ -96,8 +107,21 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   const existenceIds = out.routed.filter(r => r.plane === "existence").map(r => r.id);
   console.log(`\n${"═".repeat(64)}`);
   for (const line of summaryLines(out.ranked, out.map.intent.naics)) console.log(line);
+  if (out.contactLookups !== null) {
+    const c = out.contactLookups;
+    console.log(`Contact lookups: ${c.looked} via ${c.provider}, ${c.found} found, ~$${c.costDollars.toFixed(2)}`);
+  } else if (flags["no-contacts"] !== "true") {
+    console.log("Contact lookups: off — set EXA_API_KEY or PARALLEL_API_KEY to find websites and phones for the top leads.");
+  }
   console.log(`Showing ${out.leads.length} | fetched: ${fetchedCounts.join(", ") || "no sources"} | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}\n`);
-  out.leads.forEach((lead, i) => printLead(lead, i + 1, existenceIds, flags["verbose"] === "true"));
+  let band = "";
+  out.leads.forEach((lead, i) => {
+    if (lead.band !== "" && lead.band !== band) {
+      band = lead.band;
+      console.log(`── ${band} ──\n`);
+    }
+    printLead(lead, i + 1, existenceIds, flags["verbose"] === "true");
+  });
 
   if (flags["csv"] !== undefined && flags["csv"] !== "true") {
     writeFileSync(flags["csv"], leadsToCsv(out.ranked, existenceIds));
@@ -108,8 +132,8 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
 function printLead(lead: Lead, rank: number, existenceIds: string[], verbose: boolean): void {
   const e = lead.entity;
   const place = [e.address.city, e.address.zip].filter(v => v !== undefined && v !== "").join(" ");
-  const head = [place, e.employees !== undefined ? `${e.employees} jobs` : ""].filter(Boolean).join(" · ");
-  console.log(`${String(rank).padStart(2)}. [${String(lead.score).padStart(3)}] ${e.name}${head !== "" ? ` — ${head}` : ""}`);
+  const head = [place, e.employees !== undefined ? `${e.employees} ${e.employees === 1 ? "job" : "jobs"}` : ""].filter(Boolean).join(" · ");
+  console.log(`${String(rank).padStart(2)}. [${String(lead.score).padStart(3)}] ${e.name}${head !== "" ? ` — ${head}` : ""}${lead.distanceMi !== null ? ` · ${lead.distanceMi} mi` : ""}`);
 
   const codes = e.naics.slice(0, 2).map(c => `${c} ${naicsLabel(c) ?? ""}`.trim()).join(", ");
   console.log(`      what   ${[codes || "name match only", e.source_ids.join(" + ")].join(" · ")}`);
@@ -134,10 +158,22 @@ function printLead(lead: Lead, rank: number, existenceIds: string[], verbose: bo
       ? `published domain did not resolve → ${lead.searchUrl ?? ""}`
       : `none listed in these records → ${lead.searchUrl ?? ""}`;
   console.log(`      web    ${web}`);
+  if (lead.found !== undefined) console.log(`      found   ${foundLine(lead.found)}`);
   if (lead.brief !== "") console.log(`      brief  ${lead.brief}`);
   if (lead.opener !== "") console.log(`      say    "${lead.opener}"`);
   if (verbose) printEvidence(e);
   console.log();
+}
+
+// One line for a web-search contact lookup. Always labelled "verify": the
+// values come from web pages, not from a registry.
+function foundLine(f: FoundContact): string {
+  if (f.status === "skipped") return "not searched (individual's record)";
+  const parts = [f.phone, f.email, f.website].filter((v): v is string => v !== undefined && v !== "");
+  if (parts.length > 0) return `${parts.join(" · ")}  (via ${f.provider}, verify)`;
+  if (f.listings.length > 0) return `listed on ${f.listings.join(", ")} (via ${f.provider})`;
+  if (f.reason !== undefined) return `${f.reason} (via ${f.provider})`;
+  return "web search found nothing — likely no web presence";
 }
 
 function printEvidence(e: Entity): void {
@@ -183,6 +219,11 @@ Flags:
   --no-llm      run the zero-token path only (static map + template briefs)
   --region=<US-XX>  region to search (default: first region in the source manifest)
   --naics=<c1,c2>   NAICS codes of the businesses to contact (skips the map LLM call)
+  --near=<zip|place>  measure distance from this ZIP or place (default: the city named in the
+                      query); the whole region is searched and leads are grouped by distance
+  --radius=<miles>    drop leads farther than this from the origin
+  --no-contacts       skip the web contact lookup (otherwise on when EXA_API_KEY or
+                      PARALLEL_API_KEY is set; at most one web search per briefed lead)
   --hidden      only leads with no website on any public record
   --csv=<path>  write every ranked lead to a CSV file
   --verbose     print the evidence lines under each lead

@@ -1,10 +1,12 @@
 export { search, MAX_LLM_CALLS_PER_SEARCH } from "./engine.js";
-export type { SearchConfig, SearchOutcome, EngineEvent } from "./engine.js";
+export type { SearchConfig, SearchOutcome, EngineEvent, Origin } from "./engine.js";
 export { createLlm, Llm, LlmCallBudgetError, TIER_MODELS } from "./llm/adapter.js";
 export type { Tier, RawLlm, RawCompleteOptions, LlmConfig, LlmCallOptions } from "./llm/adapter.js";
 export { mapQuery, parseMapResponse, MAP_SYSTEM } from "./verbs/map.js";
 export type { MapResult } from "./verbs/map.js";
 export { probeEntities, publishedDomain } from "./verbs/probe.js";
 export type { ProbeResult, ProbeOptions } from "./verbs/probe.js";
-export { briefLeads, rankEntities, scoreEntity, webPresence, templateBrief, templateOpener, parseBriefResponse, webSearchUrl, BRIEF_SYSTEM } from "./verbs/brief.js";
+export { briefLeads, rankEntities, DISTANCE_BANDS, scoreEntity, webPresence, templateBrief, templateOpener, parseBriefResponse, webSearchUrl, BRIEF_SYSTEM } from "./verbs/brief.js";
 export type { Lead, WebPresence, RankContext, BriefContext } from "./verbs/brief.js";
+export { exaProvider, parallelProvider, providerFromEnv, extractContact, isLikelyIndividual, fileContactCache, memoryContactCache, findContacts } from "./verbs/contacts.js";
+export type { WebResult, WebSearchProvider, FoundContact, ContactCache } from "./verbs/contacts.js";

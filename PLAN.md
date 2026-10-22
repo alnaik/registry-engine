@@ -56,6 +56,26 @@ order, generic words never become keywords, NAICS 2022 codes get a parent
 title, the summary separates coded matches from name-only ones, and shard
 paths reject malformed regions. Validation numbers are in ADR 0015.
 
+### Phase 4 — distance from the user + web contact lookup
+- Census Gazetteer ZIP/place centroids (`scripts/data/build_geo.py`).
+- A city in the request (or `--near`) becomes the *center*: search the whole
+  state, group leads into distance bands, optional `--radius`.
+- Contact lookup for the top N leads through Exa or Parallel (env key),
+  extracted deterministically (name + place match, directory vs own site),
+  with source URLs, cached 30 days, and never run for an individual's record.
+  Web text never reaches the LLM. Ranking still ignores contacts.
+
+### Phase 5 — local web app
+- `npm start` → http://localhost:4317: search, live progress, results
+  grouped by distance, contact/opener/brief cards, outreach tracker
+  (localStorage), CSV export, print-friendly call sheet. Vanilla HTML/JS, no
+  build, localhost-only with Host check and CSP.
+
+### Phase 6 — independent audit
+- A Fable 5.1 (medium effort) audit of the product for correctness, honesty,
+  UX and security issues. Fix confirmed high-severity findings and record the
+  rest here.
+
 ## Known gaps (from live runs, 2026-10-22)
 - Most coded leads have no phone/email: PPP, ECHO and SoS publish none. The
   call sheet gives the address, agent/principals and a search link.

@@ -5,6 +5,8 @@ export { loadManifest, ManifestError } from "./manifest.js";
 export { SOURCES } from "./sources/index.js";
 export { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated } from "./naics.js";
 export { route } from "./route.js";
+export { zipCentroid, placeCentroid, regionPlaces, milesBetween, resolveLocation, entityPoint } from "./geo.js";
+export type { LatLon } from "./geo.js";
 export { knownRegions, defaultRegion, regionCities } from "./regions.js";
 export { defaultDrivers, SocrataDriver, StaticShardDriver, EchoDriver, soqlSafeLiteral, rowToEntity } from "./drivers/index.js";
 export { MemoryCache } from "./util/cache.js";

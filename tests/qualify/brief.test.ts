@@ -32,7 +32,7 @@ const MAP: MapResult = {
 };
 
 function lead(e: Entity, overrides: Partial<Lead> = {}): Lead {
-  return { entity: e, score: 0, probe: undefined, web: "none", brief: "", opener: "", searchUrl: null, ...overrides };
+  return { entity: e, score: 0, probe: undefined, web: "none", brief: "", opener: "", searchUrl: null, distanceMi: null, band: "", ...overrides };
 }
 
 describe("scoreEntity", () => {
@@ -289,5 +289,58 @@ describe("templateBrief / templateOpener", () => {
     const sell: MapResult = { ...MAP, intent: { ...MAP.intent, direction: "sell" } };
     expect(templateOpener(lead(entity({ name: "Plain Co" })), sell)).toBe(
       "Hi — I found Plain Co listed as a local business. I sell to businesses like yours; who handles purchasing?");
+  });
+});
+
+describe("rankEntities — distance", () => {
+  const origin = { lat: 39.7392, lon: -104.9903 };   // downtown Denver
+
+  it("bands and orders by distance before score; no origin keeps the plain order", () => {
+    const near = entity({ id: "x:1", name: "Near", address: { zip: "80202" }, naics: ["722511"] });
+    const far = entity({ id: "x:2", name: "Far", address: { zip: "80903" }, naics: ["332312"] });
+    const lost = entity({ id: "x:3", name: "Lost", address: { city: "Atlantis" }, naics: ["332312"] });
+    const ranked = rankEntities([lost, far, near], new Map(), { ...CTX, origin, region: "US-CO" });
+    expect(ranked.map(l => l.entity.name)).toEqual(["Near", "Far", "Lost"]);
+    expect(ranked.map(l => l.band)).toEqual(["within 10 mi", "50–100 mi", "distance unknown"]);
+    expect(ranked[0]!.distanceMi).toBeLessThan(2);
+    expect(ranked[2]!.distanceMi).toBeNull();
+
+    const plain = rankEntities([lost, far, near], new Map(), CTX);
+    expect(plain.map(l => l.band)).toEqual(["", "", ""]);
+    expect(plain.every(l => l.distanceMi === null)).toBe(true);
+    expect(plain[2]!.entity.name).toBe("Near");   // lowest score last, as before
+  });
+});
+
+describe("found contacts in briefs", () => {
+  it("template reach uses what was found online, marked for verification", () => {
+    const l = lead(entity({}), {
+      found: { status: "found", provider: "exa", website: "https://acme.example", phone: "(303) 555-0142", listings: [], sourceUrls: [] },
+    });
+    expect(templateBrief(l, MAP)).toContain("Found online (verify): (303) 555-0142, https://acme.example.");
+    const listed = lead(entity({}), { found: { status: "directory", provider: "exa", listings: ["yelp.com", "bbb.org"], sourceUrls: [] } });
+    expect(templateBrief(listed, MAP)).toContain("Listed on yelp.com, bbb.org.");
+    const none = lead(entity({}), { found: { status: "not-found", provider: "exa", listings: [], sourceUrls: [] } });
+    expect(templateBrief(none, MAP)).toContain("No phone/email on record");
+    const skipped = lead(entity({}), { found: { status: "skipped", provider: "exa", listings: [], sourceUrls: [] } });
+    expect(templateBrief(skipped, MAP)).toContain("No phone/email on record");
+  });
+
+  it("the LLM packing carries found strings only, and nothing for skipped leads", async () => {
+    let prompt = "";
+    const backend: RawLlm = { complete: async (p: string) => { prompt = p; return "[]"; } };
+    const leads = [
+      lead(entity({ id: "x:1", name: "Alpha" }), { found: { status: "found", provider: "exa", phone: "(303) 555-0142", website: "https://alpha.example", listings: [], sourceUrls: ["https://alpha.example/"] } }),
+      lead(entity({ id: "x:2", name: "Beta" }), { found: { status: "not-found", provider: "exa", listings: [], sourceUrls: [] } }),
+      lead(entity({ id: "x:3", name: "Gamma" }), { found: { status: "skipped", provider: "exa", listings: [], sourceUrls: [] } }),
+      lead(entity({ id: "x:4", name: "Delta" }), { found: { status: "directory", provider: "exa", listings: ["yelp.com"], sourceUrls: [] } }),
+    ];
+    await briefLeads(leads, MAP, createLlm({ backend }), {});
+    const lines = prompt.split("\n");
+    expect(lines.find(x => x.startsWith("#0"))).toContain("found online: (303) 555-0142, https://alpha.example");
+    expect(lines.find(x => x.startsWith("#1"))).toContain("found online: web search found nothing");
+    expect(lines.find(x => x.startsWith("#2"))).not.toContain("found online");
+    expect(lines.find(x => x.startsWith("#3"))).toContain("found online: listed on yelp.com");
+    expect(prompt).not.toContain("alpha.example/");
   });
 });

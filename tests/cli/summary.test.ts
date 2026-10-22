@@ -8,7 +8,7 @@ function lead(naics: string[], web: Lead["web"]): Lead {
       id: `x:${naics.join("")}${web}`, name: "Acme", names: [], status: "", address: {}, officers: [],
       naics, contacts: [], source_ids: ["ppp"], evidence: [],
     },
-    score: 0, probe: undefined, web, brief: "", opener: "", searchUrl: null,
+    score: 0, probe: undefined, web, brief: "", opener: "", searchUrl: null, distanceMi: null, band: "",
   };
 }
 

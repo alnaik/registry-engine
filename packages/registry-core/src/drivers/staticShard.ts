@@ -20,9 +20,9 @@ import { fileURLToPath } from "node:url";
 // Only the sectors the request's codes fall in are read; a missing sector
 // file just means no records there.
 
-// Local data, no request cost: fetch generously and let ranking decide what
-// is shown.
-const DEFAULT_LIMIT = 5000;
+// Local data, no request cost: no cap — ranking and grouping decide what is
+// shown.
+const DEFAULT_LIMIT = Infinity;
 
 interface ShardFile {
   records: Record<string, unknown>[];
