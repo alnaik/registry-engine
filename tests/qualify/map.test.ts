@@ -166,3 +166,31 @@ describe("parseMapResponse hardening", () => {
     expect(r!.caveats).toContain("static caveat");
   });
 });
+
+describe("mapQuery — gazetteer places", () => {
+  const PLACES = ["denver", "castle rock", "golden", "boulder", "colorado springs", "springs"];
+
+  it("detects a place after a locative", async () => {
+    const r = await mapQuery("metal fabrication near castle rock", null, { region: "US-CO", cities: [], places: PLACES });
+    expect(r.intent.geo.cities).toEqual(["Castle Rock"]);
+    expect(r.intent.naics).toContain("332312");
+    expect(r.keywords).not.toContain("castle");
+    expect(r.keywords).not.toContain("rock");
+  });
+
+  it("does not read a place name used as an ordinary word", async () => {
+    const r = await mapQuery("golden retriever groomer", null, { region: "US-CO", cities: [], places: PLACES });
+    expect(r.intent.geo.cities).toEqual([]);
+  });
+
+  it("prefers the longest place and dedupes against curated cities", async () => {
+    const r = await mapQuery("bakeries in colorado springs and near denver", null,
+      { region: "US-CO", cities: ["Denver", "Colorado Springs"], places: PLACES });
+    expect(r.intent.geo.cities).toEqual(["Colorado Springs", "Denver"]);
+  });
+
+  it("curated cities still match anywhere", async () => {
+    const r = await mapQuery("boulder bakeries", null, { ...CO, places: PLACES });
+    expect(r.intent.geo.cities).toEqual(["Boulder"]);
+  });
+});

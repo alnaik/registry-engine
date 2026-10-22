@@ -1,5 +1,7 @@
 import type { Entity } from "@registry-engine/registry-core";
-import { naicsLabel } from "@registry-engine/registry-core";
+import type { LatLon } from "@registry-engine/registry-core";
+import { naicsLabel, entityPoint, milesBetween } from "@registry-engine/registry-core";
+import type { FoundContact } from "./contacts.js";
 import type { Llm } from "../llm/adapter.js";
 import type { MapResult } from "./map.js";
 import type { ProbeResult } from "./probe.js";
@@ -17,6 +19,20 @@ export interface RankContext {
   naics: string[];          // NAICS codes/prefixes of the leads being sought
   existenceIds: string[];   // routed existence-plane source ids
   now?: Date | undefined;   // for recency; defaults to the current time
+  origin?: LatLon | undefined;   // the user's location; leads are banded by distance from it
+  region?: string | undefined;   // region code, for city centroids when a lead has no usable ZIP
+}
+
+// Distance bands, nearest first. "" (no origin) sorts as one group.
+export const DISTANCE_BANDS = ["within 10 mi", "10–25 mi", "25–50 mi", "50–100 mi", "100+ mi", "distance unknown"] as const;
+
+function bandFor(distanceMi: number | null): string {
+  if (distanceMi === null) return "distance unknown";
+  if (distanceMi <= 10) return DISTANCE_BANDS[0];
+  if (distanceMi <= 25) return DISTANCE_BANDS[1];
+  if (distanceMi <= 50) return DISTANCE_BANDS[2];
+  if (distanceMi <= 100) return DISTANCE_BANDS[3];
+  return DISTANCE_BANDS[4];
 }
 
 export interface Lead {
@@ -28,6 +44,9 @@ export interface Lead {
   opener: string;
   // ready-to-open web search for leads without a verified website
   searchUrl: string | null;
+  distanceMi: number | null;   // miles from the origin (0.1 precision); null = no origin or no usable location
+  band: string;                // distance band heading; "" when there is no origin
+  found?: FoundContact | undefined;   // web-search contact lookup (never used for ranking)
 }
 
 export interface BriefContext {
@@ -89,10 +108,17 @@ export function webSearchUrl(entity: Entity): string {
 }
 
 export function rankEntities(entities: Entity[], probes: Map<string, ProbeResult>, ctx: RankContext): Lead[] {
+  const origin = ctx.origin;
+  const region = ctx.region ?? "";
+  const bandOrder = (band: string): number => Math.max(0, DISTANCE_BANDS.indexOf(band as typeof DISTANCE_BANDS[number]));
   return entities
     .map(entity => {
       const probe = probes.get(entity.id);
       const web = webPresence(entity, probe);
+      const point = origin === undefined ? undefined : entityPoint(entity, region);
+      const distanceMi = origin === undefined || point === undefined
+        ? null
+        : Math.round(milesBetween(origin, point) * 10) / 10;
       return {
         entity,
         score: scoreEntity(entity, ctx),
@@ -101,10 +127,14 @@ export function rankEntities(entities: Entity[], probes: Map<string, ProbeResult
         brief: "",
         opener: "",
         searchUrl: web === "verified" ? null : webSearchUrl(entity),
+        distanceMi,
+        band: origin === undefined ? "" : bandFor(distanceMi),
       };
     })
     .sort((a, b) =>
-      b.score - a.score
+      bandOrder(a.band) - bandOrder(b.band)
+      || b.score - a.score
+      || (a.distanceMi ?? Infinity) - (b.distanceMi ?? Infinity)
       || (b.entity.employees ?? -1) - (a.entity.employees ?? -1)
       || a.entity.name.localeCompare(b.entity.name));
 }
@@ -146,6 +176,7 @@ export async function briefLeads(
       e.lastSeen !== undefined ? `last record: ${e.lastSeen}` : "",
       e.contacts.length > 0 ? `contacts: ${e.contacts.join(" ")}` : "no contacts",
       `web: ${l.web}`,
+      foundOnline(l.found),
     ].filter(Boolean).join(" | ");
   }).join("\n");
 
@@ -229,12 +260,33 @@ export function templateBrief(lead: Lead, map: MapResult, ctx: BriefContext = {}
         : `Last record ${e.lastSeen} — confirm it still operates`;
 
   const size = e.employees !== undefined ? `${e.employees} jobs reported` : "";
-  const reach = e.contacts.length > 0
+  const foundText = foundReach(lead.found);
+  const recorded = e.contacts.length > 0
     ? e.contacts.join(", ")
     : `No phone/email on record — use the address${e.officers.length > 0 ? " and named officers" : ""} or the search link`;
+  const reach = foundText === "" ? recorded : e.contacts.length > 0 ? `${recorded}. ${foundText}` : foundText;
 
   const text = [what, alive, size, reach].filter(p => p !== "").map(p => `${p}.`).join(" ");
   return clampWords([text, ...map.caveats.map(c => `Caveat: ${c}.`)].join(" "), TEMPLATE_WORDS);
+}
+
+// Template-brief reach text from a web-search contact lookup. Strings only;
+// "skipped" and "not-found" add nothing.
+function foundReach(found: FoundContact | undefined): string {
+  if (found === undefined) return "";
+  const parts = [found.phone, found.email, found.website].filter((v): v is string => v !== undefined && v !== "");
+  if (parts.length > 0) return `Found online (verify): ${parts.join(", ")}`;
+  if (found.listings.length > 0) return `Listed on ${found.listings.join(", ")}`;
+  return "";
+}
+
+// The LLM-packing line for the same lookup: strings only, never page text.
+function foundOnline(found: FoundContact | undefined): string {
+  if (found === undefined || found.status === "skipped") return "";
+  const parts = [found.phone, found.email, found.website].filter((v): v is string => v !== undefined && v !== "");
+  if (parts.length > 0) return `found online: ${parts.join(", ")}`;
+  if (found.listings.length > 0) return `found online: listed on ${found.listings.join(", ")}`;
+  return "found online: web search found nothing";
 }
 
 export function templateOpener(lead: Lead, map: MapResult): string {

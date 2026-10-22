@@ -122,12 +122,23 @@ const US_STATE_NAMES = [
 ];
 const STATE_WORDS = new Set(US_STATE_NAMES.flatMap(n => n.split(" ")));
 
+const LOCATIVES = "in|near|around|by|outside of|outside|close to|from";
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 const SELL_CAVEAT = "registries record what a business IS, never what it currently buys — every buyer lead is a fit-by-industry, not a confirmed demand";
 
 export async function mapQuery(
   query: string,
   llm: Llm | null,
-  opts: { region: string; cities?: string[] | undefined; naics?: string[] | undefined }
+  opts: {
+    region: string;
+    cities?: string[] | undefined;   // curated list (manifest quirks), matched anywhere in the query
+    places?: string[] | undefined;   // gazetteer place names, matched only after a locative ("near castle rock")
+    naics?: string[] | undefined;
+  }
 ): Promise<MapResult> {
   const region = opts.region;
   const q = query.toLowerCase();
@@ -136,7 +147,26 @@ export async function mapQuery(
   // a hardcoded table. Sort longest-first so "colorado springs" wins over
   // a stray "springs" match.
   const cityTable = (opts.cities ?? []).map(c => c.toLowerCase()).sort((a, b) => b.length - a.length);
-  const cities: string[] = cityTable.filter(c => q.includes(c));
+  const found: Array<{ city: string; at: number }> = [];
+  for (const c of cityTable) {
+    const at = q.indexOf(c);
+    if (at >= 0) found.push({ city: c, at });
+  }
+  // Any place in the region, but only after a locative: "golden retriever
+  // groomer" is not a search near Golden.
+  const places = [...(opts.places ?? [])].sort((a, b) => b.length - a.length);
+  const matchedPlaces: string[] = [];
+  for (const place of places) {
+    if (matchedPlaces.some(m => m.includes(place))) continue;   // "springs" inside "colorado springs"
+    const re = new RegExp(`\\b(?:${LOCATIVES})\\s+${escapeRegex(place)}\\b`);
+    const m = re.exec(q);
+    if (m === null) continue;
+    matchedPlaces.push(place);
+    found.push({ city: place, at: m.index + m[0].length - place.length });
+  }
+  found.sort((a, b) => a.at - b.at);
+  const cities: string[] = [];
+  for (const f of found) if (!cities.includes(f.city)) cities.push(f.city);
   const geo = { region, cities: cities.map(titleCase) };
 
   const direction: Intent["direction"] = SELL_PATTERN.test(q) ? "sell" : "buy";

@@ -9,6 +9,7 @@ export const CSV_HEADER = [
   "rank", "score", "name", "other_names", "street", "city", "state", "zip",
   "naics", "naics_titles", "employees", "last_seen", "sources", "on_state_registry",
   "contacts", "web", "search_url", "officers", "brief", "opener",
+  "distance_mi", "band", "found_status", "found_phone", "found_email", "found_website", "found_sources",
 ] as const;
 
 export function csvCell(value: string | number | undefined): string {
@@ -41,6 +42,13 @@ export function leadsToCsv(leads: Lead[], existenceIds: string[]): string {
       e.officers.join("; "),
       lead.brief,
       lead.opener,
+      lead.distanceMi ?? "",
+      lead.band,
+      lead.found?.status ?? "",
+      lead.found?.phone,
+      lead.found?.email,
+      lead.found?.website,
+      lead.found?.sourceUrls.join("; ") ?? "",
     ].map(csvCell).join(",");
   });
   return [CSV_HEADER.map(csvCell).join(","), ...rows].join("\n") + "\n";
