@@ -1,0 +1,2325 @@
+{
+ "source": "paca",
+ "region": "US-CT",
+ "generated": "2026-07-18",
+ "protocol_note": "Recorded from apps.mrp.usda.gov ServiceNow widget API (no CORS; Node-only). See docs/data/paca.md.",
+ "records": [
+  {
+   "license_number": "19192942",
+   "name_of_business": "BETTER VAL-U SUPER MARKETS INC",
+   "license_status": "Active",
+   "physical_city": "CHESHIRE",
+   "physical_state": "CT",
+   "physical_zip_code": "06410",
+   "license_issuance_date": "1961-07-14",
+   "trade_names": [],
+   "branches": [
+    "JERRY'S SUPERMARKET",
+    "BETTER VALU",
+    "BETTER VALU"
+   ],
+   "principals": [
+    "BUZZUTO'S INC",
+    "MICHAEL BOZZUTO"
+   ],
+   "telephone_number": "(205) 250-5374",
+   "email_address": "RSTEINIS@BOZZUTOS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19193316",
+   "name_of_business": "BETHEL FOOD MARKET INC",
+   "license_status": "Active",
+   "physical_city": "BETHEL",
+   "physical_state": "CT",
+   "physical_zip_code": "06801",
+   "license_issuance_date": "1961-08-09",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "STEVEN CARALUZZI",
+    "ROBERT CARALUZZI",
+    "ANTHONY CARALUZZI JR"
+   ],
+   "telephone_number": "(203) 748-3547",
+   "email_address": "STEVE@CARALUZZIS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19195585",
+   "name_of_business": "THURSTON FOODS INC",
+   "license_status": "Active",
+   "physical_city": "WALLINGFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06492",
+   "license_issuance_date": "1962-02-27",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOHN THURSTON",
+    "GOLD STAR FOODS INC",
+    "PETER MALONE"
+   ],
+   "telephone_number": "(203) 265-1525",
+   "email_address": "mike.schuster@thurstonfoods.com",
+   "website": "www.thurstonfoods.com"
+  },
+  {
+   "license_number": "19200249",
+   "name_of_business": "GEISSLER'S SUPER MARKET INC",
+   "license_status": "Active",
+   "physical_city": "E WINDSOR",
+   "physical_state": "CT",
+   "physical_zip_code": "06088",
+   "license_issuance_date": "1963-04-15",
+   "trade_names": [],
+   "branches": [
+    "GEISSLER'S SUPER MARKET",
+    "GEISSLER'S SUPER MARKET",
+    "GEISSLER'S SUPER MARKET",
+    "GEISSLER'S SUPER MARKET",
+    "GEISSLER'S SUPER MARKET",
+    "FITZGERALD FOODS"
+   ],
+   "principals": [
+    "ROBERT RYBICK",
+    "ERIC NILSSON",
+    "ANDREW RYBICK"
+   ],
+   "telephone_number": "(860) 623-0176",
+   "email_address": "apaterwic@geisslers.com",
+   "website": "www.geisslers.com"
+  },
+  {
+   "license_number": "19205807",
+   "name_of_business": "BOZZUTO'S INC",
+   "license_status": "Active",
+   "physical_city": "CHESHIRE",
+   "physical_state": "CT",
+   "physical_zip_code": "06410",
+   "license_issuance_date": "1964-09-04",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JULIANA ESPOSITO",
+    "BYRON RUSSELL",
+    "PATRICIA HOULE",
+    "MICHAEL BOZZUTO",
+    "CHARLES KNOX"
+   ],
+   "telephone_number": "(203) 272-3511",
+   "email_address": "JESPOSITO@BOZZUTOS.COM",
+   "website": "www.bozzutos.com"
+  },
+  {
+   "license_number": "19680695",
+   "name_of_business": "GRADE A MARKET INC",
+   "license_status": "Active",
+   "physical_city": "STAMFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06902",
+   "license_issuance_date": "1967-10-17",
+   "trade_names": [
+    "GRADE A MARKET"
+   ],
+   "branches": [
+    "GRADE A MARKET - NEWFIELD",
+    "SHOPRITE OF NORWALK"
+   ],
+   "principals": [
+    "JOSEPH CINGARI",
+    "KAREN CINGARI",
+    "THOMAS CINGARI",
+    "S.J. CINGARI ARTICLE I IRREVOCABLE TRUST",
+    "K. CINGARI ARTICLE IV TRUST U/A R. CINGA"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19700580",
+   "name_of_business": "CARBONELLA-DESARBO INC",
+   "license_status": "Active",
+   "physical_city": "BRANFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06405",
+   "license_issuance_date": "1969-10-10",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "SHORE CAPITAL PARTNERS",
+    "JOSEPH DESARBO JR"
+   ],
+   "telephone_number": "(203) 624-5127",
+   "email_address": "maria@CARBONELLA.COM",
+   "website": "www.carbonellaanddesarbo.com"
+  },
+  {
+   "license_number": "19760861",
+   "name_of_business": "HARTFORD PROVISION COMPANY THE",
+   "license_status": "Active",
+   "physical_city": "SOUTH WINDSOR",
+   "physical_state": "CT",
+   "physical_zip_code": "06074",
+   "license_issuance_date": "1975-12-29",
+   "trade_names": [
+    "HARTFORD PROVISION COMPANY THE",
+    "HPC FOODSERVICE"
+   ],
+   "branches": [],
+   "principals": [
+    "JEFFREY LOTSTEIN",
+    "SAMUEL LOTSTEIN",
+    "RICHARD LOTSTEIN"
+   ],
+   "telephone_number": "(860) 760-3998",
+   "email_address": "kblaise@hpcfs.com",
+   "website": ""
+  },
+  {
+   "license_number": "19780944",
+   "name_of_business": "J P JARJURA & SONS CO ",
+   "license_status": "Active",
+   "physical_city": "WATERBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06706",
+   "license_issuance_date": "1978-03-21",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MICHAEL JARJURA",
+    "WILLIAM JARJURA",
+    "PETER JARJURA",
+    "CHARLES JARJURA"
+   ],
+   "telephone_number": "(203) 574-0632",
+   "email_address": "jarjuraj@yahoo.com",
+   "website": ""
+  },
+  {
+   "license_number": "19830821",
+   "name_of_business": "MASCARI BROTHERS INC",
+   "license_status": "Active",
+   "physical_city": "New Haven",
+   "physical_state": "CT",
+   "physical_zip_code": "06512",
+   "license_issuance_date": "1983-04-13",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOSEPH MASCARI"
+   ],
+   "telephone_number": "(203) 410-9552",
+   "email_address": "josephinefarace@sbcglobal.net",
+   "website": ""
+  },
+  {
+   "license_number": "19881495",
+   "name_of_business": "COSMO'S FOOD PRODUCTS INC",
+   "license_status": "Active",
+   "physical_city": "WEST HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06516",
+   "license_issuance_date": "1988-07-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MARK LAUDANO",
+    "LAUREN LAUDANO",
+    "COSMO LAUDANO",
+    "LISA LAUDANO"
+   ],
+   "telephone_number": "(203) 933-9323",
+   "email_address": "COSMO@COSMOSFOODS.COM",
+   "website": "WWW.COSMOSFOODS.COM"
+  },
+  {
+   "license_number": "19901579",
+   "name_of_business": "VILLAGE MARKET INCORPORATED",
+   "license_status": "Active",
+   "physical_city": "WILTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06897",
+   "license_issuance_date": "1990-07-26",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "TIMOTHY DOLNIER",
+    "MICHAEL PICHECO",
+    "NANCY DOLNIER"
+   ],
+   "telephone_number": "(203) 726-7283",
+   "email_address": "TIMMAYD@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19920725",
+   "name_of_business": "CITY LINE DISTRIBUTORS INC",
+   "license_status": "Active",
+   "physical_city": "WEST HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06516",
+   "license_issuance_date": "1992-02-24",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "CITY LINE HOLDINGS LLC",
+    "DENNIS SILVA"
+   ],
+   "telephone_number": "(203) 479-5349",
+   "email_address": "DSILVA@CITYLINEFOODS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19930163",
+   "name_of_business": "B W BISHOP & SONS INCORPORATED",
+   "license_status": "Active",
+   "physical_city": "Guilford",
+   "physical_state": "CT",
+   "physical_zip_code": "06437",
+   "license_issuance_date": "1992-10-30",
+   "trade_names": [
+    "Bishop's Orchards Farm Market & Winery",
+    "BISHOP'S ORCHARDS"
+   ],
+   "branches": [],
+   "principals": [
+    "Sarah Dellaventura",
+    "Carrie Healy",
+    "KEITH BISHOP"
+   ],
+   "telephone_number": "(203) 453-2338",
+   "email_address": "keith.bishop@bishopsorchards.com",
+   "website": "WWW.BISHOPSORCHARDS.COM"
+  },
+  {
+   "license_number": "19940165",
+   "name_of_business": "BOZ WHITE HILLS INC",
+   "license_status": "Active",
+   "physical_city": "CHESHIRE",
+   "physical_state": "CT",
+   "physical_zip_code": "06410",
+   "license_issuance_date": "1993-11-01",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "BOZZUTO'S INC",
+    "MICHAEL BOZZUTO"
+   ],
+   "telephone_number": "(203) 929-7982",
+   "email_address": "jesposito@bozzutos.com",
+   "website": ""
+  },
+  {
+   "license_number": "19950251",
+   "name_of_business": "NEW HAVEN PROVISION CO",
+   "license_status": "Active",
+   "physical_city": "EAST HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06513",
+   "license_issuance_date": "1994-11-17",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "BARBARA GIGLIOTTI"
+   ],
+   "telephone_number": "(203) 468-7825",
+   "email_address": "buyer.nhp@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "19960705",
+   "name_of_business": "ROMEOS INC",
+   "license_status": "Active",
+   "physical_city": "ROCKY HILL",
+   "physical_state": "CT",
+   "physical_zip_code": "06067",
+   "license_issuance_date": "1996-01-31",
+   "trade_names": [
+    "WEST SIDE MARKET PLACE"
+   ],
+   "branches": [],
+   "principals": [
+    "LOUIS ROMEO",
+    "CHRISTOPHER ROMEO"
+   ],
+   "telephone_number": "(860) 529-2200",
+   "email_address": "CLROMEO.WESTSIDEMKT@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19960821",
+   "name_of_business": "EDGE OF THE WOODS MARKET INC",
+   "license_status": "Active",
+   "physical_city": "NEW HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06511",
+   "license_issuance_date": "1996-02-13",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "PETER DODGE",
+    "FRANCES DODGE"
+   ],
+   "telephone_number": "(203) 787-1055",
+   "email_address": "mariefranoffice379@yahoo.com",
+   "website": ""
+  },
+  {
+   "license_number": "19960908",
+   "name_of_business": "MCQUADES MARKETPLACE INC",
+   "license_status": "Active",
+   "physical_city": "MYSTIC",
+   "physical_state": "CT",
+   "physical_zip_code": "06355",
+   "license_issuance_date": "1996-02-29",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DIANE MCQUADE",
+    "MICHAEL MCQUADE"
+   ],
+   "telephone_number": "(401) 596-2054",
+   "email_address": "melanie@mcquadesmarket.com",
+   "website": ""
+  },
+  {
+   "license_number": "19961605",
+   "name_of_business": "HY LA BONNES & SONS INC",
+   "license_status": "Active",
+   "physical_city": "WOODBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06798",
+   "license_issuance_date": "1996-05-20",
+   "trade_names": [
+    "LABONNES MARKET"
+   ],
+   "branches": [
+    "Labonnes Market",
+    "LABONNES MARKET",
+    "LABONNES MARKET",
+    "LABONNES MARKET"
+   ],
+   "principals": [
+    "ROBERT LABONNE JR",
+    "ROBERT LABONNE III",
+    "SHELLEY LABONNE"
+   ],
+   "telephone_number": "(203) 263-1940",
+   "email_address": "BOBJR@LABONNES.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19970320",
+   "name_of_business": "SARDILLI PRODUCE & DAIRY CO INC",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "1996-12-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DEVIN SARDILLI",
+    "DON SARDILLI",
+    "JASON SARDILLI"
+   ],
+   "telephone_number": "(860) 525-3237",
+   "email_address": "jimp@sardilliproduce.com",
+   "website": "www.sardilliproduce.com"
+  },
+  {
+   "license_number": "19970581",
+   "name_of_business": "CAPITOL SAUSAGE & PROVISIONS INC",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "1996-12-30",
+   "trade_names": [
+    "CAPITOL SAUSAGE"
+   ],
+   "branches": [],
+   "principals": [
+    "JENNIFER PARMELEE",
+    "WILLIAM DRISCOLL III",
+    "WILLIAM DRISCOLL IV"
+   ],
+   "telephone_number": "(860) 527-5510",
+   "email_address": "jenniferparmelee3@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "19972120",
+   "name_of_business": "HIGHLAND PARK MARKET OF FARMINGTON LLC",
+   "license_status": "Active",
+   "physical_city": "FARMINGTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06032",
+   "license_issuance_date": "1997-09-05",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "TIMOTHY DEVANNEY",
+    "TIMOTHY DEVANNEY",
+    "JOHN DEVANNEY",
+    "TIMOTHY DEVANNEY",
+    "MARY DEVANNEY",
+    "CATHLEEN DYER",
+    "CHRISTINE SHEEHAN"
+   ],
+   "telephone_number": "(860) 646-4277",
+   "email_address": "CATHLEEN@HIGHLANDPARKMARKET.COM",
+   "website": "WWW.HIGHLANDPARKMARKET.COM"
+  },
+  {
+   "license_number": "19990002",
+   "name_of_business": "LEONARDS DANBURY LLC STEW",
+   "license_status": "Active",
+   "physical_city": "DANBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06810",
+   "license_issuance_date": "1998-10-01",
+   "trade_names": [
+    "LEONARDS DANBURY STEW"
+   ],
+   "branches": [
+    "LEONARDS DANBURY STEW",
+    "LEONARDS DANBURY STEW",
+    "LEONARDS DANBURY STEW",
+    "LEONARDS DANBURY STEW",
+    "LEONARDS DANBURY STEW",
+    "LEONARDS DANBURY STEW",
+    "LEONARDS DANBURY STEW",
+    "LEONARDS DANBURY STEW"
+   ],
+   "principals": [
+    "STEWART LEONARD JR"
+   ],
+   "telephone_number": "(203) 847-7213",
+   "email_address": "BBUCKNAM@STEWLEONARDS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "19990330",
+   "name_of_business": "MARQUEZ PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "SOUTH NORWALK",
+   "physical_state": "CT",
+   "physical_zip_code": "06854",
+   "license_issuance_date": "1998-12-09",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "LUIS MARQUEZ"
+   ],
+   "telephone_number": "(203) 853-7210",
+   "email_address": "luis_marquez2@aol.com",
+   "website": ""
+  },
+  {
+   "license_number": "20000605",
+   "name_of_business": "FARM STORE LLC THE",
+   "license_status": "Active",
+   "physical_city": "NEW BRITAIN",
+   "physical_state": "CT",
+   "physical_zip_code": "06053",
+   "license_issuance_date": "2000-01-04",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "SEBASTIAN FONTANA"
+   ],
+   "telephone_number": "(860) 223-0590",
+   "email_address": "thefarmstore166@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20001215",
+   "name_of_business": "FIVE STAR SUPERMARKETS OF NORWICH INC",
+   "license_status": "Active",
+   "physical_city": "NORWICH",
+   "physical_state": "CT",
+   "physical_zip_code": "06360",
+   "license_issuance_date": "2000-06-23",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JEAN CAPANO",
+    "KENNETH CAPANO SR",
+    "SCOTT CAPANO",
+    "KENNETH CAPANO JR"
+   ],
+   "telephone_number": "(860) 887-0409",
+   "email_address": "bre.flores@wakefern.com",
+   "website": ""
+  },
+  {
+   "license_number": "20010114",
+   "name_of_business": "PN MEAT CORP",
+   "license_status": "Active",
+   "physical_city": "BRIDGEPORT",
+   "physical_state": "CT",
+   "physical_zip_code": "06605",
+   "license_issuance_date": "2000-11-07",
+   "trade_names": [],
+   "branches": [
+    "COMPARE FOODS",
+    "Gala Foods Supermarkets"
+   ],
+   "principals": [
+    "PAULINO PENA",
+    "FRANCISCO PENA"
+   ],
+   "telephone_number": "(203) 330-1094",
+   "email_address": "fpena@aol.com",
+   "website": ""
+  },
+  {
+   "license_number": "20010520",
+   "name_of_business": "ALEX FOOD INC",
+   "license_status": "Active",
+   "physical_city": "BRIDGEPORT",
+   "physical_state": "CT",
+   "physical_zip_code": "06608",
+   "license_issuance_date": "2001-01-17",
+   "trade_names": [
+    "Gala Foods"
+   ],
+   "branches": [],
+   "principals": [
+    "CARLOS PENA"
+   ],
+   "telephone_number": "(203) 366-9060",
+   "email_address": "ALEXFOODINC@HOTMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20010536",
+   "name_of_business": "GRADE A MARKET HOPE STREET LLC",
+   "license_status": "Active",
+   "physical_city": "STAMFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06906",
+   "license_issuance_date": "2001-02-06",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "GRADE A MARKET INC"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20020461",
+   "name_of_business": "TINAROSE PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "2002-01-25",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ALFREDO PARZIALE"
+   ],
+   "telephone_number": "(860) 727-8790",
+   "email_address": "TINAROSEPRODUCE@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20021362",
+   "name_of_business": "GRADE A MARKET DERBY LLC",
+   "license_status": "Active",
+   "physical_city": "DERBY",
+   "physical_state": "CT",
+   "physical_zip_code": "06418",
+   "license_issuance_date": "2002-07-30",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "THOMAS CINGARI",
+    "GRADE A MARKET INC"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20030045",
+   "name_of_business": "COAST TO COAST PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "CHESHIRE",
+   "physical_state": "CT",
+   "physical_zip_code": "06410",
+   "license_issuance_date": "2002-10-16",
+   "trade_names": [
+    "COAST TO COAST PRODUCE"
+   ],
+   "branches": [
+    "COAST TO COAST PRODUCE",
+    "COAST TO COAST PRODUCE"
+   ],
+   "principals": [
+    "THEODORE KULPIK JR",
+    "BEVERLY GROVE",
+    "LINDA SPRY",
+    "COAST TO COAST HLDING INC"
+   ],
+   "telephone_number": "(203) 271-2006",
+   "email_address": "kpalmieri@ctcproduce.com",
+   "website": "WWW.CTCPRODUCE.COM"
+  },
+  {
+   "license_number": "20030444",
+   "name_of_business": "CARALUZZI'S GEORGETOWN FOOD MARKET LLC",
+   "license_status": "Active",
+   "physical_city": "WILTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06897",
+   "license_issuance_date": "2003-01-03",
+   "trade_names": [
+    "CARALUZZI'S GEORGETOWN MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "ANTHONY CARALUZZI JR",
+    "ROBERTA CARALUZZI"
+   ],
+   "telephone_number": "(203) 748-3547",
+   "email_address": "CDEE@CARALUZZIS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20030471",
+   "name_of_business": "VEG MEN BROKERAGE LLC",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "2003-01-10",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DON SARDILLI"
+   ],
+   "telephone_number": "(860) 525-3237",
+   "email_address": "jimp@sardilliproduce.com",
+   "website": ""
+  },
+  {
+   "license_number": "20031155",
+   "name_of_business": "MASCARI ENTERPRISES INC",
+   "license_status": "Active",
+   "physical_city": "NEW HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06512",
+   "license_issuance_date": "2003-06-17",
+   "trade_names": [
+    "CEDRO BANANAS WHOLESALE DISTRIBUTORS"
+   ],
+   "branches": [],
+   "principals": [
+    "JOSEPH MASCARI JR",
+    "WILLIAM MASCARI"
+   ],
+   "telephone_number": "(203) 469-9366",
+   "email_address": "BILLY@CEDROBANANAS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20051168",
+   "name_of_business": "FRESHPOINT CONNECTICUT LLC",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "2005-08-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "BRANDON SEWELL",
+    "JENNIFER GREEN",
+    "JAMES PROCUNAIR",
+    "FRESH POINT INC",
+    "RYAN RUMBARGER",
+    "ANTHONY WALKER"
+   ],
+   "telephone_number": "(281) 899-4281",
+   "email_address": "entity.management@sysco.com",
+   "website": "WWW.FRESHPOINT.COM"
+  },
+  {
+   "license_number": "20060125",
+   "name_of_business": "GRADE A SHOPRITE COMMERCE ROAD LLC",
+   "license_status": "Active",
+   "physical_city": "STAMFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06902",
+   "license_issuance_date": "2005-11-03",
+   "trade_names": [
+    "GRADE A SHOPRITE"
+   ],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "GRADE A MARKET INC"
+   ],
+   "telephone_number": "(203) 978-0464",
+   "email_address": "joseph.diaspro@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20060842",
+   "name_of_business": "TIBBETTS WHOLESALE FOOD AND PRODUCE LLC",
+   "license_status": "Active",
+   "physical_city": "WATERBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06705",
+   "license_issuance_date": "2006-05-10",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MATTHEW TIBBETTS",
+    "LAWRENCE TIBBETTS JR"
+   ],
+   "telephone_number": "(203) 496-0661",
+   "email_address": "APRILTIBBETTS@ATT.NET",
+   "website": ""
+  },
+  {
+   "license_number": "20070439",
+   "name_of_business": "MUSTO FRUIT & PRODUCE LLC J M",
+   "license_status": "Active",
+   "physical_city": "Cheshire",
+   "physical_state": "CT",
+   "physical_zip_code": "06410",
+   "license_issuance_date": "2007-02-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JEFFREY MUSTO"
+   ],
+   "telephone_number": "(203) 509-2538",
+   "email_address": "lisa.musto410@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20071180",
+   "name_of_business": "G2G3 NEWINGTON LLC",
+   "license_status": "Active",
+   "physical_city": "NEWINGTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06111",
+   "license_issuance_date": "2007-08-09",
+   "trade_names": [
+    "STEW LEONARDS"
+   ],
+   "branches": [],
+   "principals": [
+    "LEONARD JR BRC TR STEWART, DANIEL ARTHUR",
+    "PATRICK DENTATO",
+    "LEONARDS HOLDINGS LLC STEW",
+    "TAVELLO FAMILY TR JILL L, Daniel Arthur",
+    "STEWART LEONARD JR",
+    "DANIEL ARTHUR",
+    "HOLLIS FAMILY TR LIZABETH L, Daniel Arth",
+    "LEONARD FAMILY TR THOMAS P, Daniel Arthu"
+   ],
+   "telephone_number": "(203) 847-7214",
+   "email_address": "WCARPENTER@STEWLEONARDS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20080182",
+   "name_of_business": "CASERTANO INC MAX",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "2007-11-08",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "NICHOLAS CASERTANO JR"
+   ],
+   "telephone_number": "(203) 758-3735",
+   "email_address": "Casertano@snet.net",
+   "website": ""
+  },
+  {
+   "license_number": "20080889",
+   "name_of_business": "HARKENS MARKET LLC",
+   "license_status": "Active",
+   "physical_city": "EAST WINDSOR",
+   "physical_state": "CT",
+   "physical_zip_code": "06088",
+   "license_issuance_date": "2008-05-23",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "EMILIO PARENTE"
+   ],
+   "telephone_number": "(860) 623-9137",
+   "email_address": "EMILY@HARKENSMARKET.NECOXMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20081051",
+   "name_of_business": "SYSCO CONNECTICUT LLC",
+   "license_status": "Active",
+   "physical_city": "ROCKY HILL",
+   "physical_state": "CT",
+   "physical_zip_code": "06067",
+   "license_issuance_date": "2008-06-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ANTHONY WALKER",
+    "GERALD CLANTON",
+    "ISRAEL OWODUNNI",
+    "STEPHEN HIGGS",
+    "ANDREW WURDACK",
+    "SYSCO HOLDINGS LLC",
+    "BRANDON SEWELL",
+    "Roger Francis",
+    "MICHAEL SCHONBERG"
+   ],
+   "telephone_number": "(860) 571-5624",
+   "email_address": "entity.management@sysco.com",
+   "website": ""
+  },
+  {
+   "license_number": "20091301",
+   "name_of_business": "FERRAROS FOODLAND OF NEW HAVEN",
+   "license_status": "Active",
+   "physical_city": "North Haven",
+   "physical_state": "CT",
+   "physical_zip_code": "06473",
+   "license_issuance_date": "2009-09-14",
+   "trade_names": [
+    "FERRARO MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "MARK FERRARO",
+    "EXECUTORS OF THE ESTATE OF SALVATORE P. ",
+    "JOHN FERRARO",
+    "PETER FERRARO"
+   ],
+   "telephone_number": "(203) 776-3462",
+   "email_address": "al@ferraromarket.com",
+   "website": ""
+  },
+  {
+   "license_number": "20100556",
+   "name_of_business": "GRADE A SHOP RITE OF SHELTON LLC",
+   "license_status": "Active",
+   "physical_city": "SHELTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06484",
+   "license_issuance_date": "2010-03-02",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "GRADE A MARKET INC"
+   ],
+   "telephone_number": "(203) 225-9224",
+   "email_address": "joseph.diaspro@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20100718",
+   "name_of_business": "JOSEPH FAMILY MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "CANTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06019",
+   "license_issuance_date": "2010-04-13",
+   "trade_names": [
+    "SHOPRITE OF CANTON"
+   ],
+   "branches": [],
+   "principals": [
+    "CHARLES JOSEPH JR",
+    "CHARLES JOSEPH III"
+   ],
+   "telephone_number": "(860) 693-3666",
+   "email_address": "CHUCK.JOSEPH@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20100740",
+   "name_of_business": "BOGOPA BP CORPORATION",
+   "license_status": "Active",
+   "physical_city": "BRIDGEPORT",
+   "physical_state": "CT",
+   "physical_zip_code": "06606",
+   "license_issuance_date": "2010-04-19",
+   "trade_names": [
+    "FOOD BAZAAR"
+   ],
+   "branches": [],
+   "principals": [
+    "SPENCER AN"
+   ],
+   "telephone_number": "(718) 346-6500",
+   "email_address": "lossprevention@bogopausa.com",
+   "website": ""
+  },
+  {
+   "license_number": "20100785",
+   "name_of_business": "GRADE A SHOPRITE OF SOUTHBURY LLC",
+   "license_status": "Active",
+   "physical_city": "SOUTHBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06488",
+   "license_issuance_date": "2010-04-29",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "GRADE A MARKET INC"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "joseph.diaspro@wakefern.com",
+   "website": ""
+  },
+  {
+   "license_number": "20100812",
+   "name_of_business": "WAVERLY MARKETS OF EAST HARTFORD LLC",
+   "license_status": "Active",
+   "physical_city": "EAST HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06118",
+   "license_issuance_date": "2010-05-06",
+   "trade_names": [
+    "SHOPRITE OF EAST HARTFORD"
+   ],
+   "branches": [],
+   "principals": [
+    "RICHARD COHEN",
+    "JORDAN COE"
+   ],
+   "telephone_number": "(860) 895-8390",
+   "email_address": "JCOE@WAVERLYMARKETS.COM",
+   "website": "WWW.SHOPRITE.COM"
+  },
+  {
+   "license_number": "20110209",
+   "name_of_business": "HEART OF THE HARVEST INC",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "2010-12-20",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "WILLIAM DRISCOLL IV",
+    "LISA DRISCOLL",
+    "WILLIAM DRISCOLL III"
+   ],
+   "telephone_number": "(860) 240-7508",
+   "email_address": "HEARTOFTHEHARVEST@GMAIL.COM",
+   "website": "WWW.HEARTOFTHEHARVEST.NET"
+  },
+  {
+   "license_number": "20110232",
+   "name_of_business": "GRADE A SHOPRITE OF FAIRFIELD LLC",
+   "license_status": "Active",
+   "physical_city": "FAIRFIELD",
+   "physical_state": "CT",
+   "physical_zip_code": "06825",
+   "license_issuance_date": "2011-01-03",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "GRADE A MARKET INC",
+    "THOMAS CINGARI"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20110905",
+   "name_of_business": "NORTHVILLE MARKET INC",
+   "license_status": "Active",
+   "physical_city": "NEW MILFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06776",
+   "license_issuance_date": "2011-05-13",
+   "trade_names": [
+    "NORTHVILLE MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "DAVID BRENNER"
+   ],
+   "telephone_number": "(860) 355-2667",
+   "email_address": "DAVID@THEMARKETCT.COM",
+   "website": "themarketct.com"
+  },
+  {
+   "license_number": "20110924",
+   "name_of_business": "BANTAM MARKET INC",
+   "license_status": "Active",
+   "physical_city": "BANTAM",
+   "physical_state": "CT",
+   "physical_zip_code": "06750",
+   "license_issuance_date": "2011-05-17",
+   "trade_names": [
+    "BANTAM MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "DAVID BRENNER"
+   ],
+   "telephone_number": "(860) 567-8647",
+   "email_address": "DAVID@THEMARKETCT.COM",
+   "website": "themarketct.com"
+  },
+  {
+   "license_number": "20111383",
+   "name_of_business": "KNL INC",
+   "license_status": "Active",
+   "physical_city": "GREENWICH",
+   "physical_state": "CT",
+   "physical_zip_code": "06830",
+   "license_issuance_date": "2011-09-06",
+   "trade_names": [
+    "SONNYS PRODUCE"
+   ],
+   "branches": [],
+   "principals": [
+    "SOUNG KIM"
+   ],
+   "telephone_number": "(203) 532-1400",
+   "email_address": "SONNYSPRODUCE@HOTMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20120167",
+   "name_of_business": "CITY FOOD GROUP INC",
+   "license_status": "Active",
+   "physical_city": "WATERBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06702",
+   "license_issuance_date": "2011-11-02",
+   "trade_names": [
+    "CHERRY VALLEY MARKETPLACE"
+   ],
+   "branches": [],
+   "principals": [
+    "LEONARDO ESPINAL"
+   ],
+   "telephone_number": "(203) 754-5700",
+   "email_address": "CHERRYVALLEY155@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20131190",
+   "name_of_business": "EAST HAVEN MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "EAST HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06513",
+   "license_issuance_date": "2013-08-08",
+   "trade_names": [
+    "SHOPRITE OF EAST HAVEN"
+   ],
+   "branches": [],
+   "principals": [
+    "ANN GARAFALO",
+    "JAMES DESTEFANO",
+    "HARRY GARAFALO",
+    "GARAFALO MARKETS LLC"
+   ],
+   "telephone_number": "(475) 202-5180",
+   "email_address": "Harry.garafalo@Wakefern.com",
+   "website": ""
+  },
+  {
+   "license_number": "20131291",
+   "name_of_business": "STEW LEONARDS",
+   "license_status": "Active",
+   "physical_city": "NORWALK",
+   "physical_state": "CT",
+   "physical_zip_code": "06851",
+   "license_issuance_date": "2013-09-03",
+   "trade_names": [
+    "G & I DISTRIBUTOR"
+   ],
+   "branches": [],
+   "principals": [
+    "DANIEL ARTHUR",
+    "LEONARD 1993 TR MARIANNE, ",
+    "LEONARD 2006 TR MARIANNE, "
+   ],
+   "telephone_number": "(203) 750-6118",
+   "email_address": "WCARPENTER@STEWLEONARDS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20140096",
+   "name_of_business": "RIPE BAR JUICE LLC",
+   "license_status": "Active",
+   "physical_city": "WALLINGFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06492",
+   "license_issuance_date": "2013-10-24",
+   "trade_names": [
+    "Freshbev",
+    "RIPE BAR JUICE"
+   ],
+   "branches": [],
+   "principals": [
+    "JUSTIN KUNTZ",
+    "BRANFORD INVESTMENT PARNTERS LLC"
+   ],
+   "telephone_number": "(475) 227-3446",
+   "email_address": "justin.kuntz@ripebarjuice.com",
+   "website": "ripebarjuice.com"
+  },
+  {
+   "license_number": "20140345",
+   "name_of_business": "MUSTO WINE GRAPE CO LLC",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "2014-01-15",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "FRANK MUSTO"
+   ],
+   "telephone_number": "(860) 471-8439",
+   "email_address": "fmusto@juicegrape.com",
+   "website": "WWW.JUICEGRAPE.COM"
+  },
+  {
+   "license_number": "20150110",
+   "name_of_business": "STRATFORD MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "STRATFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06614",
+   "license_issuance_date": "2014-11-10",
+   "trade_names": [
+    "SHOPRITE OF STRATFORD"
+   ],
+   "branches": [],
+   "principals": [
+    "JAMES DESTEFANO",
+    "ANNE GARAFALO",
+    "GARAFALO MARKETS LLC",
+    "HARRY GARAFALO"
+   ],
+   "telephone_number": "(203) 876-7868",
+   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20150111",
+   "name_of_business": "HAMDEN MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "HAMDEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06514",
+   "license_issuance_date": "2014-11-10",
+   "trade_names": [
+    "SHOPRITE OF HAMDEN"
+   ],
+   "branches": [],
+   "principals": [
+    "GARAFALO MARKETS LLC",
+    "HARRY GARAFALO",
+    "ANN GARAFALO",
+    "JAMES DESTEFANO"
+   ],
+   "telephone_number": "(203) 876-7868",
+   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20150113",
+   "name_of_business": "MILFORD MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "MILFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06460",
+   "license_issuance_date": "2014-11-10",
+   "trade_names": [
+    "SHOPRITE OF MILFORD"
+   ],
+   "branches": [],
+   "principals": [
+    "HARRY GARAFALO",
+    "GARAFALO HOLDINGS INC",
+    "JAMES DESTEFANO",
+    "ANN GARAFALO",
+    "GARAFALO MARKETS LLC"
+   ],
+   "telephone_number": "(203) 876-7868",
+   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20150163",
+   "name_of_business": "CARALUZZIS NEWTOWN MARKET LLC",
+   "license_status": "Active",
+   "physical_city": "NEWTOWN",
+   "physical_state": "CT",
+   "physical_zip_code": "06470",
+   "license_issuance_date": "2014-12-02",
+   "trade_names": [
+    "CARALUZZIS NEWTOWN MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "MARK CARALUZZI",
+    "STEVEN CARALUZZI",
+    "JENNIFER DIMYAN"
+   ],
+   "telephone_number": "(203) 270-7500",
+   "email_address": "JEN@CARALUZZIS.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20150325",
+   "name_of_business": "BOGOPA 345 HUNTINGTON INC",
+   "license_status": "Active",
+   "physical_city": "BRIDGEPORT",
+   "physical_state": "CT",
+   "physical_zip_code": "06610",
+   "license_issuance_date": "2015-01-27",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "SPENCER AN"
+   ],
+   "telephone_number": "(203) 610-6995",
+   "email_address": "lossprevention@bogopausa.com",
+   "website": ""
+  },
+  {
+   "license_number": "20150800",
+   "name_of_business": "BARTOLOTTA LLC",
+   "license_status": "Active",
+   "physical_city": "TORRINGTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06057",
+   "license_issuance_date": "2015-06-11",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MINYI XU",
+    "GRUBMARKET INC"
+   ],
+   "telephone_number": "(570) 558-2409",
+   "email_address": "ATLANTICFRESH1@AOL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20160908",
+   "name_of_business": "GRADE A MARKET OF DANBURY LLC",
+   "license_status": "Active",
+   "physical_city": "DANBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06811",
+   "license_issuance_date": "2016-07-08",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "THOMAS CINGARI",
+    "GRADE A MARKET INC"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20161071",
+   "name_of_business": "ORANGE MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "ORANGE",
+   "physical_state": "CT",
+   "physical_zip_code": "06477",
+   "license_issuance_date": "2016-08-19",
+   "trade_names": [
+    "SHOPRITE OF ORANGE"
+   ],
+   "branches": [],
+   "principals": [
+    "GARAFALO MARKETS LLC",
+    "ANN GARAFALO",
+    "JAMES DESTEFANO",
+    "HARRY GARAFALO"
+   ],
+   "telephone_number": "(203) 795-0628",
+   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20171178",
+   "name_of_business": "GNAZZO FOOD CENTER INC",
+   "license_status": "Active",
+   "physical_city": "PLAINVILLE",
+   "physical_state": "CT",
+   "physical_zip_code": "06062",
+   "license_issuance_date": "2017-09-29",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "KEITH GNAZZO"
+   ],
+   "telephone_number": "(860) 747-8758",
+   "email_address": "keith@gnazzos.com",
+   "website": ""
+  },
+  {
+   "license_number": "20190701",
+   "name_of_business": "Cromwell Markets LLC",
+   "license_status": "Active",
+   "physical_city": "Cromwell",
+   "physical_state": "CT",
+   "physical_zip_code": "06416",
+   "license_issuance_date": "2019-05-17",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "HARRY GARAFALO",
+    "GARAFALO MARKETS LLC",
+    "James DeStafano",
+    "ANN GARAFALO",
+    "Harry Garafalo",
+    "Ann Garafalo"
+   ],
+   "telephone_number": "(203) 876-7868",
+   "email_address": "harry.garafalo@wakefern.com",
+   "website": ""
+  },
+  {
+   "license_number": "20191249",
+   "name_of_business": "CLINTON MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "CLINTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06413",
+   "license_issuance_date": "2019-09-30",
+   "trade_names": [
+    "SHOPRITE OF CLINTON"
+   ],
+   "branches": [],
+   "principals": [
+    "ANNE GARAFALO",
+    "James DeStafano",
+    "GARAFALO MARKETS LLC",
+    "HARRY GARAFALO",
+    "GARAFALO MARKETS LLC"
+   ],
+   "telephone_number": "(203) 876-7868",
+   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20200197",
+   "name_of_business": "FERRARO FOODS OF CONNECTICUT LLC",
+   "license_status": "Active",
+   "physical_city": "CHESHIRE",
+   "physical_state": "CT",
+   "physical_zip_code": "06410",
+   "license_issuance_date": "2019-11-19",
+   "trade_names": [
+    "NAPOLI FOODS"
+   ],
+   "branches": [],
+   "principals": [
+    "FERRARO FINE FOODS CORP",
+    "ITALIAN FINE FOODS HOLDING CO CORP",
+    "MICHAEL CIPRIANO"
+   ],
+   "telephone_number": "(860) 276-4000",
+   "email_address": "dosborne@ferrarofoods.com",
+   "website": "napolifoodsinc.com"
+  },
+  {
+   "license_number": "20200538",
+   "name_of_business": "Waverly Markets of Vernon LLC",
+   "license_status": "Active",
+   "physical_city": "Vernon",
+   "physical_state": "CT",
+   "physical_zip_code": "06066",
+   "license_issuance_date": "2020-03-04",
+   "trade_names": [
+    "ShopRite of Tri-City Plaza"
+   ],
+   "branches": [],
+   "principals": [
+    "ALEXANDER COHEN",
+    "RICHARD COHEN",
+    "JORDAN COE"
+   ],
+   "telephone_number": "(860) 645-3240",
+   "email_address": "jcoe@waverlymarkets.com",
+   "website": "www.shoprite.com"
+  },
+  {
+   "license_number": "20200919",
+   "name_of_business": "WILLIMANTIC FOOD CO OP ",
+   "license_status": "Active",
+   "physical_city": "Willimantic",
+   "physical_state": "CT",
+   "physical_zip_code": "06226",
+   "license_issuance_date": "2020-06-15",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "Patricia Smith"
+   ],
+   "telephone_number": "(860) 456-3611",
+   "email_address": "patty.smith@willimanticfood.coop",
+   "website": "WILLIMANTICFOOD.COOP"
+  },
+  {
+   "license_number": "20201022",
+   "name_of_business": "Brookside Market LLC",
+   "license_status": "Active",
+   "physical_city": "SOUTH GLASTONBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06073",
+   "license_issuance_date": "2020-07-13",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ZACHARY FUSCO",
+    "ROBERT FUSCO JR"
+   ],
+   "telephone_number": "(860) 633-4625",
+   "email_address": "BFUSCO@ROBERTSFOODCENTER.COM",
+   "website": "WWW.BROOKSIDEMARKETCT.COM"
+  },
+  {
+   "license_number": "20210027",
+   "name_of_business": "RAGOZZINO FOODS INC",
+   "license_status": "Active",
+   "physical_city": "MERIDEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06451",
+   "license_issuance_date": "2020-10-07",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "NANCY RAGOZZINO",
+    "JOHN RAGOZZINO",
+    "ELLEN SATTLER",
+    "SUSAN DARIN"
+   ],
+   "telephone_number": "(203) 238-2553",
+   "email_address": "nancy@ragozzino.com",
+   "website": ""
+  },
+  {
+   "license_number": "20210263",
+   "name_of_business": "ASIA GROCERS LLC",
+   "license_status": "Active",
+   "physical_city": "Cromwell",
+   "physical_state": "CT",
+   "physical_zip_code": "06416",
+   "license_issuance_date": "2020-12-10",
+   "trade_names": [
+    "FRESH FARM MARKET"
+   ],
+   "branches": [
+    "FRESH FARM MARKET"
+   ],
+   "principals": [
+    "Tom Palazhi",
+    "Mareena Palazhi",
+    "Tony Palazhi",
+    "Reynold Palazhi"
+   ],
+   "telephone_number": "(860) 632-2262",
+   "email_address": "TONY@ASIAGROCERS.COM",
+   "website": "asiagrocers.com"
+  },
+  {
+   "license_number": "20210396",
+   "name_of_business": "LIBRO III",
+   "license_status": "Active",
+   "physical_city": "HARTFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06114",
+   "license_issuance_date": "2021-01-22",
+   "trade_names": [
+    "LIBROS PRODUCE"
+   ],
+   "branches": [],
+   "principals": [
+    "JOHN LIBRO III"
+   ],
+   "telephone_number": "(860) 246-9969",
+   "email_address": "JLIBRO3rd@yahoo.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20210423",
+   "name_of_business": "Enfield Markets, LLC",
+   "license_status": "Active",
+   "physical_city": "Enfield",
+   "physical_state": "CT",
+   "physical_zip_code": "06082",
+   "license_issuance_date": "2021-02-01",
+   "trade_names": [
+    "ShopRite of Enfield"
+   ],
+   "branches": [],
+   "principals": [
+    "New Market Enfield, LLC",
+    "HARRY GARAFALO",
+    "Harry Garafalo",
+    "Wakefern Food Corp."
+   ],
+   "telephone_number": "(860) 745-1621",
+   "email_address": "harry.garafalo@wakefern.com",
+   "website": ""
+  },
+  {
+   "license_number": "20210536",
+   "name_of_business": "ONOFRIOS FRESH CUT INC",
+   "license_status": "Active",
+   "physical_city": "NEW HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06512",
+   "license_issuance_date": "2021-03-01",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "RICHARD ONOFRIO"
+   ],
+   "telephone_number": "(203) 469-5624",
+   "email_address": "sbriones@onofriosfreshcut.com",
+   "website": ""
+  },
+  {
+   "license_number": "20211123",
+   "name_of_business": "IONIAN FOOD IMPORTS INC",
+   "license_status": "Active",
+   "physical_city": "STAMFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06906",
+   "license_issuance_date": "2021-08-24",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "KRISTINA BAKES"
+   ],
+   "telephone_number": "(203) 504-8485",
+   "email_address": "IONIANFOODS@OPTONLINE.NET",
+   "website": ""
+  },
+  {
+   "license_number": "20220183",
+   "name_of_business": "FRONTAGE ROAD FOOD CORP",
+   "license_status": "Active",
+   "physical_city": "New London",
+   "physical_state": "CT",
+   "physical_zip_code": "06320",
+   "license_issuance_date": "2021-11-26",
+   "trade_names": [
+    "NSA Supermarket"
+   ],
+   "branches": [],
+   "principals": [
+    "RAIFIZ VARGAS",
+    "ALEJANDRO PAULINO",
+    "JUAN DIAZ"
+   ],
+   "telephone_number": "(860) 961-9398",
+   "email_address": "nsanewlondon@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20220352",
+   "name_of_business": "G.I.&J Family Produce ",
+   "license_status": "Active",
+   "physical_city": "New Haven",
+   "physical_state": "CT",
+   "physical_zip_code": "06511",
+   "license_issuance_date": "2022-01-12",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "JOSEPH MASTROIANNI"
+   ],
+   "telephone_number": "(203) 640-1839",
+   "email_address": "bigdawg4444@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20220530",
+   "name_of_business": "GRADE A MARKET CT LP",
+   "license_status": "Active",
+   "physical_city": "BROOKFIELD",
+   "physical_state": "CT",
+   "physical_zip_code": "06804",
+   "license_issuance_date": "2022-03-28",
+   "trade_names": [
+    "SHOPRITE"
+   ],
+   "branches": [],
+   "principals": [
+    "ARTCLE 1 TRUST FBO SJ CINGARI, SJ CINGAR",
+    "Article III Trust FBO Dominick Cingari, ",
+    "KAREN CINGARI",
+    "JOSEPH CINGARI",
+    "THOMAS CINGARI",
+    "Grade A Market, Inc.",
+    "GRADE A MARKET INC"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "joseph.diaspro@wakefern.com",
+   "website": ""
+  },
+  {
+   "license_number": "20220844",
+   "name_of_business": "Efes Produce LLC",
+   "license_status": "Active",
+   "physical_city": "Orange",
+   "physical_state": "CT",
+   "physical_zip_code": "06477",
+   "license_issuance_date": "2022-06-29",
+   "trade_names": [
+    "Orange Farmers Market"
+   ],
+   "branches": [],
+   "principals": [
+    "Murat Karacayli"
+   ],
+   "telephone_number": "(203) 606-8981",
+   "email_address": "efesproduce254@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20220923",
+   "name_of_business": "CARALUZZIS DANBURY MARKET LLC",
+   "license_status": "Active",
+   "physical_city": "DANBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06811",
+   "license_issuance_date": "2022-07-19",
+   "trade_names": [
+    "CARALUZZIS DANBURY MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "MARK CARALUZZI",
+    "STEVEN CARALUZZI",
+    "JENNIFER DIMYAN"
+   ],
+   "telephone_number": "(203) 748-3547",
+   "email_address": "JEN@CARALUZZIS.COM",
+   "website": "www.caraluzzis.com"
+  },
+  {
+   "license_number": "20220928",
+   "name_of_business": "HIGHLAND PARK MARKET GLASTONBURY LLC",
+   "license_status": "Active",
+   "physical_city": "GLASTENBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06033",
+   "license_issuance_date": "2022-07-20",
+   "trade_names": [
+    "HIGHLAND PARK MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "MARY DEVANNEY",
+    "TIMOTHY DEVANNEY",
+    "CATHLEEN DYER",
+    "CHRISTINE SHEEHAN",
+    "TIMOTHY DEVANNEY",
+    "TIMOTHY DEVANNEY",
+    "JOHN DEVANNEY"
+   ],
+   "telephone_number": "(860) 659-1717",
+   "email_address": "CATHLEEN@HIGHLANDPARKMARKET.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20221092",
+   "name_of_business": "LIMSON INC",
+   "license_status": "Active",
+   "physical_city": "NORWALK",
+   "physical_state": "CT",
+   "physical_zip_code": "06854",
+   "license_issuance_date": "2022-09-14",
+   "trade_names": [],
+   "branches": [
+    "LIMSON INC."
+   ],
+   "principals": [
+    "RYAN FISHER",
+    "GORDON FOOD SERVICE INC"
+   ],
+   "telephone_number": "(905) 693-3604",
+   "email_address": "alida.kuhr@gfs.com",
+   "website": ""
+  },
+  {
+   "license_number": "20230058",
+   "name_of_business": "BRISTOL SUPERMARKET LLC",
+   "license_status": "Active",
+   "physical_city": "BRISTOL",
+   "physical_state": "CT",
+   "physical_zip_code": "06010",
+   "license_issuance_date": "2022-10-21",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "THOMAS CINGARI",
+    "GRADE A MARKET OF BRISTOL, LLC",
+    "Wakefern Food Corporation"
+   ],
+   "telephone_number": "(203) 299-5719",
+   "email_address": "Joseph.diaspro@wakefern.com",
+   "website": "www.shoprite.com"
+  },
+  {
+   "license_number": "20230786",
+   "name_of_business": "JAY ADHET MAA INC",
+   "license_status": "Active",
+   "physical_city": "NORWALK",
+   "physical_state": "CT",
+   "physical_zip_code": "06854",
+   "license_issuance_date": "2023-04-28",
+   "trade_names": [
+    "PATEL BROTHERS"
+   ],
+   "branches": [],
+   "principals": [
+    "DEEP PATEL",
+    "RANCHHODBHAI PATEL",
+    "SWETAL PATEL",
+    "DEV PATEL",
+    "RAKESH PATEL",
+    "HIRAN PATEL",
+    "RAHUL PATEL",
+    "GIRISH PATEL",
+    "PRATIK PATEL"
+   ],
+   "telephone_number": "(203) 939-1777",
+   "email_address": "pratik@patelbros.com",
+   "website": ""
+  },
+  {
+   "license_number": "20230977",
+   "name_of_business": "LUSSIER VENTURES INC",
+   "license_status": "Active",
+   "physical_city": "SIMSBURY",
+   "physical_state": "CT",
+   "physical_zip_code": "06070",
+   "license_issuance_date": "2023-06-07",
+   "trade_names": [
+    "FITZGERALD'S FOODS"
+   ],
+   "branches": [],
+   "principals": [
+    "SANDRA DEVOE",
+    "BRYAN DEVOE"
+   ],
+   "telephone_number": "(860) 658-2271",
+   "email_address": "BDEVOE28@YAHOO.COM",
+   "website": "WWW.FITZGERALDSFOODS.COM"
+  },
+  {
+   "license_number": "20231073",
+   "name_of_business": "Washington Food Market Inc",
+   "license_status": "Active",
+   "physical_city": "Washington Depot",
+   "physical_state": "CT",
+   "physical_zip_code": "06794",
+   "license_issuance_date": "2023-07-07",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "George Verrastro",
+    "Jocelyne Verrastro"
+   ],
+   "telephone_number": "(860) 868-7351",
+   "email_address": "washington.food.mark@snet.net",
+   "website": "washingtonfoodmarket.com"
+  },
+  {
+   "license_number": "20231080",
+   "name_of_business": "PRODUCE MARKET INC",
+   "license_status": "Active",
+   "physical_city": "NORWALK",
+   "physical_state": "CT",
+   "physical_zip_code": "06851",
+   "license_issuance_date": "2023-07-10",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "LUIS GABRIEL",
+    "JUAN SANCHEZ"
+   ],
+   "telephone_number": "(203) 642-4400",
+   "email_address": "producemarket_01@hotmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20231198",
+   "name_of_business": "HIGHLAND PARK MARKET INC",
+   "license_status": "Active",
+   "physical_city": "MANCHESTER",
+   "physical_state": "CT",
+   "physical_zip_code": "06040",
+   "license_issuance_date": "2023-08-07",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "CHRISTINE SHEEHAN",
+    "CATHLEEN DYER",
+    "JOHN DEVANNEY",
+    "TIMOTHY DEVANNEY",
+    "MARY DEVANNEY",
+    "TIMOTHY DEVANNEY"
+   ],
+   "telephone_number": "(860) 646-4277",
+   "email_address": "cathleen@highlandparkmarket.com",
+   "website": "WWW.HIGHLANDPARKMARKET.COM"
+  },
+  {
+   "license_number": "20231211",
+   "name_of_business": "NORWALK FOOD CORP",
+   "license_status": "Active",
+   "physical_city": "Norwalk",
+   "physical_state": "CT",
+   "physical_zip_code": "06854",
+   "license_issuance_date": "2023-08-09",
+   "trade_names": [
+    "C-TOWN SUPERMARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "EDWIN SANCHEZ"
+   ],
+   "telephone_number": "(203) 838-0888",
+   "email_address": "ctownnorwalk@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20240060",
+   "name_of_business": "TED'S INC",
+   "license_status": "Active",
+   "physical_city": "HEBRON",
+   "physical_state": "CT",
+   "physical_zip_code": "06248",
+   "license_issuance_date": "2023-10-13",
+   "trade_names": [
+    "TED'S MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "DAVID ARMATA",
+    "THEODORE ARMATA JR"
+   ],
+   "telephone_number": "(860) 228-4311",
+   "email_address": "TEDSIGA@AOL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20240171",
+   "name_of_business": "MINA FOODS INC",
+   "license_status": "Active",
+   "physical_city": "MILFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06460",
+   "license_issuance_date": "2023-11-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "PETER MITAS",
+    "DIMOS MITAS"
+   ],
+   "telephone_number": "(203) 874-6462",
+   "email_address": "MINAFOODS@OPTONLINE.NET",
+   "website": "WWW.MINAFOODSINC.COM"
+  },
+  {
+   "license_number": "20240436",
+   "name_of_business": "LIPMAN CONNECTICUT LLC",
+   "license_status": "Active",
+   "physical_city": "PLAINVILLE",
+   "physical_state": "CT",
+   "physical_zip_code": "06062",
+   "license_issuance_date": "2024-02-09",
+   "trade_names": [
+    "LIPMAN FAMILY FARMS",
+    "NORTHEAST PRODUCE"
+   ],
+   "branches": [],
+   "principals": [
+    "DREW YURKO",
+    "MAX WEISINGER",
+    "LFC ENTERPRISES LLC",
+    "TOBY PURSE",
+    "DARREN MICELLE",
+    "ELYSE LIPMAN",
+    "MAXWELL PRESS"
+   ],
+   "telephone_number": "(860) 793-2700",
+   "email_address": "drew.yurko@lipmanfamilyfarms.com",
+   "website": "lipmanfamilyfarms.com"
+  },
+  {
+   "license_number": "20240658",
+   "name_of_business": "Fiddleheads Natural Foods Cooperative In",
+   "license_status": "Active",
+   "physical_city": "New London",
+   "physical_state": "CT",
+   "physical_zip_code": "06320",
+   "license_issuance_date": "2024-04-16",
+   "trade_names": [
+    "Fiddleheads Food Co-operative",
+    "Fiddleheads Natural Foods Co-operative"
+   ],
+   "branches": [],
+   "principals": [
+    "Stanley Bellamy",
+    "Kourtney Hanson",
+    "Brenda De Los Santos",
+    "Jeff Depta",
+    "Amy Duval"
+   ],
+   "telephone_number": "(860) 701-9123",
+   "email_address": "gm@fiddleheadsfood.coop",
+   "website": "https://fiddleheadsfood.weebly.com/"
+  },
+  {
+   "license_number": "20240682",
+   "name_of_business": "Bogopa Fairfield Inc",
+   "license_status": "Active",
+   "physical_city": "Fairfield",
+   "physical_state": "CT",
+   "physical_zip_code": "06606",
+   "license_issuance_date": "2024-04-22",
+   "trade_names": [
+    "Food Bazaar"
+   ],
+   "branches": [],
+   "principals": [
+    "SPENCER AN"
+   ],
+   "telephone_number": "(718) 346-6500",
+   "email_address": "maria.g@bogopausa.com",
+   "website": "www.foodbazaar.com"
+  },
+  {
+   "license_number": "20240691",
+   "name_of_business": "WALTER STEWART CO INC",
+   "license_status": "Active",
+   "physical_city": "NEW CANAAN",
+   "physical_state": "CT",
+   "physical_zip_code": "06840",
+   "license_issuance_date": "2024-04-23",
+   "trade_names": [
+    "WALTER STEWARTS MARKET"
+   ],
+   "branches": [],
+   "principals": [
+    "DOUGLAS STEWART",
+    "ALEXANDER STEWART"
+   ],
+   "telephone_number": "(203) 966-4848",
+   "email_address": "ALEX@STEWARTSMARKET.COM",
+   "website": "STEWARTSMARKET.COM"
+  },
+  {
+   "license_number": "20240706",
+   "name_of_business": "SABATINO NORTH AMERICA LLC",
+   "license_status": "Active",
+   "physical_city": "WEST HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06516",
+   "license_issuance_date": "2024-04-30",
+   "trade_names": [],
+   "branches": [
+    "SABATINO LOS ANGELES",
+    "Sabatino Texas",
+    "SABATINO MIAMI",
+    "SABATINO LAS VEGAS",
+    "SABATINO TRUFFLES NEW YORK LLC"
+   ],
+   "principals": [
+    "FEDERICO BALESTRA",
+    "Ethoa LLC"
+   ],
+   "telephone_number": "(718) 328-4120",
+   "email_address": "j.stewart@sabatinostore.com",
+   "website": ""
+  },
+  {
+   "license_number": "20240716",
+   "name_of_business": "CONNECTICUT NATURAL FOOD MART INC",
+   "license_status": "Active",
+   "physical_city": "WALLINGFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06492",
+   "license_issuance_date": "2024-05-06",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "DENNIS KOVACS"
+   ],
+   "telephone_number": "(203) 234-2162",
+   "email_address": "DJKCNFM@GMAIL.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20240796",
+   "name_of_business": "DRUST MARKETS LLC",
+   "license_status": "Active",
+   "physical_city": "WALLINGFORD",
+   "physical_state": "CT",
+   "physical_zip_code": "06492",
+   "license_issuance_date": "2024-05-30",
+   "trade_names": [
+    "SHOPRITE OF WALLINGFORD"
+   ],
+   "branches": [],
+   "principals": [
+    "RICHARD DRUST",
+    "DONALD DRUST JR",
+    "DIANE DRUST",
+    "DONALD DRUST"
+   ],
+   "telephone_number": "(203) 626-7760",
+   "email_address": "ELENA.PARSONS@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20240901",
+   "name_of_business": "SHOPRITE OF SOUTHINGTON LLC",
+   "license_status": "Active",
+   "physical_city": "SOUTHINGTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06489",
+   "license_issuance_date": "2024-06-13",
+   "trade_names": [
+    "SHOPRITE OF SOUTHINGTON"
+   ],
+   "branches": [],
+   "principals": [
+    "DONALD DRUST JR",
+    "FAMILY D MARKETS INC"
+   ],
+   "telephone_number": "(860) 736-0044",
+   "email_address": "ELENA.PARSONS@WAKEFERN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20241051",
+   "name_of_business": "PATS INCORPORATED",
+   "license_status": "Active",
+   "physical_city": "WOLCOTT",
+   "physical_state": "CT",
+   "physical_zip_code": "06716",
+   "license_issuance_date": "2024-08-02",
+   "trade_names": [
+    "PATS IGA"
+   ],
+   "branches": [],
+   "principals": [
+    "MICHAEL DISAPIO"
+   ],
+   "telephone_number": "(203) 879-4317",
+   "email_address": "SALES@PATSIGA.NET",
+   "website": "WWW.PATSIGA.NET"
+  },
+  {
+   "license_number": "20241223",
+   "name_of_business": "PALMERS SUPER MARKET INC",
+   "license_status": "Active",
+   "physical_city": "DARIEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06820",
+   "license_issuance_date": "2024-09-16",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "ALPHONSE PALMER",
+    "CYNTHIA DEAN",
+    "Megan Dean",
+    "GREGORY PALMER",
+    "JOSEPH PALMER JR"
+   ],
+   "telephone_number": "(203) 655-2077",
+   "email_address": "ACCOUNTSPAYABLE@PALMERSDARIEN.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20250156",
+   "name_of_business": "MILLER FOODS INC",
+   "license_status": "Active",
+   "physical_city": "AVON",
+   "physical_state": "CT",
+   "physical_zip_code": "06001",
+   "license_issuance_date": "2024-11-18",
+   "trade_names": [
+    "OMAS PRIDE"
+   ],
+   "branches": [],
+   "principals": [
+    "Brighenti Capri ",
+    "CAROLYN MILLER-STEVENS",
+    "Adam DeJulius",
+    "Nicholas DeJulius ",
+    "Tanner Miller-Stevens",
+    "CAMLYN MILLER-STEVENS"
+   ],
+   "telephone_number": "(860) 673-3256",
+   "email_address": "CAPRI@OMASPRIDE.COM",
+   "website": "WWW.OMASPRIDE.COM"
+  },
+  {
+   "license_number": "20250342",
+   "name_of_business": "CPM RETAIL INC",
+   "license_status": "Active",
+   "physical_city": "COVENTRY",
+   "physical_state": "CT",
+   "physical_zip_code": "06238",
+   "license_issuance_date": "2025-01-28",
+   "trade_names": [
+    "Coventry Public Market"
+   ],
+   "branches": [],
+   "principals": [
+    "BRIJESH PATEL",
+    "HARSH PATEL"
+   ],
+   "telephone_number": "(860) 742-7361",
+   "email_address": "management@coventrypublicmarket.com",
+   "website": "coventrypublicmarket.com"
+  },
+  {
+   "license_number": "20250728",
+   "name_of_business": "BRAND WHITE PERU LLC",
+   "license_status": "Active",
+   "physical_city": "GREENWICH",
+   "physical_state": "CT",
+   "physical_zip_code": "06830",
+   "license_issuance_date": "2025-05-28",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "GHURETH CHAVEZ MELGAREJO",
+    "DANIEL CHAVEZ MELGAREJO"
+   ],
+   "telephone_number": "(201) 362-4746",
+   "email_address": "tamara.chavez@brandwhiteperu.com",
+   "website": "https://brandwhiteperu.com/"
+  },
+  {
+   "license_number": "20260078",
+   "name_of_business": "TORRINGTON PRODUCE CORP",
+   "license_status": "Active",
+   "physical_city": "TORRINGTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06790",
+   "license_issuance_date": "2025-10-24",
+   "trade_names": [
+    "CITY FRUIT & PRODUCE CO"
+   ],
+   "branches": [],
+   "principals": [
+    "JOHN FALCONE"
+   ],
+   "telephone_number": "(860) 489-4109",
+   "email_address": "audrey61168@gmail.com",
+   "website": ""
+  },
+  {
+   "license_number": "20260265",
+   "name_of_business": "NATURAL COUNTRY FARMS INC",
+   "license_status": "Active",
+   "physical_city": "ELLINGTON",
+   "physical_state": "CT",
+   "physical_zip_code": "06029",
+   "license_issuance_date": "2026-01-06",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "PFI Holdco LLC",
+    "AARON PETERSON"
+   ],
+   "telephone_number": "",
+   "email_address": "abaker@petersonfarmsinc.com",
+   "website": ""
+  },
+  {
+   "license_number": "20260492",
+   "name_of_business": "MINORES MEATS LLC",
+   "license_status": "Active",
+   "physical_city": "NEW HAVEN",
+   "physical_state": "CT",
+   "physical_zip_code": "06511",
+   "license_issuance_date": "2026-03-13",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "MINORES HOLDCO INC",
+    "JOHN SANTACROCE"
+   ],
+   "telephone_number": "(203) 865-4119",
+   "email_address": "JOHN@MINORES.COM",
+   "website": "MINORES.COM"
+  },
+  {
+   "license_number": "20260608",
+   "name_of_business": "BURRITO MEAT CORP",
+   "license_status": "Active",
+   "physical_city": "NEW BRITAIN",
+   "physical_state": "CT",
+   "physical_zip_code": "06053",
+   "license_issuance_date": "2026-04-09",
+   "trade_names": [
+    "AMERICA'S FOOD BASKET"
+   ],
+   "branches": [],
+   "principals": [
+    "ANDRES FERREIRA"
+   ],
+   "telephone_number": "(860) 505-8130",
+   "email_address": "AFB0233@AMFMANAGEMENT.COM",
+   "website": ""
+  },
+  {
+   "license_number": "20260701",
+   "name_of_business": "SABA LIVE POULTRY INC",
+   "license_status": "Active",
+   "physical_city": "BLOOMFILED",
+   "physical_state": "CT",
+   "physical_zip_code": "06002",
+   "license_issuance_date": "2026-04-30",
+   "trade_names": [],
+   "branches": [],
+   "principals": [
+    "BILAL MUSID"
+   ],
+   "telephone_number": "(860) 816-6052",
+   "email_address": "sabalivepoultry@yahoo.com",
+   "website": ""
+  }
+ ]
+}

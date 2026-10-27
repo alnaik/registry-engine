@@ -18,7 +18,7 @@ const MOCKLAND_MANIFEST = {
       name: "Mockland Secretary of State",
       plane: "existence",
       driver: "socrata",
-      coverage: { geo: ["US-XX"], categories: ["*"] },
+      coverage: { geo: ["US-XX"], naics: ["*"] },
       endpoint: "https://data.mockland.gov/resource",
       fields: {
         id: "biz_number",
@@ -53,7 +53,7 @@ describe("zero-code-change state onboarding", () => {
     const sources = loadManifest(MOCKLAND_MANIFEST);
 
     const intent: Intent = {
-      categories: ["jewelry"],
+      naics: ["339910"],
       geo: { region: "US-XX", cities: ["Mocktown"] },
       direction: "sell",
     };
@@ -72,7 +72,7 @@ describe("zero-code-change state onboarding", () => {
       keywords: ["jewel"],
       region: intent.geo.region,
       cities: intent.geo.cities,
-      categories: intent.categories,
+      naics: intent.naics,
     });
 
     expect(entities).toHaveLength(1);

@@ -5,7 +5,7 @@
       "name": "Colorado Secretary of State",
       "plane": "existence",
       "driver": "socrata",
-      "coverage": { "geo": ["US-CO"], "categories": ["*"] },
+      "coverage": { "geo": ["US-CO"], "naics": ["*"] },
       "endpoint": "https://data.colorado.gov/resource",
       "fields": {
         "id": "entityid",
@@ -17,11 +17,18 @@
         "zip": "principalzipcode",
         "officer_first": "agentfirstname",
         "officer_last": "agentlastname",
-        "officer_org": "agentorganizationname"
+        "officer_org": "agentorganizationname",
+        "formedDate": "entityformdate"
       },
       "quirks": {
         "datasetId": "4ykn-tg5h",
         "statusValue": "Good Standing",
+        "cities": [
+          "Colorado Springs", "Fort Collins", "Castle Rock", "Monte Vista", "Grand Junction",
+          "Denver", "Boulder", "Aurora", "Lakewood", "Littleton", "Arvada", "Westminster",
+          "Thornton", "Centennial", "Pueblo", "Greeley", "Longmont", "Loveland",
+          "Broomfield", "Parker", "Golden", "Alamosa", "Durango"
+        ],
         "tradeNames": {
           "datasetId": "u7sb-g482",
           "statusValue": "GOOD",
@@ -35,12 +42,73 @@
       }
     },
     {
+      "id": "ct_sos",
+      "name": "Connecticut Secretary of the State business registry",
+      "plane": "existence",
+      "driver": "socrata",
+      "coverage": { "geo": ["US-CT"], "naics": ["*"] },
+      "endpoint": "https://data.ct.gov/resource",
+      "fields": {
+        "id": "id",
+        "name": "name",
+        "status": "status",
+        "street": "billingstreet",
+        "city": "billingcity",
+        "state": "billingstate",
+        "zip": "billingpostalcode",
+        "formedDate": "date_registration"
+      },
+      "quirks": {
+        "datasetId": "n7gp-d28j",
+        "statusValue": "Active",
+        "cities": [
+          "Stamford", "Bridgeport", "New Haven", "Hartford", "Norwalk",
+          "Danbury", "Waterbury", "Fairfield", "Greenwich", "West Hartford",
+          "Hamden", "Milford", "Westport", "New Britain", "Stratford",
+          "Meriden", "Shelton", "Manchester", "Bristol", "East Hartford",
+          "Wallingford", "Middletown", "Branford", "Glastonbury"
+        ]
+      }
+    },
+    {
+      "id": "ny_dos",
+      "name": "New York Department of State corporations registry",
+      "plane": "existence",
+      "driver": "socrata",
+      "coverage": { "geo": ["US-NY"], "naics": ["*"] },
+      "endpoint": "https://data.ny.gov/resource",
+      "fields": {
+        "id": "dos_id",
+        "name": "current_entity_name",
+        "status": "jurisdiction",
+        "street": "dos_process_address_1",
+        "city": "dos_process_city",
+        "state": "dos_process_state",
+        "zip": "dos_process_zip",
+        "officer_org": "registered_agent_name",
+        "formedDate": "initial_dos_filing_date"
+      },
+      "quirks": {
+        "datasetId": "n9v6-gdp6",
+        "statusValue": "New York",
+        "statusDisplay": "Active (domestic)",
+        "cities": [
+          "New York", "Brooklyn", "Albany", "Bronx", "Staten Island",
+          "Flushing", "Buffalo", "Rochester", "Jamaica", "Astoria",
+          "Yonkers", "White Plains", "Syracuse", "Long Island City",
+          "Garden City", "New Rochelle", "Melville", "Hicksville",
+          "Jackson Heights", "Huntington", "Poughkeepsie", "Westbury",
+          "Great Neck", "Valley Stream"
+        ]
+      }
+    },
+    {
       "id": "paca",
       "name": "USDA PACA produce license registry",
       "plane": "category",
       "driver": "static_shard",
-      "coverage": { "geo": ["US"], "categories": ["produce"] },
-      "endpoint": "https://gist.githubusercontent.com/alnaik/48d13eb9b5f428e547e99ab4b49b4a85/raw",
+      "coverage": { "geo": ["US"], "naics": ["111", "4244", "445"] },
+      "endpoint": "repo:shards/paca",
       "fields": {
         "id": "license_number",
         "name": "name_of_business",
@@ -54,7 +122,70 @@
         "statusValue": "Active",
         "namesField": "trade_names",
         "officersField": "principals",
-        "shardRegions": ["US-CO"]
+        "shardRegions": ["US-CO", "US-CT", "US-NY"],
+        "defaultNaics": ["424480"]
+      }
+    },
+    {
+      "id": "ppp",
+      "name": "SBA Paycheck Protection Program loan records (2020–21)",
+      "plane": "category",
+      "driver": "static_shard",
+      "coverage": { "geo": ["US"], "naics": ["*"] },
+      "endpoint": "repo:shards/ppp",
+      "fields": {
+        "id": "loan_number",
+        "name": "name",
+        "street": "address",
+        "city": "city",
+        "state": "state",
+        "zip": "zip",
+        "naics": "naics",
+        "employees": "jobs",
+        "date": "date_approved"
+      },
+      "quirks": {
+        "shardBy": "naics2",
+        "shardRegions": ["US-CO"],
+        "evidenceFields": ["business_type", "business_age"]
+      }
+    },
+    {
+      "id": "epa_echo",
+      "name": "EPA ECHO regulated facilities",
+      "plane": "category",
+      "driver": "echo",
+      "coverage": { "geo": ["US"], "naics": ["*"] },
+      "endpoint": "https://echodata.epa.gov/echo",
+      "fields": {
+        "id": "RegistryID",
+        "name": "FacName",
+        "street": "FacStreet",
+        "city": "FacCity",
+        "state": "FacState",
+        "zip": "FacZip",
+        "naics": "FacNAICSCodes",
+        "date": "FacDateLastInspection"
+      }
+    },
+    {
+      "id": "co_farm_products",
+      "name": "Colorado farm-products financing statements (Food Security Act central filing)",
+      "plane": "category",
+      "driver": "socrata",
+      "coverage": { "geo": ["US-CO"], "naics": ["11"] },
+      "endpoint": "https://data.colorado.gov/resource",
+      "fields": {
+        "id": "debtorid",
+        "name": "debtorname",
+        "address_line": "debtoraddress",
+        "date": "recordiddate"
+      },
+      "quirks": {
+        "datasetId": "ej2c-jkvh",
+        "keywordFields": ["farmproduct", "additionalfarmproduct", "farmproductdescription"],
+        "evidenceFields": ["farmproduct", "additionalfarmproduct", "securedparty"],
+        "defaultNaics": ["11"]
       }
     }
   ]

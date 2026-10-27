@@ -1,7 +1,7 @@
 import type { SourceSpec, Plane, DriverKind } from "./driver.js";
 
 const PLANES: readonly string[] = ["existence", "category", "contact"];
-const DRIVERS: readonly string[] = ["socrata", "rest", "static_shard"];
+const DRIVERS: readonly string[] = ["socrata", "rest", "static_shard", "echo"];
 
 export class ManifestError extends Error {
   constructor(message: string) {
@@ -10,7 +10,7 @@ export class ManifestError extends Error {
   }
 }
 
-// The manifest is declarative JSON shipped inside the artifact; it is
+// The manifest is declarative JSON shipped with the library; it is
 // validated here so a bad config entry fails loudly at load, not as a
 // mystery downstream.
 export function loadManifest(raw: unknown): SourceSpec[] {
@@ -50,9 +50,12 @@ function validateSource(entry: unknown, i: number): SourceSpec {
   if (!isRecord(coverage)) throw at(`"${id}": coverage must be an object`);
   const geo = stringArray(coverage["geo"]);
   if (geo === null || geo.length === 0) throw at(`"${id}": coverage.geo must be a non-empty string array`);
-  const categories = stringArray(coverage["categories"]);
-  if (categories === null || categories.length === 0) {
-    throw at(`"${id}": coverage.categories must be a non-empty string array (use ["*"] for all)`);
+  if (coverage["categories"] !== undefined) {
+    throw at(`"${id}": coverage.categories was replaced by coverage.naics (NAICS codes or prefixes; ["*"] = any)`);
+  }
+  const naics = stringArray(coverage["naics"]);
+  if (naics === null || naics.length === 0 || naics.some(c => c !== "*" && !/^\d{2,6}$/.test(c))) {
+    throw at(`"${id}": coverage.naics must be a non-empty array of NAICS codes (2-6 digits) or "*"`);
   }
 
   const endpoint = entry["endpoint"];
@@ -83,7 +86,7 @@ function validateSource(entry: unknown, i: number): SourceSpec {
     name,
     plane: plane as Plane,
     driver: driver as DriverKind,
-    coverage: { geo, categories },
+    coverage: { geo, naics },
     endpoint,
     fields: fields as Record<string, string>,
     contact_fields: contactFields,

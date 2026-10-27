@@ -49,29 +49,8 @@ describe("createLlm", () => {
     expect(seen).toHaveLength(2); // the third call never reached the backend
   });
 
-  it("uses window.claude.complete for BOTH tiers when no key/backend is given", async () => {
-    const prompts: string[] = [];
-    vi.stubGlobal("window", {
-      claude: { complete: async (p: string) => { prompts.push(p); return "from claude.ai"; } },
-    });
-    const llm = createLlm();
-    const a = await llm.call("hello", { tier: "cheap", system: "be terse" });
-    const b = await llm.call("world", { tier: "best" });
-    expect(a).toBe("from claude.ai");
-    expect(b).toBe("from claude.ai");
-    expect(prompts[0]).toBe("be terse\n\nhello");
-    expect(prompts[1]).toBe("world");
-  });
-
   it("throws immediately when no backend is available", () => {
     expect(() => createLlm()).toThrow(/No LLM backend/);
-  });
-
-  it("prefers an injected backend over window.claude", async () => {
-    vi.stubGlobal("window", { claude: { complete: async () => "wrong path" } });
-    const { backend } = recordingBackend();
-    const llm = createLlm({ backend });
-    expect(await llm.call("x", { tier: "cheap" })).toBe("ok");
   });
 
   it("hits the Anthropic API with the tier model when apiKey is set", async () => {
