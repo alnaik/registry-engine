@@ -28,7 +28,7 @@ describe("summaryLines", () => {
 });
 
 describe("sheetCounts / hasPhone", () => {
-  it("counts over coded leads only: radius, confirmed, phones, individuals", async () => {
+  it("counts over coded businesses only: radius, confirmed, phones; individuals apart", async () => {
     const { sheetCounts, hasPhone } = await import("../../packages/qualify/src/summary.js");
     const a = { ...lead(["332312"], "none"), distanceMi: 4, registryCheck: "matched" as const };
     a.entity = { ...a.entity, contacts: ["(303) 555-0100"] };
@@ -39,8 +39,12 @@ describe("sheetCounts / hasPhone", () => {
     expect(hasPhone(a)).toBe(true);
     expect(hasPhone(b)).toBe(true);
     expect(hasPhone(d)).toBe(false);
-    const counts = sheetCounts([a, b, c, d], ["332"], { radiusMi: 25, hasOrigin: true, isIndividual: l => l === c });
-    expect(counts).toEqual({ total: 4, coded: 3, nameOnly: 1, individuals: 1, withinRadius: 1, radiusMi: 25, confirmed: 1, withPhone: 2 });
-    expect(sheetCounts([a], ["332"], { radiusMi: 25, hasOrigin: false, isIndividual: () => false }).withinRadius).toBeNull();
+    c.entity = { ...c.entity, name: "SMITH, JOHN A" };
+    const c2 = { ...c, registryCheck: "matched" as const };
+    const counts = sheetCounts([a, b, c2, d], ["332"], { radiusMi: 25, hasOrigin: true });
+    // the individual's record (c2) is matched but counts only as an individual
+    expect(counts).toEqual({ total: 4, coded: 3, businesses: 2, listed: 2, nameOnly: 1, individuals: 1, withinRadius: 1, radiusMi: 25, confirmed: 1, withPhone: 2 });
+    expect(sheetCounts([a, b], ["332"], { radiusMi: 25, hasOrigin: true, listCap: 1 }).listed).toBe(1);
+    expect(sheetCounts([a], ["332"], { radiusMi: 25, hasOrigin: false }).withinRadius).toBeNull();
   });
 });

@@ -74,7 +74,7 @@ const CODED: Spec[] = [
   { id: "8", name: "Sage Stitch Co", naics: ["315210"], street: "800 Fictional Way", city: "Golden", zip: "80401", miles: 19.3, band: MID, check: "checked_not_found" },
 ];
 
-const INDIVIDUAL: Spec = { id: "9", name: "SAMPLE, PAT", naics: ["314910"], street: "900 Example St", city: "Denver", zip: "80211", miles: 5.0, band: NEAR, check: "not_checked", business_type: "Sole Proprietorship" };
+const INDIVIDUAL: Spec = { id: "9", name: "SAMPLE, PAT", naics: ["314910"], street: "900 Example St", city: "Denver", zip: "80211", miles: 5.0, band: NEAR, check: "matched", business_type: "Sole Proprietorship" };
 const NAME_ONLY: Spec = { id: "10", name: "Tote Example Rentals LLC", naics: ["532490"], street: "1000 Sample Ave", city: "Denver", zip: "80204", miles: 2.2, band: NEAR, check: "matched" };
 const RECENT: Spec = { id: "11", name: "New Tote Example LLC", naics: [], street: "1100 Placeholder Rd", city: "Denver", zip: "80203", miles: 1.8, band: NEAR, check: "matched", formedDate: "2026-10-01", sources: ["co_sos"] };
 

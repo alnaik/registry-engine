@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ClaudeCodeBackend, leadsToCsv, summaryCounts, sheetCounts, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
+import { ClaudeCodeBackend, leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck } from "@registry-engine/qualify";
 import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhrase, naicsRelated, normalizeName } from "@registry-engine/registry-core";
 
@@ -384,11 +384,9 @@ function buildResult(
   // Three lists from one ranking: coded businesses (the sheet), coded
   // individuals' records (a collapsed group), and name-only matches (a
   // collapsed group that never enters the headline count).
-  const isCoded = (l: Lead): boolean => l.entity.naics.some(e => codes.some(q => naicsRelated(e, q)));
+  // partitionLeads is the same split sheetCounts counts over.
   const ranks = new Map(outcome.ranked.map((l, i) => [l, i + 1]));
-  const main = outcome.ranked.filter(l => isCoded(l) && !isLikelyIndividual(l.entity));
-  const individuals = outcome.ranked.filter(l => isCoded(l) && isLikelyIndividual(l.entity));
-  const nameOnly = outcome.ranked.filter(l => !isCoded(l));
+  const { businesses: main, individuals, nameOnly } = partitionLeads(outcome.ranked, codes);
   const radiusMi = params.radiusMi ?? DEFAULT_RADIUS_MI;
   const region = outcome.map.intent.geo.region;
 
@@ -398,7 +396,7 @@ function buildResult(
     region,
     regionName: REGION_NAMES[region] ?? region.replace(/^US-/, ""),
     summary: summaryCounts(outcome.ranked, codes),
-    sheet: sheetCounts(outcome.ranked, codes, { radiusMi, hasOrigin: outcome.origin !== null, isIndividual: l => isLikelyIndividual(l.entity) }),
+    sheet: sheetCounts(outcome.ranked, codes, { radiusMi, hasOrigin: outcome.origin !== null, listCap: topN + MORE_LEADS }),
     registryLookup: outcome.registryLookup,
     sources: outcome.routed.map(s => ({ id: s.id, name: s.name, plane: s.plane, ...(fetchedBy.get(s.id) ?? { count: 0, capped: false, error: false }) })),
     contactLookups: outcome.contactLookups,
