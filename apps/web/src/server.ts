@@ -41,6 +41,7 @@ interface SearchParams {
   noLlm: boolean;
   leads: number;
   region: string | undefined;
+  direction: "buy" | "sell" | undefined;
 }
 
 class BadRequest extends Error {
@@ -190,6 +191,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         hiddenOnly: params.hiddenOnly,
         maxLeads: params.leads,
         region: params.region,
+        direction: params.direction,
         contacts: params.findContacts ? undefined : null,
         onEvent: event => {
           const line = translateEvent(event);
@@ -297,8 +299,14 @@ function parseSearchParams(body: unknown): SearchParams {
     region = b["region"];
   }
 
+  let direction: "buy" | "sell" | undefined;
+  if (b["direction"] !== undefined && b["direction"] !== null && b["direction"] !== "auto") {
+    if (b["direction"] !== "buy" && b["direction"] !== "sell") throw new BadRequest("direction must be auto, buy or sell");
+    direction = b["direction"];
+  }
+
   return {
-    query, near, radiusMi, naics, region, leads,
+    query, near, radiusMi, naics, region, leads, direction,
     hiddenOnly: flag("hiddenOnly", false),
     findContacts: flag("findContacts", true),
     noLlm: flag("noLlm", false),
@@ -317,6 +325,7 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
         cities: event.map.intent.geo.cities,
         caveats: event.map.caveats,
         via: event.map.via,
+        directionFixed: event.map.directionFixed,
       };
     case "origin":
       return { type: "origin", origin: event.origin };

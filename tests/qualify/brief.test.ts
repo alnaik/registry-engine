@@ -30,6 +30,7 @@ const MAP: MapResult = {
   caveats: ["capacity and minimum order are not verifiable from registry data"],
   usedLlm: false,
   via: "table",
+  directionFixed: false,
 };
 
 function lead(e: Entity, overrides: Partial<Lead> = {}): Lead {

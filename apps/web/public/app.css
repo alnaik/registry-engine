@@ -425,6 +425,21 @@ main > * + * { margin-top: 24px; }
 }
 .segmented button:hover { background: var(--accent-soft); }
 .segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.direction { display: flex; flex-wrap: wrap; gap: 1px; margin-top: 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; background: var(--border-strong); }
+.direction .dir-button {
+  flex: 1 1 120px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.direction .dir-button:hover { background: var(--accent-soft); }
+.direction .dir-button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 .tracker-note {
   width: 100%;
   min-height: 72px;

@@ -98,7 +98,7 @@ paths reject malformed regions. Validation numbers are in ADR 0015.
 ### Phase 7 — small features (user-approved 2026-10-26)
 Build in this order, one spec each. Keep each one small, and drop it if
 it turns into infrastructure.
-- **7a Supplier/buyer switch.** A two-way toggle in the web app ("Find
+- ✅ **7a Supplier/buyer switch.** A two-way toggle in the web app ("Find
   suppliers" / "Find buyers") and `--direction=buy|sell` in the CLI.
   `SearchConfig.direction` overrides the map's guess; the map LLM prompt
   receives it as fixed, and the static path uses it in place of

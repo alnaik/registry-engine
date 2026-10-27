@@ -34,7 +34,7 @@ function makeLead(i: number): Lead {
 function makeOutcome(n = 3): SearchOutcome {
   const ranked = Array.from({ length: n }, (_, i) => makeLead(i));
   return {
-    map: { intent: { naics: ["332312"], geo: { region: "US-CO", cities: [] }, direction: "buy" }, keywords: ["metal"], caveats: ["c1"], usedLlm: false, via: "table" },
+    map: { intent: { naics: ["332312"], geo: { region: "US-CO", cities: [] }, direction: "buy" }, keywords: ["metal"], caveats: ["c1"], usedLlm: false, via: "table", directionFixed: false },
     routed: [
       { id: "co_sos", name: "Colorado SoS", plane: "existence", driver: "socrata", coverage: { geo: ["US-CO"], naics: ["*"] }, endpoint: "https://x", fields: {} },
       { id: "ppp", name: "PPP loans", plane: "category", driver: "static_shard", coverage: { geo: ["US"], naics: ["*"] }, endpoint: "", fields: {} },
@@ -163,7 +163,7 @@ describe("web app server", () => {
       expect(r.status).toBe(200);
       expect(String(r.headers["content-type"])).toContain("application/x-ndjson");
       const out = lines(r);
-      expect(out[0]).toMatchObject({ type: "map", direction: "buy", via: "table", caveats: ["c1"] });
+      expect(out[0]).toMatchObject({ type: "map", direction: "buy", via: "table", directionFixed: false, caveats: ["c1"] });
       expect(out[0]?.["naics"]).toEqual([{ code: "332312", title: "Fabricated Structural Metal Manufacturing" }]);
       expect(out[1]).toEqual({ type: "fetched", sourceId: "ppp", count: 7 });
 
@@ -201,6 +201,17 @@ describe("web app server", () => {
       expect(dflt.llm).toBeDefined();
       expect(dflt.contacts).toBeUndefined();
       expect(dflt.maxLeads).toBe(12);
+    });
+
+    it("passes a fixed direction through; auto and absent mean undefined; anything else is a 400", async () => {
+      await post({ query: "metal fabrication", direction: "sell" });
+      expect(calls[0]!.cfg.direction).toBe("sell");
+      await post({ query: "metal fabrication", direction: "auto" });
+      expect(calls[1]!.cfg.direction).toBeUndefined();
+      await post({ query: "metal fabrication" });
+      expect(calls[2]!.cfg.direction).toBeUndefined();
+      expect((await post({ query: "metal fabrication", direction: "sideways" })).status).toBe(400);
+      expect(calls).toHaveLength(3);
     });
 
     it("allows one search at a time", async () => {

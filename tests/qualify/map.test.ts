@@ -236,3 +236,44 @@ describe("mapQuery — static table and direction (H2, M6)", () => {
     expect((await mapQuery("I make candles, find me buyers", null, CO2)).intent.direction).toBe("sell");
   });
 });
+
+describe("mapQuery — fixed direction (7a)", () => {
+  function capturingLlm(response: string) {
+    const prompts: string[] = [];
+    const backend: RawLlm = { complete: async (prompt: string) => { prompts.push(prompt); return response; } };
+    return { llm: createLlm({ backend }), prompts };
+  }
+
+  it("fixed buy overrides a sell-sounding request on the static path", async () => {
+    const r = await mapQuery("who would buy my hot sauce", null, { ...CO, direction: "buy" });
+    expect(r.intent.direction).toBe("buy");
+    expect(r.directionFixed).toBe(true);
+    expect(r.caveats.some(c => c.includes("never what it currently buys"))).toBe(false);
+    expect(r.intent.naics).toContain("311941");
+  });
+
+  it("fixed sell without an LLM returns no codes and the sell + needs-LLM caveats", async () => {
+    const r = await mapQuery("produce supplier", null, { ...CO, direction: "sell" });
+    expect(r.intent.direction).toBe("sell");
+    expect(r.directionFixed).toBe(true);
+    expect(r.intent.naics).toEqual([]);
+    expect(r.caveats.some(c => c.includes("never what it currently buys"))).toBe(true);
+    expect(r.caveats.some(c => c.includes("finding buyers needs the LLM step"))).toBe(true);
+  });
+
+  it("fixed direction wins over the model's and is told to the model", async () => {
+    const { llm, prompts } = capturingLlm('{"direction":"buy","naics":["311941"],"keywords":["sauce"],"cities":[],"caveats":[]}');
+    const r = await mapQuery("hot sauce", llm, { ...CO, direction: "sell" });
+    expect(r.intent.direction).toBe("sell");
+    expect(r.directionFixed).toBe(true);
+    expect(r.caveats.some(c => c.includes("never what it currently buys"))).toBe(true);
+    expect(prompts[0]).toContain("Direction (fixed by the user): sell");
+  });
+
+  it("auto: directionFixed is false and the prompt has no fixed-direction line", async () => {
+    const { llm, prompts } = capturingLlm('{"direction":"buy","naics":["311941"],"keywords":["sauce"],"cities":[],"caveats":[]}');
+    const r = await mapQuery("hot sauce", llm, CO);
+    expect(r.directionFixed).toBe(false);
+    expect(prompts[0]).not.toContain("Direction (fixed");
+  });
+});

@@ -30,6 +30,11 @@
             <button type="button" class="chip-button example">Who would buy my small-batch hot sauce?</button>
             <button type="button" class="chip-button example">Metal fabrication shop for brackets</button>
           </div>
+          <div class="direction" role="group" aria-label="What are you looking for?">
+            <button type="button" class="dir-button" data-direction="auto" aria-pressed="true">Let us guess</button>
+            <button type="button" class="dir-button" data-direction="buy" aria-pressed="false">Find suppliers</button>
+            <button type="button" class="dir-button" data-direction="sell" aria-pressed="false">Find buyers</button>
+          </div>
         </div>
 
         <div class="field">
@@ -77,7 +82,7 @@
             </div>
 
             <div class="field wide">
-              <label class="check"><input type="checkbox" id="no-llm"> <span>Skip AI <span class="muted">(faster; supplier searches only)</span></span></label>
+              <label class="check"><input type="checkbox" id="no-llm"> <span>Skip AI <span class="muted">(faster; finding buyers then needs industry codes)</span></span></label>
               <p class="hint" id="llm-hint" hidden>Claude Code isn&rsquo;t available on this computer, so AI is off.</p>
             </div>
 

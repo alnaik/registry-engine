@@ -33,6 +33,7 @@ export interface SearchConfig {
   probeLimit?: number | undefined;
   maxLeads?: number | undefined;
   naics?: string[] | undefined;     // user-supplied lead codes; skips the map LLM call
+  direction?: "buy" | "sell" | undefined;   // fixed search direction; undefined = guess from the request
   hiddenOnly?: boolean | undefined; // keep only leads with no website on any public record
   near?: string | undefined;        // ZIP or place name the leads are measured from
   radiusMi?: number | undefined;    // drop leads farther than this from the origin
@@ -73,7 +74,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   }
 
   const region = cfg.region ?? defaultRegion(sources);
-  const map = await mapQuery(query, llm, { region, cities: regionCities(sources, region), places: regionPlaces(region), naics: cfg.naics, locationHint: cfg.near });
+  const map = await mapQuery(query, llm, { region, cities: regionCities(sources, region), places: regionPlaces(region), naics: cfg.naics, locationHint: cfg.near, direction: cfg.direction });
   emit({ type: "map", map });
 
   // The origin is the user's location: --near, else the first city named in

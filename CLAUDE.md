@@ -36,7 +36,8 @@ python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csv
 ```
 
 CLI flags: `--near=<ZIP|town>` distance center · `--radius=<mi>` ·
-`--no-contacts` · `--naics=<codes>` override · `--hidden` only leads with no website
+`--no-contacts` · `--naics=<codes>` override ·
+`--direction=buy|sell` (buy = find suppliers, sell = find buyers; overrides the guess) · `--hidden` only leads with no website
 in any record · `--csv=<path>` all ranked leads · `--leads=<n>` (default 12)
 · `--verbose` evidence · `--region=<US-XX>` · `--limit=<n>` · `--model=<m>`
 · `--shards=<url>`. The default path makes 2 LLM calls via the Claude Code
