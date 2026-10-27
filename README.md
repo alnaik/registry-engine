@@ -43,6 +43,7 @@ Flags:
 - `--near=<ZIP|town>`: center for distance grouping. Default: a town named in the request.
 - `--radius=<mi>`: drop leads farther away than this.
 - `--naics=<c1,c2>`: use these industry codes instead of inferring them.
+- `--direction=buy|sell`: buy = find suppliers, sell = find buyers. Default: guessed from the request.
 - `--hidden`: only leads with no website listed in any record.
 - `--csv=<path>`: write every ranked lead.
 - `--leads=<n>`: number of briefed and looked-up leads (default 12).

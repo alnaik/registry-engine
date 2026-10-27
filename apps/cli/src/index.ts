@@ -67,6 +67,10 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
       fail(`--naics needs valid NAICS codes, comma-separated${bad.length > 0 ? ` (not a code: ${bad.join(", ")})` : ""} — run "codes <words>" to look them up`);
     }
   }
+  const direction = flags["direction"];
+  if (direction !== undefined && direction !== "buy" && direction !== "sell") {
+    fail(`--direction must be buy (find suppliers) or sell (find buyers) (got "${direction}")`);
+  }
   const fetchedCounts: string[] = [];
 
   const out = await search(query, {
@@ -77,6 +81,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     limit,
     maxLeads: leads,
     naics,
+    direction: direction === "buy" || direction === "sell" ? direction : undefined,
     hiddenOnly: flags["hidden"] === "true",
     near: flags["near"] !== undefined && flags["near"] !== "true" ? flags["near"] : undefined,
     radiusMi,
@@ -85,7 +90,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
       switch (event.type) {
         case "map":
           console.log(`map     ${JSON.stringify(event.map.intent)} keywords=[${event.map.keywords.join(",")}] llm=${event.map.usedLlm ? "1 call" : "static"}`);
-          console.log(`        via=${event.map.via}`);
+          console.log(`        via=${event.map.via}${event.map.directionFixed ? " (direction fixed by --direction)" : ""}`);
           console.log(`        lead codes: ${event.map.intent.naics.map(c => `${c} ${naicsLabel(c) ?? ""}`.trim()).join("; ") || "none"}`);
           for (const c of event.map.caveats) console.log(`        ⚠ ${c}`);
           break;
@@ -226,6 +231,7 @@ Usage:
 
 Buyer searches ("who would buy my ...") need the LLM path (drop --no-llm) or
 --naics=<buyer industry codes>; without either they return no leads.
+--direction=sell sets the direction without relying on wording.
 
 Flags:
   --limit=<n>   per-source fetch cap
@@ -239,6 +245,7 @@ Flags:
   --radius=<miles>    drop leads farther than this from the origin
   --no-contacts       skip the web contact lookup (otherwise on when EXA_API_KEY or
                       PARALLEL_API_KEY is set; at most one web search per briefed lead)
+  --direction=buy|sell  buy = find suppliers, sell = find buyers (default: guessed from the request)
   --hidden      only leads with no website on any public record
   --csv=<path>  write every ranked lead to a CSV file
   --verbose     print the evidence lines under each lead

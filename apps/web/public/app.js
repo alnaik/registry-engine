@@ -152,6 +152,7 @@ const app = {
   status: null,
   running: false,
   lastParams: null,
+  direction: "auto",
   map: null,
   origin: undefined,        // undefined until the origin event arrives
   result: null,
@@ -215,6 +216,13 @@ async function loadStatus() {
   }
 }
 
+function setDirection(value) {
+  app.direction = value;
+  for (const b of document.querySelectorAll(".dir-button")) {
+    b.setAttribute("aria-pressed", b.dataset.direction === value ? "true" : "false");
+  }
+}
+
 function readParams() {
   const query = $("query").value.trim();
   const params = { query };
@@ -228,6 +236,7 @@ function readParams() {
   params.findContacts = $("find-contacts").checked && !$("find-contacts").disabled;
   params.noLlm = $("no-llm").checked;
   params.leads = Number($("leads").value);
+  if (app.direction !== "auto") params.direction = app.direction;
   if (!$("region-field").hidden && $("region").value) params.region = $("region").value;
   return params;
 }
@@ -262,6 +271,10 @@ function setupForm() {
       showQueryError("");
       $("query").focus();
     });
+  }
+
+  for (const b of document.querySelectorAll(".dir-button")) {
+    b.addEventListener("click", () => setDirection(b.dataset.direction));
   }
 
   $("retry").addEventListener("click", () => {
@@ -456,6 +469,18 @@ function renderInterp() {
 
   const line = h("div", { class: "interp-line" },
     "Looking for ", h("strong", { text: map.direction === "sell" ? "buyers" : "suppliers" }));
+  if (!map.directionFixed) {
+    const other = map.direction === "sell" ? "buy" : "sell";
+    line.append(h("span", { class: "muted", text: " (guessed)" }));
+    line.append(h("button", {
+      type: "button",
+      class: "link-button",
+      onclick: () => {
+        setDirection(other);
+        if (!app.running && app.lastParams) runSearch({ ...app.lastParams, direction: other });
+      },
+    }, other === "sell" ? "Find buyers instead" : "Find suppliers instead"));
+  }
   if (app.origin !== undefined) {
     line.append(h("span", { class: "sep", "aria-hidden": "true", text: "·" }));
     if (app.origin === null) line.append("anywhere in the state");
@@ -631,7 +656,7 @@ function renderEmpty() {
   tips.append(h("li", { text: "Try different words. Describe the kind of business, like \"metal fabrication shop\"." }));
   tips.append(h("li", { text: "Enter industry codes under More options. \"Find codes\" will look them up for you." }));
   if (p.noLlm && app.map && app.map.direction === "sell") {
-    tips.prepend(h("li", { text: "Finding buyers needs the AI step (it decides which industries use your product). Turn off 'Skip AI', or enter industry codes in More options." }));
+    tips.prepend(h("li", { text: "Finding buyers needs the AI step (it decides which industries use your product). Turn off \"Skip AI\", or enter industry codes in More options. If you need a supplier instead, choose \"Find suppliers\"." }));
   } else if (p.noLlm) {
     tips.append(h("li", { text: "Selling something? Turn off \"Skip AI\" so we can work out who would buy it." }));
   }

@@ -13,6 +13,7 @@ export interface MapResult {
   caveats: string[];    // things registries cannot verify — brief() must flag these
   usedLlm: boolean;
   via: "llm" | "override" | "table" | "none";
+  directionFixed: boolean;   // true when the caller fixed the direction instead of it being guessed
 }
 
 // token -> NAICS codes of the businesses to contact (suppliers) + name/crop
@@ -138,6 +139,7 @@ export async function mapQuery(
     places?: string[] | undefined;   // gazetteer place names, matched only after a locative ("near castle rock")
     naics?: string[] | undefined;
     locationHint?: string | undefined;   // the user's stated location; shown to the LLM so it doesn't caveat a "missing" one
+    direction?: "buy" | "sell" | undefined;   // fixed by the user; undefined = guess from the request
   }
 ): Promise<MapResult> {
   const region = opts.region;
@@ -169,7 +171,7 @@ export async function mapQuery(
   for (const f of found) if (!cities.includes(f.city)) cities.push(f.city);
   const geo = { region, cities: cities.map(titleCase) };
 
-  const direction: Intent["direction"] = SELL_PATTERN.test(q) ? "sell" : "buy";
+  const direction: Intent["direction"] = opts.direction ?? (SELL_PATTERN.test(q) ? "sell" : "buy");
 
   const cityWords = new Set(cities.flatMap(c => c.split(" ")));
   const content = q.replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(t =>
@@ -177,7 +179,7 @@ export async function mapQuery(
 
   const caveats: string[] = direction === "sell" ? [SELL_CAVEAT] : [];
   const done = (naics: string[], keywords: string[], via: MapResult["via"]): MapResult =>
-    ({ intent: { naics, geo, direction }, keywords, caveats, usedLlm: false, via });
+    ({ intent: { naics, geo, direction }, keywords, caveats, usedLlm: false, via, directionFixed: opts.direction !== undefined });
 
   // 1) Explicit codes from the user win over everything.
   const override = (opts.naics ?? []).filter(isNaicsCode).slice(0, 6);
@@ -187,9 +189,11 @@ export async function mapQuery(
   if (llm !== null) {
     try {
       const hint = opts.locationHint?.trim().slice(0, 60);
-      const prompt = hint ? `${query}\n\nUser's location: ${hint}` : query;
+      let prompt = hint ? `${query}\n\nUser's location: ${hint}` : query;
+      if (opts.direction === "buy") prompt += "\n\nDirection (fixed by the user): buy — they need a product or service; return supplier codes.";
+      else if (opts.direction === "sell") prompt += "\n\nDirection (fixed by the user): sell — they sell something; return buyer codes.";
       const raw = await llm.call(prompt, { tier: "cheap", maxTokens: 400, system: MAP_SYSTEM });
-      const parsed = parseMapResponse(raw, region, direction, caveats);
+      const parsed = parseMapResponse(raw, region, direction, caveats, opts.direction);
       if (parsed !== null) return parsed;
     } catch {
       // fall through to the no-LLM paths
@@ -224,6 +228,7 @@ export const MAP_SYSTEM = `You turn a small business owner's request into the NA
 First decide the direction:
 - "buy": they need a product or service -> codes of businesses that MAKE or SUPPLY it (manufacturers, growers, wholesalers, contractors, service providers).
 - "sell": they sell something -> codes of businesses that would BUY or USE it.
+If the direction is given as fixed by the user, use it and return it unchanged.
 
 Output ONLY a JSON object:
 {"direction":"buy","naics":["315210","314910"],"keywords":["sew","bag"],"cities":["Denver"],"caveats":["..."]}
@@ -241,7 +246,8 @@ export function parseMapResponse(
   raw: string,
   region: string,
   fallbackDirection: Intent["direction"],
-  staticCaveats: string[]
+  staticCaveats: string[],
+  fixedDirection?: Intent["direction"]
 ): MapResult | null {
   const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
   const candidate = cleaned.startsWith("{") ? cleaned : (cleaned.match(/\{[\s\S]*\}/)?.[0] ?? cleaned);
@@ -254,8 +260,8 @@ export function parseMapResponse(
       .filter(k => k.length >= 3)
       .filter(k => !k.split(/\s+/).every(w => STOPWORDS.has(w)))
       .slice(0, 6);
-    const direction = parsed["direction"] === "buy" || parsed["direction"] === "sell"
-      ? parsed["direction"] : fallbackDirection;
+    const direction = fixedDirection ?? (parsed["direction"] === "buy" || parsed["direction"] === "sell"
+      ? parsed["direction"] : fallbackDirection);
     // The model's direction wins over the static guess, and so does its
     // demand caveat: a "sell" search always carries it, a "buy" one never does.
     const base = staticCaveats.filter(c => c !== SELL_CAVEAT);
@@ -265,6 +271,7 @@ export function parseMapResponse(
       caveats: [...(direction === "sell" ? [SELL_CAVEAT] : []), ...base, ...strings(parsed["caveats"], 4, 200)],
       usedLlm: true,
       via: "llm",
+      directionFixed: fixedDirection !== undefined,
     };
   } catch {
     return null;
