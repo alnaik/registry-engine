@@ -16,7 +16,8 @@ whole state's matching businesses grouped by distance (within 10 mi, 10–25,
 operating, how to reach it, call notes, an opener you can copy, and a
 tracker (New / Called / Interested / Not a fit, plus notes, saved in your
 browser). Export everything to CSV, export just your tracked list, or print
-a call sheet.
+a call sheet. Saved searches live in this browser and flag businesses that
+are new since the last run.
 
 **AI.** Two LLM calls per search, run through your Claude Code login
 (`claude -p`), with no API key. Without Claude Code, tick "Skip AI".

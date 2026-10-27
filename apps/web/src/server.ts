@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ClaudeCodeBackend, leadsToCsv, summaryCounts, codeSourceIds, naicsFieldMap } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel } from "@registry-engine/registry-core";
+import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, normalizeName } from "@registry-engine/registry-core";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
 // lookup, and one streaming search endpoint. Everything is loopback-only
@@ -50,6 +50,7 @@ class BadRequest extends Error {
 
 export interface LeadView {
   id: string;
+  key: string;   // stable across sources: normalized name + ZIP5
   rank: number;
   score: number;
   name: string;
@@ -369,6 +370,7 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
   const place = [e.name, address.street, address.city, address.state, address.zip].filter(v => v !== "").join(" ");
   const view: LeadView = {
     id: e.id,
+    key: `${normalizeName(e.name)}|${(e.address.zip ?? "").trim().slice(0, 5)}`,
     rank,
     score: lead.score,
     name: e.name,

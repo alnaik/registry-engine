@@ -108,6 +108,22 @@ function saveTracker(id, data) {
   }
 }
 
+// Trackers are keyed by the stable lead key (name + ZIP5). Entries saved under
+// the old source-dependent id are moved to the key the first time they are read.
+function loadLeadTracker(lead) {
+  const current = loadTracker(lead.key);
+  if (current) return current;
+  const legacy = loadTracker(lead.id);
+  if (!legacy) return null;
+  try {
+    localStorage.setItem(TRACKER_PREFIX + lead.key, JSON.stringify(legacy));
+    localStorage.removeItem(TRACKER_PREFIX + lead.id);
+  } catch {
+    // storage unavailable: keep using the legacy entry as read
+  }
+  return legacy;
+}
+
 function allTracked() {
   const out = [];
   try {
@@ -121,6 +137,56 @@ function allTracked() {
     // storage unavailable: nothing tracked
   }
   return out.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+}
+
+// ---- saved searches ---------------------------------------------------------
+
+const SAVED_KEY = "re:saved";
+const SAVED_MAX = 20;
+const SEEN_MAX = 500;
+
+function normCodes(text) {
+  return String(text || "").split(/[\s,]+/).filter(Boolean).sort().join(",");
+}
+
+function searchId(p) {
+  return JSON.stringify([
+    String(p.query || "").trim().toLowerCase(),
+    String(p.near || "").trim().toLowerCase(),
+    normCodes(p.naics),
+    p.direction || "auto",
+  ]);
+}
+
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (raw === null) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list.filter(e => e && typeof e === "object" && typeof e.query === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeSaved(list) {
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(list));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function findSaved(params) {
+  if (!params) return null;
+  const id = searchId(params);
+  return loadSaved().find(e => searchId(e) === id) || null;
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString();
 }
 
 function loadPref(key) {
@@ -165,6 +231,8 @@ const app = {
   sourceRows: {},
   contactsEnabled: false,
   startedAt: 0,
+  newKeys: new Set(),       // lead keys not seen in the previous run of a saved search
+  newSince: null,           // ISO time of that previous run
 };
 
 let toastTimer = 0;
@@ -519,6 +587,8 @@ function resetForRun(params) {
   app.groups = new Map();
   app.totals = new Map();
   app.moreQueue = [];
+  app.newKeys = new Set();
+  app.newSince = null;
   app.filter = "all";
   app.contactsEnabled = params.findContacts === true;
   app.startedAt = Date.now();
@@ -642,6 +712,23 @@ function showResult(result) {
     return;
   }
 
+  const keys = [...result.leads, ...result.more].map(l => l.key);
+  const saved = findSaved(app.lastParams);
+  if (saved) {
+    const prior = new Set(Array.isArray(saved.seen) ? saved.seen : []);
+    app.newKeys = new Set(keys.filter(k => !prior.has(k)));
+    app.newSince = saved.lastRunAt;
+    const id = searchId(saved);
+    const list = loadSaved().map(e => (searchId(e) === id
+      ? { ...e, seen: keys.slice(0, SEEN_MAX), lastRunAt: new Date().toISOString() }
+      : e));
+    storeSaved(list);
+    renderSaved();
+  } else {
+    app.newKeys = new Set();
+    app.newSince = null;
+  }
+
   renderSummary(result);
   renderFilters();
   renderResults(result);
@@ -685,8 +772,93 @@ function renderSummary(result) {
   const csv = h("a", { class: "button small primary", href: "/api/csv", download: "leads.csv", text: "Download CSV (all results)" });
   const mine = h("button", { type: "button", class: "button small", text: "Download my list", onclick: downloadMyList });
   const print = h("button", { type: "button", class: "button small", text: "Print call sheet", onclick: () => window.print() });
-  box.append(h("div", { class: "summary-actions" }, csv, mine, print));
+  const already = findSaved(app.lastParams) !== null;
+  const save = h("button", {
+    type: "button",
+    class: "button small",
+    text: already ? "Saved ✓" : "Save this search",
+    disabled: already,
+  });
+  save.addEventListener("click", () => saveCurrentSearch(save, result));
+  box.append(h("div", { class: "summary-actions" }, csv, mine, print, save));
+  if (app.newSince !== null) {
+    const n = app.newKeys.size;
+    const date = fmtDate(app.newSince);
+    const tail = "New businesses can only come from live records (state registry, EPA, farm products); the PPP loan data is a fixed 2020–21 snapshot.";
+    box.append(h("p", { class: "muted small", text: n > 0 ? `${n} new since ${date}. ${tail}` : `Nothing new since ${date}. ${tail}` }));
+  }
   box.hidden = false;
+}
+
+function saveCurrentSearch(button, result) {
+  const p = app.lastParams || {};
+  const now = new Date().toISOString();
+  const entry = {
+    query: String(p.query || ""),
+    near: p.near || "",
+    naics: p.naics || "",
+    direction: p.direction || "auto",
+    savedAt: now,
+    lastRunAt: now,
+    seen: [...result.leads, ...result.more].map(l => l.key).slice(0, SEEN_MAX),
+  };
+  const id = searchId(entry);
+  const list = loadSaved().filter(e => searchId(e) !== id);
+  list.push(entry);
+  if (!storeSaved(list.slice(-SAVED_MAX))) {
+    toast("Couldn't save. Browser storage is blocked.");
+    return;
+  }
+  button.textContent = "Saved ✓";
+  button.disabled = true;
+  renderSaved();
+  toast("Saved. Run it again later to see what's new.");
+}
+
+function renderSaved() {
+  const list = loadSaved();
+  const box = $("saved");
+  const ul = $("saved-list");
+  clear(ul);
+  box.hidden = list.length === 0;
+  for (const entry of list) {
+    const info = [
+      entry.near ? `near ${entry.near}` : "",
+      entry.naics ? `codes ${entry.naics}` : "",
+      entry.direction === "buy" ? "suppliers" : entry.direction === "sell" ? "buyers" : "",
+      fmtDate(entry.lastRunAt) ? `last run ${fmtDate(entry.lastRunAt)}` : "",
+    ].filter(Boolean);
+    const run = h("button", {
+      type: "button",
+      class: "button small",
+      text: "Run",
+      "aria-label": `Run saved search: ${entry.query}`,
+      onclick: () => {
+        $("query").value = entry.query;
+        $("near").value = entry.near || "";
+        $("naics").value = entry.naics || "";
+        setDirection(entry.direction || "auto");
+        showQueryError("");
+        if (!app.running) runSearch(readParams());
+      },
+    });
+    const remove = h("button", {
+      type: "button",
+      class: "button small secondary",
+      text: "Remove",
+      "aria-label": `Remove saved search: ${entry.query}`,
+      onclick: () => {
+        const id = searchId(entry);
+        storeSaved(loadSaved().filter(e => searchId(e) !== id));
+        renderSaved();
+      },
+    });
+    ul.append(h("li", { class: "saved-item" },
+      h("div", { class: "saved-info" },
+        h("strong", { text: entry.query }),
+        info.map(t => h("span", { class: "muted small", text: t }))),
+      h("div", { class: "saved-buttons" }, run, remove)));
+  }
 }
 
 function downloadMyList() {
@@ -712,7 +884,7 @@ function hasSite(lead) {
 }
 
 function trackerStatus(lead) {
-  const t = loadTracker(lead.id);
+  const t = loadLeadTracker(lead);
   return t && t.status ? t.status : "new";
 }
 
@@ -887,6 +1059,7 @@ function industryText(lead, max) {
 function compactRow(lead) {
   const chip = webChip(lead);
   const meta = h("div", { class: "row-meta" },
+    app.newKeys.has(lead.key) ? h("span", { class: "chip new", text: `New since ${fmtDate(app.newSince)}` }) : null,
     lead.distanceMi !== null ? h("span", { text: `${lead.distanceMi} mi` }) : null,
     h("span", { text: industryText(lead, 1) || "Name match only" }),
     lead.address.city ? h("span", { text: lead.address.city }) : null,
@@ -1033,7 +1206,7 @@ async function copyText(text, quoteEl, button) {
 
 function trackerSection(lead) {
   const sec = h("section", { class: "sec-tracker" }, h("h4", { class: "sec-title", text: "Your outreach" }));
-  const saved = loadTracker(lead.id);
+  const saved = loadLeadTracker(lead);
   let status = saved && STATUS_LABEL[saved.status] ? saved.status : "new";
   const note = h("textarea", {
     class: "tracker-note",
@@ -1068,7 +1241,7 @@ function trackerSection(lead) {
 
   const persist = () => {
     const contacts = bestContacts(lead);
-    const ok = saveTracker(lead.id, {
+    const ok = saveTracker(lead.key, {
       status,
       note: note.value.trim(),
       name: lead.name,
@@ -1104,6 +1277,7 @@ function trackerSection(lead) {
 function leadCard(lead) {
   const chip = webChip(lead);
   const chips = h("div", { class: "chip-row" },
+    app.newKeys.has(lead.key) ? h("span", { class: "chip new", text: `New since ${fmtDate(app.newSince)}` }) : null,
     lead.distanceMi !== null ? h("span", { class: "chip", text: `${lead.distanceMi} mi` }) : null,
     sizeText(lead) ? h("span", { class: "chip", text: sizeText(lead) }) : null,
     lead.onStateRegistry
@@ -1142,5 +1316,6 @@ function leadCard(lead) {
 // ---- boot --------------------------------------------------------------------------------------------
 
 setupForm();
+renderSaved();
 $("near").value = loadPref("near");
 loadStatus();
