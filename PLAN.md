@@ -8,6 +8,46 @@ round), one commit per phase, each after `npm test` + `npm run typecheck`.
 
 ## Phases
 
+### Phase A — honest labels ✅
+- **Tri-state standing.** `Lead.registryCheck` = `matched` |
+  `checked_not_found` | `not_checked`, set by the engine.
+  `planBackfill` replicates the driver's dedupe key (`backfillKey`) and cap
+  (`maxBackfillNames`, now on the `Driver` interface) over the top
+  `BACKFILL_ENTITIES` candidates, so the engine knows exactly which names
+  were sent. `SearchOutcome.registryLookup` = `{ status: ran|failed|none,
+  namesChecked, nameCap, candidates }`. A failed lookup makes every
+  unmatched lead `not_checked`. The probe's evidence note now says "not
+  checked against …" for those instead of "not found in …". Brief packing
+  and the template brief use the same tri-state. CLI `alive` line uses the
+  web wording.
+- **Capped fetches.** `Driver.defaultLimit` (socrata 500, echo 500, shard
+  ∞); the `fetched` event carries `capped`; UI and CLI show "500+ (capped)".
+- **Name-only matches and individuals' records** leave the main list: the
+  result line now has `leads`/`more` (coded businesses), `individuals`
+  (coded individuals' records, `mapsUrl` and `searchUrl` null from the
+  server) and `nameOnly`. `sheet` counts (`sheetCounts`) only count coded
+  leads.
+- **Openers** rewritten (template + LLM prompt): the user's own words,
+  never a NAICS title or a person's name (`requestPhrase`).
+- **Plain "what"**: `naicsPhrase` turns a title into a sentence fragment;
+  `LeadView.what`.
+- **Labels** live in `apps/web/public/labels.js` (pure, no DOM);
+  `tests/web/labels.test.ts` pins every pill/tag string to its LeadView
+  predicate and fails on an unpinned label or a label hard-coded in app.js.
+- Deviations from the brief:
+  - A fourth case inside "checked, not found": when the registry has a
+    same-named record at an incompatible locality (the ACME TENT & CANVAS
+    gap), the pill reads "Not on state registry at this address" with the
+    tag "A business with this name is registered elsewhere. Confirm it's the
+    same one." Saying "Not on state registry" there would be false.
+  - The grey tag has two more variants for when the lookup failed or didn't
+    run, so "Beyond the N names" is only shown when N names really were
+    checked. A top-150 candidate whose name is too short to look up (<4
+    letters) also lands under "Beyond the N names"; recorded in ADR 0017.
+  - `LeadView.onStateRegistry` and `LeadView.point` were removed (replaced
+    by `registryCheck`; the distance map goes in Phase B). The server test
+    for map points was replaced by one for the three-way split.
+
 ### Phase 0 — tokens and component sheet ✅
 - `app.css` `:root` rewritten: paper/ink, teal for actions and links only,
   three trust tokens (ok / unk / no), type scale 13/15/17/22/30 at 450/650,

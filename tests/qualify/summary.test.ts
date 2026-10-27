@@ -26,3 +26,21 @@ describe("summaryLines", () => {
     expect(summaryLines(ranked, ["332"])).toEqual(["Found 2 businesses with an industry code for this request"]);
   });
 });
+
+describe("sheetCounts / hasPhone", () => {
+  it("counts over coded leads only: radius, confirmed, phones, individuals", async () => {
+    const { sheetCounts, hasPhone } = await import("../../packages/qualify/src/summary.js");
+    const a = { ...lead(["332312"], "none"), distanceMi: 4, registryCheck: "matched" as const };
+    a.entity = { ...a.entity, contacts: ["(303) 555-0100"] };
+    const b = { ...lead(["332"], "none"), distanceMi: 40, registryCheck: "not_checked" as const, found: { status: "found", provider: "exa", phone: "303-555-0199", listings: [], sourceUrls: [] } as unknown as Lead["found"] };
+    const c = { ...lead(["332312"], "none"), distanceMi: null, registryCheck: "checked_not_found" as const };
+    const d = { ...lead([], "none"), distanceMi: 1, registryCheck: "matched" as const };
+    d.entity = { ...d.entity, contacts: ["555 0100"] };
+    expect(hasPhone(a)).toBe(true);
+    expect(hasPhone(b)).toBe(true);
+    expect(hasPhone(d)).toBe(false);
+    const counts = sheetCounts([a, b, c, d], ["332"], { radiusMi: 25, hasOrigin: true, isIndividual: l => l === c });
+    expect(counts).toEqual({ total: 4, coded: 3, nameOnly: 1, individuals: 1, withinRadius: 1, radiusMi: 25, confirmed: 1, withPhone: 2 });
+    expect(sheetCounts([a], ["332"], { radiusMi: 25, hasOrigin: false, isIndividual: () => false }).withinRadius).toBeNull();
+  });
+});

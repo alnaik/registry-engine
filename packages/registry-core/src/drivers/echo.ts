@@ -25,6 +25,7 @@ interface EchoResults {
 
 export class EchoDriver implements Driver {
   readonly kind = "echo" as const;
+  readonly defaultLimit = DEFAULT_LIMIT;
 
   async fetch(source: SourceSpec, req: FetchRequest, opts: FetchRetryOptions = {}): Promise<Entity[]> {
     const codes = req.naics.filter(c => /^\d{3,6}$/.test(c));

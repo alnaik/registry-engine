@@ -9,7 +9,7 @@ const DEFAULT_LIMIT = 500;
 const MAX_KEYWORDS = 8;
 const ID_CHUNK = 100;
 const CONCURRENCY = 4;
-const MAX_BACKFILL_NAMES = 80;    // cap on distinct name patterns per call
+export const MAX_BACKFILL_NAMES = 80;    // cap on distinct name patterns per call
 const NAME_CHUNK = 25;            // OR'd LIKE patterns per request
 const BACKFILL_PAGE_LIMIT = 200;  // row cap per chunk request
 const RECENT_LIMIT = 1000;        // default row cap for fetchRecent: one Socrata page, so the 90-day window isn't cut short statewide before the radius filter
@@ -63,6 +63,12 @@ function keywordClause(fields: string[], values: string[]): string {
 
 export class SocrataDriver implements Driver {
   readonly kind = "socrata" as const;
+  readonly defaultLimit: number = DEFAULT_LIMIT;
+  readonly maxBackfillNames: number = MAX_BACKFILL_NAMES;
+
+  backfillKey(name: string): string | null {
+    return namePattern(name);
+  }
 
   async fetch(source: SourceSpec, req: FetchRequest, opts: FetchRetryOptions = {}): Promise<Entity[]> {
     const quirks = readQuirks(source);

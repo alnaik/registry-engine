@@ -4,6 +4,8 @@
 // results) is only ever put on the page with textContent / text nodes, never
 // as HTML. Links are built only from validated URLs.
 
+import { trustLabel, webTag, fetchedText, whatLine } from "/labels.js";
+
 const $ = id => document.getElementById(id);
 
 // ---- DOM helper ----------------------------------------------------------
@@ -503,7 +505,7 @@ function handleEvent(event) {
       break;
     case "fetched": {
       const row = sourceRow(event.sourceId);
-      row.count.textContent = `${event.count.toLocaleString()} found`;
+      row.count.textContent = event.capped ? fetchedText(event.count, true) : `${fetchedText(event.count, false)} found`;
       break;
     }
     case "source_error": {
@@ -749,7 +751,7 @@ function showResult(result) {
   if (result.origin !== undefined) app.origin = result.origin;
   renderInterp();
 
-  if (result.leads.length === 0 && result.more.length === 0) {
+  if (result.leads.length === 0 && result.more.length === 0 && result.individuals.length === 0 && result.nameOnly.length === 0) {
     renderEmpty();
     renderRecent(result);
     return;
@@ -775,7 +777,24 @@ function showResult(result) {
   renderSummary(result);
   renderFilters();
   renderResults(result);
+  renderGroups(result);
   renderRecent(result);
+}
+
+// Individuals' records and name-only matches: collapsed, after the coded
+// list, never counted in the headline and never on the distance map.
+function renderGroups(result) {
+  const groups = [
+    [result.individuals, "Individuals' records", "Sole proprietors and others filed under a person's name. Shown as filed, with no map link and no web search."],
+    [result.nameOnly, "Name matches only", "Records whose names contain your words but carry no industry code for this work. Most are unrelated."],
+  ];
+  for (const [list, title, why] of groups) {
+    if (!Array.isArray(list) || list.length === 0) continue;
+    const n = title === "Name matches only" ? result.summary.nameOnly : result.sheet.individuals;
+    $("results").append(h("details", { class: "group" },
+      h("summary", null, h("span", { class: "eyebrow", text: `${title} · ${n.toLocaleString()}` }), h("span", { class: "why", text: why })),
+      h("div", { class: "inner band-rows" }, list.map(lead => compactRow(lead)))));
+  }
 }
 
 // State-registry entities formed in the last few months whose names match.
@@ -819,7 +838,7 @@ function renderSummary(result) {
   const stat = (value, name, title) => h("div", { class: "stat", title }, h("span", { class: "value", text: value }), h("span", { class: "name", text: name }));
   const c = result.contactLookups;
   const stats = [
-    stat(s.coded.toLocaleString(), "matching businesses"),
+    stat(s.coded.toLocaleString(), "businesses coded for this work"),
     stat(s.nameOnly.toLocaleString(), "name matches only"),
   ];
   // "No website on record" says nothing when it is true of everyone.
@@ -1183,19 +1202,12 @@ function sizeText(lead) {
 }
 
 function webChip(lead) {
-  const f = lead.found;
-  if (lead.web === "verified") return { text: "Website ✓", tone: "ok" };
-  if (f) {
-    if (f.status === "found") return { text: "Found online — verify", tone: "accent" };
-    if (f.status === "directory") {
-      const names = f.listings.map(prettyHost);
-      return { text: names.length > 0 ? `Listed on ${names.join(", ")}` : "Listed in directories", tone: "" };
-    }
-    if (f.status === "not-found") return { text: "No web presence found", tone: "accent" };
-    return { text: "Not searched", tone: "" };
-  }
-  if (lead.web === "unresolved") return { text: "Listed website didn't respond", tone: "warn" };
-  return { text: "No website on record", tone: "" };
+  return { text: webTag(lead), tone: "" };
+}
+
+function trustPills(lead) {
+  const t = trustLabel(lead, app.result ? app.result.registryLookup : null);
+  return [h("span", { class: `pill ${t.tone}`, text: t.pill }), t.tag ? h("span", { class: "trust-tag", text: t.tag }) : null];
 }
 
 function addressText(lead) {
@@ -1220,9 +1232,10 @@ function compactRow(lead, opts = {}) {
     opts.registered && fmtDate(lead.formedDate) ? h("span", { text: `Registered ${fmtDate(lead.formedDate)}` }) : null,
     app.newKeys.has(lead.key) ? h("span", { class: "chip new", text: `New since ${fmtDate(app.newSince)}` }) : null,
     lead.distanceMi !== null ? h("span", { text: `${lead.distanceMi} mi` }) : null,
-    h("span", { text: industryText(lead, 1) || "Name match only" }),
+    h("span", { text: whatLine(lead) }),
     lead.address.city ? h("span", { text: lead.address.city }) : null,
     sizeText(lead) ? h("span", { text: sizeText(lead) }) : null,
+    trustPills(lead),
     h("span", { text: chip.text }),
     lead.searchUrl ? extLink("Search the web", lead.searchUrl) : noSearchNote(lead));
   return h("div", { class: "row" }, h("div", { class: "row-name", text: lead.name }), meta);
@@ -1439,9 +1452,7 @@ function leadCard(lead) {
     app.newKeys.has(lead.key) ? h("span", { class: "chip new", text: `New since ${fmtDate(app.newSince)}` }) : null,
     lead.distanceMi !== null ? h("span", { class: "chip", text: `${lead.distanceMi} mi` }) : null,
     sizeText(lead) ? h("span", { class: "chip", text: sizeText(lead) }) : null,
-    lead.onStateRegistry
-      ? h("span", { class: "chip ok", text: "On state registry", title: lead.lastSeen ? `Last record ${lead.lastSeen}` : "" })
-      : h("span", { class: "chip warn", text: "Confirm it's still operating", title: lead.lastSeen ? `Last record ${lead.lastSeen}` : "No state registry match" }),
+    trustPills(lead),
     h("span", { class: `chip ${chip.tone}`.trim(), text: chip.text }));
 
   const head = h("div", { class: "lead-head" },

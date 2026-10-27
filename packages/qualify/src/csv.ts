@@ -7,7 +7,7 @@ import type { Lead } from "./verbs/brief.js";
 
 export const CSV_HEADER = [
   "rank", "score", "name", "other_names", "street", "city", "state", "zip",
-  "naics", "naics_titles", "employees", "last_seen", "sources", "on_state_registry",
+  "naics", "naics_titles", "employees", "last_seen", "sources", "on_state_registry", "registry_check",
   "contacts", "web", "search_url", "officers", "brief", "opener",
   "distance_mi", "band", "found_status", "found_phone", "found_email", "found_website", "found_sources",
 ] as const;
@@ -36,6 +36,7 @@ export function leadsToCsv(leads: Lead[], existenceIds: string[]): string {
       e.lastSeen,
       e.source_ids.join("; "),
       e.source_ids.some(id => existenceIds.includes(id)) ? "yes" : "no",
+      lead.registryCheck ?? "",
       e.contacts.join("; "),
       lead.web,
       lead.searchUrl ?? "",

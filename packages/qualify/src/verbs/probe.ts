@@ -28,6 +28,7 @@ export interface ProbeOptions {
   limit?: number | undefined;         // probe at most N entities (default 25)
   concurrency?: number | undefined;
   existenceSourceId?: string | undefined;  // flag entities missing this source
+  wasChecked?: ((entity: Entity) => boolean) | undefined;  // false = its name was never looked up in that source
   fetchImpl?: typeof fetch | undefined;
 }
 
@@ -42,6 +43,15 @@ export async function probeEntities(entities: Entity[], opts: ProbeOptions = {})
       results.set(entity.id, r);
       applyToEntity(entity, r);
       if (opts.existenceSourceId !== undefined && !entity.source_ids.includes(opts.existenceSourceId)) {
+        if (opts.wasChecked !== undefined && !opts.wasChecked(entity)) {
+          entity.evidence.push({
+            source: "probe",
+            field: "existence",
+            value: opts.existenceSourceId,
+            note: `not checked against ${opts.existenceSourceId} — beyond the names looked up this search`,
+          });
+          return;
+        }
         entity.evidence.push({
           source: "probe",
           field: "existence",

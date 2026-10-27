@@ -78,3 +78,30 @@ export function lookupCodes(words: string[], max = 15): { code: string; title: s
   scored.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
   return scored.slice(0, max).map(({ code, title, description }) => ({ code, title, description }));
 }
+
+// A NAICS title as a plain sentence fragment for a call sheet: "Textile Bag
+// and Canvas Mills" -> "Makes textile bag and canvas products", "Full-Service
+// Restaurants" -> "Runs a full-service restaurant". Display only; the code
+// and its official title stay available alongside it.
+export function naicsPhrase(title: string): string {
+  let t = title.replace(/\s*\([^)]*\)/g, "").replace(/,?\s*All Other\b/gi, "").replace(/^All Other\s+/i, "")
+    .replace(/^Other\s+/i, "").replace(/\s+Other\s+/g, " ").replace(/\s+/g, " ").trim();
+  if (t === "") return "";
+  const lower = (s: string): string => s.split(" ").map(w => (/^[A-Z]{2,}$/.test(w) ? w : w.toLowerCase())).join(" ");
+  const article = (s: string): string => (/^[aeiou]/i.test(s) ? `an ${s}` : `a ${s}`);
+  const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+  const m = (re: RegExp): string | null => { const r = re.exec(t); return r === null ? null : lower(r[1]!.trim()); };
+  let x: string | null;
+  if ((x = m(/^(.+) Manufacturing$/)) !== null) return `Makes ${x}`;
+  if ((x = m(/^(.+) Mills$/)) !== null) return /products?$/.test(x) ? `Makes ${x.replace(/products?$/, "products")}` : `Makes ${x} products`;
+  if ((x = m(/^(.+?) (?:Merchant )?Wholesalers$/)) !== null) return cap(`${x} wholesaler`);
+  if ((x = m(/^(.+) Stores$/)) !== null) return `Runs ${x} stores`;
+  if ((x = m(/^(.+) Restaurants$/)) !== null) return `Runs ${article(x)} restaurant`;
+  if ((x = m(/^(.+) Shops$/)) !== null) return `Runs ${article(x)} shop`;
+  if ((x = m(/^(.+) Contractors$/)) !== null) return cap(`${x} contractor`);
+  if ((x = m(/^(.+) Dealers$/)) !== null) return cap(`${x} dealer`);
+  if (!/ and /i.test(t) && (x = m(/^(.+) Farming$/)) !== null) return `Runs ${article(x)} farm`;
+  if ((x = m(/^(.+) Services$/)) !== null) return `Provides ${x} services`;
+  t = lower(t);
+  return cap(t);
+}
