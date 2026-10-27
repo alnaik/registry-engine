@@ -625,7 +625,12 @@ function renderReading() {
       },
     }, "adjust"));
   box.append(codes);
-  for (const c of map.caveats) box.append(h("p", { class: "caveat", text: c }));
+  // The AI's caveats get a label so they don't float; they print with the sheet.
+  if (map.caveats.length > 0) {
+    box.append(h("div", { class: "caveats" },
+      h("h2", { class: "eyebrow", text: "Before you call" }),
+      map.caveats.map(c => h("p", { class: "caveat", text: c }))));
+  }
 }
 
 // ---- running a search -----------------------------------------------------------------------
