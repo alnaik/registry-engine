@@ -1,3 +1,29 @@
+# v6 — field sheet
+
+Working branch: `v6-field-sheet` (off `main`, not pushed). Rationale and
+design decisions: ADR 0017. Visual reference: the approved field-sheet
+mockup (one column of ruled rows on paper; the only card is an expanded
+lead). Implemented directly by the orchestrator (no coder hand-offs this
+round), one commit per phase, each after `npm test` + `npm run typecheck`.
+
+## Phases
+
+### Phase 0 — tokens and component sheet ✅
+- `app.css` `:root` rewritten: paper/ink, teal for actions and links only,
+  three trust tokens (ok / unk / no), type scale 13/15/17/22/30 at 450/650,
+  4px spacing scale, dark mode via `prefers-color-scheme`, plus
+  `[data-theme]` re-scoping so one page can show both themes. Legacy token
+  names were aliased so the old search page kept working until Phase B.
+- `GET /design` (`design.html` + `design.js`): every component with
+  fictional data; `design.js` clones the light column into a dark one
+  (DOM cloning, no HTML strings). Same Host check and CSP as `/` (the CSP
+  now goes on every HTML entry of the whitelist).
+- New `tests/web/public-assets.test.ts`: no `innerHTML`-style sinks in any
+  shipped script; HTML pages load same-origin scripts only, with no inline
+  script or style.
+
+---
+
 # v5 Plan — activity-coded discovery
 
 Working branch: `v5-activity-coded`. Rationale: ADR 0015. v4 phases (artifact

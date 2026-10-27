@@ -29,6 +29,9 @@ const STATIC_FILES: Record<string, { file: string; type: string }> = {
   "/": { file: "index.html", type: "text/html; charset=utf-8" },
   "/app.js": { file: "app.js", type: "text/javascript; charset=utf-8" },
   "/app.css": { file: "app.css", type: "text/css; charset=utf-8" },
+  // Component sheet: every UI component with fictional data, light and dark.
+  "/design": { file: "design.html", type: "text/html; charset=utf-8" },
+  "/design.js": { file: "design.js", type: "text/javascript; charset=utf-8" },
 };
 
 interface SearchParams {
@@ -111,7 +114,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       res.writeHead(200, {
         "Content-Type": entry.type,
         "Cache-Control": "no-store",
-        ...(path === "/" ? { "Content-Security-Policy": HTML_CSP } : {}),
+        ...(entry.type.startsWith("text/html") ? { "Content-Security-Policy": HTML_CSP } : {}),
       });
       res.end(head ? undefined : body);
       return;
