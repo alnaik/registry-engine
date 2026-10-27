@@ -171,3 +171,85 @@ export function reachSummary(lead) {
   const principal = !lead.individual && Array.isArray(lead.officers) && lead.officers.length > 0 ? lead.officers[0] : "";
   return { phone: "", source: "", place: lead.individual ? `Address as filed: ${place}` : place, principal };
 }
+
+// ---- the summary sentence ---------------------------------------------------------
+
+// Plain-language summary of a result, as [text, strong?] parts so the page can
+// bold the numbers without building HTML. Counts are over coded leads only.
+// opts: { radiusSet: the user chose a radius (results are already cut to it) }
+export function summaryParts(result, opts = {}) {
+  const s = result.sheet;
+  const parts = [];
+  const add = (text, strong = false) => parts.push([text, strong]);
+  const n = v => Number(v).toLocaleString("en-US");
+  const place = result.regionName || "this state";
+  const origin = result.origin ? result.origin.label : "";
+  const are = v => (v === 1 ? "is" : "are");
+  const biz = v => `${n(v)} ${v === 1 ? "business" : "businesses"}`;
+
+  if (s.coded === 0) {
+    add(`No businesses are coded for this work in ${place}`);
+    add(origin && opts.radiusSet ? ` within ${s.radiusMi} miles of ${origin}.` : ".");
+    return parts;
+  }
+  if (origin && opts.radiusSet) {
+    add(biz(s.coded), true);
+    add(` within ${s.radiusMi} miles of ${origin} ${are(s.coded)} coded for this work.`);
+  } else {
+    add(biz(s.coded), true);
+    add(` ${are(s.coded)} coded for this work in ${place}`);
+    if (origin && s.withinRadius !== null) {
+      add(", ");
+      add(s.withinRadius === 0 ? `none within ${s.radiusMi} miles` : `${n(s.withinRadius)} within ${s.radiusMi} miles`, true);
+      add(` of ${origin}.`);
+    } else {
+      add(".");
+    }
+  }
+  if (s.individuals > 0) add(` ${n(s.individuals)} of them ${s.individuals === 1 ? "is an individual's record" : "are individuals' records"}, listed at the end.`);
+
+  if (s.confirmed === 0) add(" None are confirmed on the state registry yet.");
+  else { add(" "); add(n(s.confirmed), true); add(` ${are(s.confirmed)} confirmed on the state registry.`); }
+
+  const c = result.contactLookups;
+  if (s.withPhone === 0) {
+    add(c ? ` None have a phone number, in the records or from the web lookup of the top ${n(c.looked)}, so the sheet gives addresses and named agents.`
+      : " None publish a phone number in these records, so the sheet gives addresses and named agents.");
+  } else {
+    add(" "); add(n(s.withPhone), true);
+    add(c ? ` ${s.withPhone === 1 ? "has" : "have"} a phone number, from the records or the web lookup of the top ${n(c.looked)}.`
+      : ` ${s.withPhone === 1 ? "publishes" : "publish"} a phone number.`);
+  }
+  return parts;
+}
+
+// ---- about this search ------------------------------------------------------------
+
+export function tokensText(n) {
+  return n < 1000 ? String(n) : `${(n / 1000).toFixed(1)}k`;
+}
+
+// [label, value] rows for "About this search". status = /api/status.
+export function aboutRows(result, status = {}, seconds = null) {
+  const rows = [];
+  for (const s of result.sources || []) rows.push([s.name, s.error ? "didn't respond" : fetchedText(s.count, s.capped)]);
+  const l = result.registryLookup || { status: "none" };
+  rows.push(["Names checked against the state registry",
+    l.status === "ran" ? `${Number(l.namesChecked).toLocaleString("en-US")} of the top ${Number(l.candidates).toLocaleString("en-US")} not already matched${l.nameCap ? ` (at most ${l.nameCap} per search)` : ""}`
+      : l.status === "failed" ? "The lookup failed this search" : "No registry lookup for this search"]);
+  rows.push(["Name matches only (kept out of the list)", Number(result.sheet ? result.sheet.nameOnly : 0).toLocaleString("en-US")]);
+  const u = result.llmUsage;
+  if (u) {
+    const cost = u.costUsd !== null && u.costUsd !== undefined ? ` · about $${u.costUsd.toFixed(2)} at API prices` : "";
+    rows.push(["AI calls", `${u.calls.length} · ${tokensText(u.inputTokens + u.outputTokens)} tokens${cost}`]);
+  } else {
+    rows.push(["AI calls", result.llmCalls > 0 ? String(result.llmCalls) : "None (AI step skipped)"]);
+  }
+  const c = result.contactLookups;
+  rows.push(["Web contact lookup", c
+    ? `${c.found} of ${c.looked} found via ${c.provider} · about $${Number(c.costDollars).toFixed(2)}`
+    : status.contactsProvider ? "Off for this search" : "Off (no Exa or Parallel key)"]);
+  if (result.recentWindow) rows.push([`Filings in the last ${result.recentWindow.days} days`, `${(result.recent || []).length} within ${result.recentWindow.radiusMi} miles`]);
+  if (typeof seconds === "number") rows.push(["Time", `${seconds} s`]);
+  return rows;
+}

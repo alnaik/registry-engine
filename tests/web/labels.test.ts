@@ -146,3 +146,52 @@ describe("call tracker", () => {
     expect(reachSummary({ ...lead, contacts: ["(303) 555-0100"] })).toMatchObject({ phone: "(303) 555-0100", source: "on public record" });
   });
 });
+
+describe("summary sentence and About this search", () => {
+  const sheet = { total: 405, coded: 46, nameOnly: 359, individuals: 11, withinRadius: 28, radiusMi: 25, confirmed: 18, withPhone: 0 };
+  const base = { sheet, regionName: "Colorado", origin: { label: "Denver, CO" }, contactLookups: null };
+  const text = (parts: [string, boolean][]) => parts.map(p => p[0]).join("");
+
+  it("reads as one plain paragraph built from the counts", async () => {
+    const { summaryParts } = await import("../../apps/web/public/labels.js");
+    expect(text(summaryParts(base))).toBe(
+      "46 businesses are coded for this work in Colorado, 28 within 25 miles of Denver, CO. 11 of them are individuals' records, listed at the end. 18 are confirmed on the state registry. None publish a phone number in these records, so the sheet gives addresses and named agents.");
+    const bold = summaryParts(base).filter(p => p[1]).map(p => p[0]);
+    expect(bold).toEqual(["46 businesses", "28 within 25 miles", "18"]);
+  });
+
+  it("adapts: no origin, a chosen radius, a contact lookup, zeros, singulars", async () => {
+    const { summaryParts } = await import("../../apps/web/public/labels.js");
+    expect(text(summaryParts({ ...base, origin: null, sheet: { ...sheet, withinRadius: null, individuals: 0 } })))
+      .toBe("46 businesses are coded for this work in Colorado. 18 are confirmed on the state registry. None publish a phone number in these records, so the sheet gives addresses and named agents.");
+    expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 1, individuals: 0, confirmed: 0, withPhone: 1, radiusMi: 10 } }, { radiusSet: true })))
+      .toBe("1 business within 10 miles of Denver, CO is coded for this work. None are confirmed on the state registry yet. 1 publishes a phone number.");
+    expect(text(summaryParts({ ...base, contactLookups: { provider: "exa", looked: 12, found: 4, costDollars: 0.1 }, sheet: { ...sheet, individuals: 0, withPhone: 4 } })))
+      .toContain("4 have a phone number, from the records or the web lookup of the top 12.");
+    expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 0 } }))).toBe("No businesses are coded for this work in Colorado.");
+  });
+
+  it("About rows carry capped notation, names checked, AI usage and contact lookup status", async () => {
+    const { aboutRows } = await import("../../apps/web/public/labels.js");
+    const rows = aboutRows({
+      ...base,
+      sources: [{ name: "Colorado Secretary of State", count: 500, capped: true, error: false }, { name: "EPA ECHO", count: 0, capped: false, error: true }],
+      registryLookup: { status: "ran", namesChecked: 46, nameCap: 80, candidates: 46 },
+      llmUsage: { inputTokens: 9000, outputTokens: 4500, costUsd: 0.059, calls: [{}, {}] },
+      llmCalls: 2,
+    }, { contactsProvider: null }, 14);
+    expect(rows).toEqual([
+      ["Colorado Secretary of State", "500+ (capped)"],
+      ["EPA ECHO", "didn't respond"],
+      ["Names checked against the state registry", "46 of the top 46 not already matched (at most 80 per search)"],
+      ["Name matches only (kept out of the list)", "359"],
+      ["AI calls", "2 · 13.5k tokens · about $0.06 at API prices"],
+      ["Web contact lookup", "Off (no Exa or Parallel key)"],
+      ["Time", "14 s"],
+    ]);
+    const skip = aboutRows({ ...base, sources: [], registryLookup: { status: "failed" }, llmUsage: null, llmCalls: 0 }, { contactsProvider: "exa" });
+    expect(skip).toContainEqual(["AI calls", "None (AI step skipped)"]);
+    expect(skip).toContainEqual(["Names checked against the state registry", "The lookup failed this search"]);
+    expect(skip).toContainEqual(["Web contact lookup", "Off for this search"]);
+  });
+});

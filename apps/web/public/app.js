@@ -8,7 +8,7 @@
 import {
   trustLabel, webTag, fetchedText, whatLine,
   OUTCOMES, OUTCOME_LABEL, migrateTracker, isTracked, shortDate, callStatusText,
-  FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost,
+  FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost, summaryParts, aboutRows,
 } from "/labels.js";
 
 const $ = id => document.getElementById(id);
@@ -251,6 +251,7 @@ const app = {
   openRow: null,
   steps: {},
   sources: new Map(),       // source id -> { name, text } while fetching
+  startedAt: 0,
   contactsEnabled: false,
   newKeys: new Set(),
   newSince: null,
@@ -481,7 +482,7 @@ function buildSteps() {
   app.steps = {};
   for (const [id, label] of STEP_DEFS) {
     if (id === "contacts" && !app.contactsEnabled) continue;
-    const detail = h("span", { class: "detail" });
+    const detail = h("span", { class: "step-detail" });
     const li = h("li", { "data-state": "pending" }, h("span", { text: label }), detail);
     li.hidden = true;
     list.append(li);
@@ -643,6 +644,7 @@ function resetForRun(params) {
   app.codeBoxReason = "";
   app.contactsEnabled = params.findContacts === true;
   app.sources = new Map();
+  app.startedAt = Date.now();
 
   $("how").hidden = true;
   $("error-box").hidden = true;
@@ -787,10 +789,12 @@ function renderEmpty() {
 
 // One plain sentence instead of stat tiles.
 function renderSummary(result) {
-  const s = result.sheet;
   const box = $("sum");
   clear(box);
-  box.append(h("strong", { text: `${s.coded.toLocaleString()} ${s.coded === 1 ? "business is" : "businesses are"}` }), ` coded for this work in ${result.regionName}.`);
+  const parts = summaryParts(result, { radiusSet: Boolean(app.lastParams && app.lastParams.radiusMi) });
+  for (const [text, strong] of parts) box.append(strong ? h("strong", { text }) : text);
+  const p = app.lastParams || {};
+  $("print-head").textContent = `Call sheet · ${p.query || ""}${app.origin ? ` · from ${app.origin.label}` : ""} · ${new Date().toLocaleDateString()}`;
 }
 
 function renderTools() {
@@ -1002,8 +1006,10 @@ function renderGroups(result) {
 function renderAbout(result) {
   const rows = $("about-rows");
   clear(rows);
-  const row = (k, v) => rows.append(h("tr", null, h("th", { scope: "row", text: k }), h("td", { text: v })));
-  for (const s of result.sources) row(s.name, s.error ? "didn't respond" : fetchedText(s.count, s.capped));
+  const seconds = Math.max(1, Math.round((Date.now() - app.startedAt) / 1000));
+  for (const [k, v] of aboutRows(result, app.status || {}, seconds)) {
+    rows.append(h("tr", null, h("th", { scope: "row", text: k }), h("td", { text: v })));
+  }
 }
 
 // ---- lead rows ------------------------------------------------------------------------------------
