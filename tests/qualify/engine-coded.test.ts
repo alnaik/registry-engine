@@ -102,6 +102,37 @@ describe("engine — AI step failure", () => {
   });
 });
 
+describe("engine — unusable map answer (audit finding 6)", () => {
+  it("keeps the raw answer for diagnosis, truncated, and spends no brief call", async () => {
+    stubDns();
+    const prompts: string[] = [];
+    const garbage = `I think you want metal shops!\nline two\u001b[31m red\n${"x".repeat(3000)}`;
+    const backend: RawLlm = { complete: async prompt => { prompts.push(prompt); return garbage; } };
+    const out = await search("metal fabrication in denver", {
+      sources: SOURCES, drivers: stubDrivers([]), region: "US-CO", llm: { backend },
+    });
+    expect(out.map.llmError).toBe("the AI answer couldn't be used");
+    expect(out.mapRawAnswer).not.toBeNull();
+    expect(out.mapRawAnswer!.startsWith("I think you want metal shops!\nline two")).toBe(true);   // newlines kept
+    expect(out.mapRawAnswer).not.toContain("\u001b");                                         // terminal escapes replaced
+    expect(out.mapRawAnswer!.length).toBeLessThan(2100);
+    expect(out.mapRawAnswer).toContain("more chars)");
+    // it rides on the outcome only: not on the map result, not in any other prompt
+    expect(out.map.mapRawAnswer).toBeUndefined();
+    expect(prompts).toHaveLength(1);
+    expect(out.llmCalls).toBe(1);
+    expect(out.llmCalls).toBeLessThanOrEqual(2);
+  });
+
+  it("is null when the map answer parsed", async () => {
+    stubDns();
+    const out = await search("metal fabrication in denver", {
+      sources: SOURCES, drivers: stubDrivers([]), region: "US-CO", llm: { backend: stubLlm().backend },
+    });
+    expect(out.mapRawAnswer).toBeNull();
+  });
+});
+
 describe("engine — activity-coded discovery", () => {
   it("finds code-matched businesses with no keyword in their name, merges planes, and stays within 2 LLM calls", async () => {
     stubDns();

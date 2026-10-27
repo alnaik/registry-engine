@@ -15,6 +15,20 @@ export interface MapResult {
   via: "llm" | "override" | "table" | "none";
   directionFixed: boolean;   // true when the caller fixed the direction instead of it being guessed
   llmError?: string | undefined;   // set when an LLM was configured and its map call failed or was unusable
+  // The model's raw answer when the parser rejected it, for diagnosis only:
+  // untrusted text, truncated and stripped of control characters. The engine
+  // moves it to SearchOutcome.mapRawAnswer and never passes it on to the
+  // brief call, a query or the UI.
+  mapRawAnswer?: string | undefined;
+}
+
+export const MAP_RAW_MAX = 2000;
+
+// Keeps newlines and tabs; replaces other control characters (terminal
+// escapes included) so the text is safe to print to a log.
+export function rawAnswerForLog(raw: string): string {
+  const clipped = raw.length > MAP_RAW_MAX ? `${raw.slice(0, MAP_RAW_MAX)}\n… (${raw.length - MAP_RAW_MAX} more chars)` : raw;
+  return clipped.replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, "\uFFFD");
 }
 
 // token -> NAICS codes of the businesses to contact (suppliers) + name/crop
@@ -180,9 +194,11 @@ export async function mapQuery(
 
   const caveats: string[] = direction === "sell" ? [SELL_CAVEAT] : [];
   let llmError: string | undefined;
+  let mapRawAnswer: string | undefined;
   const done = (naics: string[], keywords: string[], via: MapResult["via"]): MapResult =>
     ({ intent: { naics, geo, direction }, keywords, caveats, usedLlm: false, via, directionFixed: opts.direction !== undefined,
-      ...(llmError !== undefined ? { llmError } : {}) });
+      ...(llmError !== undefined ? { llmError } : {}),
+      ...(mapRawAnswer !== undefined ? { mapRawAnswer } : {}) });
 
   // 1) Explicit codes from the user win over everything.
   const override = (opts.naics ?? []).filter(isNaicsCode).slice(0, 6);
@@ -199,6 +215,7 @@ export async function mapQuery(
       const parsed = parseMapResponse(raw, region, direction, caveats, opts.direction);
       if (parsed !== null) return parsed;
       llmError = "the AI answer couldn't be used";
+      mapRawAnswer = rawAnswerForLog(raw);
     } catch (err) {
       // fall through to the no-LLM paths
       llmError = (err instanceof Error ? err.message : String(err)).slice(0, 200);

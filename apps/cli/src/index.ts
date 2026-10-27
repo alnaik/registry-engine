@@ -138,6 +138,16 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     },
   });
 
+  // Diagnostics only: the rejected map answer is untrusted model text, shown
+  // as-is (control characters already replaced) and never reused.
+  if (out.mapRawAnswer !== null) {
+    if (flags["verbose"] === "true") {
+      console.log(`map raw answer (unusable, ${out.mapRawAnswer.length} chars shown):\n${out.mapRawAnswer.split("\n").map(l => `  | ${l}`).join("\n")}`);
+    } else {
+      console.log("map     the AI answer couldn't be used; run with --verbose to see it");
+    }
+  }
+
   const existenceIds = out.routed.filter(r => r.plane === "existence").map(r => r.id);
   const naicsFields = naicsFieldMap(out.routed);
   const lookup = out.registryLookup;

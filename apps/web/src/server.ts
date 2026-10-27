@@ -218,6 +218,11 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         },
       });
 
+      // The rejected map answer goes to the server's stderr for diagnosis,
+      // never into the result line or the page.
+      if (outcome.mapRawAnswer !== null) {
+        console.error(`[map] the AI answer couldn't be used. Raw answer (untrusted):\n${outcome.mapRawAnswer}\n[map] end of raw answer`);
+      }
       const existenceIds = outcome.routed.filter(s => s.plane === "existence").map(s => s.id);
       last = { ranked: outcome.ranked, existenceIds };
       write(buildResult(outcome, existenceIds, params, sourceNames, fetchedBy));
