@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.6 (v6, field sheet)
+Version: 3.7 (v6, field sheet, audit fixes)
 Last updated: 2026-10-27
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -34,7 +34,15 @@ user's request, in `map` and `brief`. The other is registry text inside
    - `packages/qualify/src/llm/adapter.ts`
 5. **Minimal data to the model.** Officers, agents and addresses are never
    sent to the LLM.
-6. **No tools for the headless model.** `claude -p` runs with `--tools ""`
+6. **Rejected map answers are logged, not reused.** When `parseMapResponse`
+   rejects the model's answer, the raw text is clipped to 2,000 chars with
+   control characters (terminal escapes) replaced (`rawAnswerForLog`) and
+   travels only as `SearchOutcome.mapRawAnswer`: the engine strips it from
+   the map result before the brief call, the CLI prints it under
+   `--verbose`, and the web server writes it to stderr, never into the
+   NDJSON stream or the page. It never feeds a prompt or a query.
+   - `mapQuery` in `map.ts`, `search` in `engine.ts`, `handleSearch` in `apps/web/src/server.ts`
+7. **No tools for the headless model.** `claude -p` runs with `--tools ""`
    and `--strict-mcp-config`, so injected request or registry text can't
    trigger tool use.
    - `packages/qualify/src/llm/claudeCodeBackend.ts`
@@ -235,3 +243,7 @@ credits is a target for other websites open in the same browser.
 - v3.6 (2026-10-27, v6 Phase D): My calls export (was "my list") keeps the CSV rules and adds
   the trust label at call time. The accessibility check (`scripts/a11y/axe.ts`) runs the real
   server against a fictional fixture search, with no network and no AI.
+- v3.7 (2026-10-27, v6 Phase E audit fixes): rejected map answers are kept for diagnosis
+  only (Threat 1, item 6). Registry standing gains "inactive" (dissolved, delinquent),
+  opt-in per source via `quirks.backfillInactive`; its extra SoQL clause uses only the
+  manifest's `statusValue` (Threat 6, item 2). CSV adds `individual_record`.

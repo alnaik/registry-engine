@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { createServer, request } from "node:http";
 import type { Server } from "node:http";
 import { mkdtempSync, writeFileSync } from "node:fs";
@@ -49,6 +49,7 @@ function makeOutcome(n = 3): SearchOutcome {
     recent: [],
     recentWindow: null,
     registryLookup: { status: "ran", namesChecked: 0, nameCap: 80, candidates: 0 },
+    mapRawAnswer: null,
   };
 }
 
@@ -209,6 +210,24 @@ describe("web app server", () => {
       const result = lines(r).pop() as Record<string, unknown>;
       expect(result["type"]).toBe("result");
       expect(result["llmUsage"]).toEqual(usage);
+    });
+
+    it("logs a rejected map answer to stderr only, never into the stream (audit finding 6)", async () => {
+      const raw = "Sure! Here are codes:\nRAW-MAP-ANSWER-7731 <img src=x>";
+      behavior = async (_q, cfg) => {
+        const o = makeOutcome();
+        cfg.onEvent?.({ type: "map", map: { ...o.map, llmError: "the AI answer couldn't be used", mapRawAnswer: raw } });
+        return { ...o, mapRawAnswer: raw };
+      };
+      const logged: string[] = [];
+      const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => { logged.push(args.map(String).join(" ")); });
+      try {
+        const r = await post({ query: "metal fabrication", near: "Denver" });
+        expect(r.text).not.toContain("RAW-MAP-ANSWER-7731");
+        expect(logged.join("\n")).toContain("RAW-MAP-ANSWER-7731");
+      } finally {
+        spy.mockRestore();
+      }
     });
 
     it("streams translated events and ends with a result line of LeadViews", async () => {
