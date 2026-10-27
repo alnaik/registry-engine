@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Driver, DriverRegistry, Entity, RecentRequest, SourceSpec } from "../../packages/registry-core/src/index.js";
-import { search, nameHasWord, type EngineEvent, type SearchConfig } from "../../packages/qualify/src/engine.js";
+import { search, nameHasWord, recentNameMatch, type EngineEvent, type SearchConfig } from "../../packages/qualify/src/engine.js";
 import { memoryContactCache } from "../../packages/qualify/src/verbs/contacts.js";
 
 // Recently registered filings over stub drivers: no network, no LLM.
@@ -45,6 +45,21 @@ const base: SearchConfig = {
   sources: SOURCES, region: "US-CO", naics: ["722513"], probeLimit: 0, contacts: null, contactCache: memoryContactCache(),
   now: new Date("2026-10-27T12:00:00Z"),
 };
+
+describe("recentNameMatch (audit finding 4: 'sew' matched sewer companies)", () => {
+  it("drops names whose only hit is a known collision, keeps the real ones", () => {
+    expect(recentNameMatch("CityWide Sewers, LLC", "sew")).toBe(false);
+    expect(recentNameMatch("Cornerstone Sewer & Drain LLC", "sew")).toBe(false);
+    expect(recentNameMatch("AMERICAN SEWER & DRAIN INC", "sew")).toBe(false);
+    expect(recentNameMatch("Front Line Sewer Lines LLC", "sew")).toBe(false);
+    expect(recentNameMatch("Denver Industrial Sewing LLC", "sew")).toBe(true);
+    expect(recentNameMatch("Sew and Sewer Repair LLC", "sew")).toBe(true);
+    expect(recentNameMatch("Greenfoot Totes LLC", "tote")).toBe(true);
+    expect(recentNameMatch("Peter Pan Partners", "pet")).toBe(false);
+    expect(recentNameMatch("Happy Pets LLC", "pet")).toBe(true);
+    expect(recentNameMatch("BagelBytes, LLC", "bag")).toBe(false);
+  });
+});
 
 describe("nameHasWord", () => {
   it("matches whole words with common endings only", () => {
