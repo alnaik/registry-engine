@@ -89,6 +89,7 @@ describe("web app server", () => {
     writeFileSync(join(publicDir, "app.css"), "body{}");
     writeFileSync(join(publicDir, "design.html"), "<!doctype html><title>d</title>");
     writeFileSync(join(publicDir, "design.js"), "console.log(2);");
+    writeFileSync(join(publicDir, "labels.js"), "export {};");
     server = createServer();
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     port = (server.address() as AddressInfo).port;
@@ -149,6 +150,7 @@ describe("web app server", () => {
     it("serves the whitelisted assets, 404s the rest, and ignores traversal", async () => {
       expect((await send({ path: "/app.js" })).status).toBe(200);
       expect((await send({ path: "/app.css" })).status).toBe(200);
+      expect((await send({ path: "/labels.js" })).status).toBe(200);
       expect((await send({ path: "/nope" })).status).toBe(404);
       expect((await send({ path: "/../package.json" })).status).toBe(404);
       expect((await send({ path: "/%2e%2e/package.json" })).status).toBe(404);
