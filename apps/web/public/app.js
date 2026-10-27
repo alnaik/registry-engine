@@ -733,10 +733,16 @@ async function runSearch(params) {
 
 // ---- results -------------------------------------------------------------------------
 
+function fmtTokens(n) {
+  return n < 1000 ? String(n) : `${(n / 1000).toFixed(1)}k`;
+}
+
 function showResult(result) {
   app.result = result;
   const seconds = Math.max(1, Math.round((Date.now() - app.startedAt) / 1000));
-  $("progress-title").textContent = `Search complete · ${seconds} s`;
+  const u = result.llmUsage;
+  const tokenPart = u ? ` · ${fmtTokens(u.inputTokens + u.outputTokens)} AI tokens` : "";
+  $("progress-title").textContent = `Search complete · ${seconds} s${tokenPart}`;
   $("progress").classList.add("finished");
   if ($("warnings").children.length === 0) $("progress").hidden = true;
 
@@ -810,7 +816,7 @@ function renderSummary(result) {
   const box = $("summary");
   clear(box);
   const s = result.summary;
-  const stat = (value, name) => h("div", { class: "stat" }, h("span", { class: "value", text: value }), h("span", { class: "name", text: name }));
+  const stat = (value, name, title) => h("div", { class: "stat", title }, h("span", { class: "value", text: value }), h("span", { class: "name", text: name }));
   const c = result.contactLookups;
   const stats = [
     stat(s.coded.toLocaleString(), "matching businesses"),
@@ -821,6 +827,15 @@ function renderSummary(result) {
   else {
     if (s.noWebsite < s.total) stats.push(stat(s.noWebsite.toLocaleString(), "no website on record"));
     stats.push(stat("Off", "web contact lookup"));
+  }
+  const u = result.llmUsage;
+  if (u) {
+    const n = u.calls.length;
+    const cost = u.costUsd !== null && u.costUsd !== undefined ? `, ~$${u.costUsd.toFixed(3)} at API prices` : "";
+    const detail = u.calls.map(k => `${k.label}: ${k.inputTokens.toLocaleString()} in / ${k.outputTokens.toLocaleString()} out`).join(" · ");
+    stats.push(stat(fmtTokens(u.inputTokens + u.outputTokens), `AI tokens (${n} call${n === 1 ? "" : "s"}${cost})`, detail));
+  } else if (result.llmCalls === 0) {
+    stats.push(stat("0", "AI tokens (AI step skipped)"));
   }
   box.append(h("div", { class: "stats" }, stats));
 

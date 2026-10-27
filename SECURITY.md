@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.3 (v5, activity-coded discovery + web app)
+Version: 3.4 (v5, activity-coded discovery + web app)
 Last updated: 2026-10-27
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -34,6 +34,10 @@ user's request, in `map` and `brief`. The other is registry text inside
    - `packages/qualify/src/llm/adapter.ts`
 5. **Minimal data to the model.** Officers, agents and addresses are never
    sent to the LLM.
+6. **No tools for the headless model.** `claude -p` runs with `--tools ""`
+   and `--strict-mcp-config`, so injected request or registry text can't
+   trigger tool use.
+   - `packages/qualify/src/llm/claudeCodeBackend.ts`
 
 ---
 
@@ -209,3 +213,4 @@ credits is a target for other websites open in the same browser.
   Individuals' records no longer get a name-search link, and their names are
   withheld from the LLM brief.
 - v3.3 (2026-10-27, Phase 7c): recent-filings query (fetchRecent); date literal validated.
+- v3.4 (2026-10-27): claude -p runs with no tools and no MCP servers; per-search token usage reported.

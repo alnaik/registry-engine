@@ -136,6 +136,33 @@ describe("engine — activity-coded discovery", () => {
     expect(out.ranked[0]!.entity.name).toContain("VISSER");
   });
 
+  it("reports token usage per labeled call; Skip AI reports none", async () => {
+    stubDns();
+    const backend: RawLlm = {
+      complete: async (prompt, opts) => {
+        const isMap = opts.system?.includes("NAICS 2017") === true;
+        opts.onUsage?.(isMap ? { inputTokens: 800, outputTokens: 60, costUsd: 0.001 } : { inputTokens: 3000, outputTokens: 400, costUsd: 0.01 });
+        if (isMap) return MAP_JSON;
+        const ids = [...prompt.matchAll(/^#(\d+) /gm)].map(m => Number(m[1]));
+        return JSON.stringify(ids.map(i => ({ i, brief: `brief ${i}`, opener: `opener ${i}` })));
+      },
+    };
+    const out = await search("metal fabrication in denver", {
+      sources: SOURCES, drivers: stubDrivers([]), region: "US-CO", llm: { backend },
+    });
+    expect(out.llmUsage).not.toBeNull();
+    expect(out.llmUsage!.inputTokens).toBe(3800);
+    expect(out.llmUsage!.outputTokens).toBe(460);
+    expect(out.llmUsage!.costUsd).toBeCloseTo(0.011);
+    expect(out.llmUsage!.calls.map(c => c.label)).toEqual(["map", "brief"]);
+    expect(out.llmUsage!.calls[0]).toMatchObject({ inputTokens: 800, outputTokens: 60 });
+
+    const skipped = await search("metal fabrication in denver", {
+      sources: SOURCES, drivers: stubDrivers([]), region: "US-CO", naics: ["332312"],
+    });
+    expect(skipped.llmUsage).toBeNull();
+  });
+
   it("SoS backfill joins only locality-compatible rows", async () => {
     stubDns();
     const out = await search("metal fabrication in denver", {

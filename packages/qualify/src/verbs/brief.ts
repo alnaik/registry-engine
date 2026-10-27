@@ -241,6 +241,7 @@ ${packed}`;
   try {
     const raw = await llm.call(user, {
       tier: "best",
+      label: "brief",
       maxTokens: Math.min(400 + top.length * 200, 3200),
       system: BRIEF_SYSTEM,
     });
