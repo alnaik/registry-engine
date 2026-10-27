@@ -117,7 +117,7 @@ it turns into infrastructure.
   registry has a `naics_code` field holding a title as text, which may allow
   coded matching there. Most useful for buyer searches (a new restaurant
   needs suppliers). Manifest-driven: a `formedDate` field-map key.
-- **7d Distance view.** An SVG plot (no map tiles, no new CSP origins, no
+- ✅ **7d Distance view.** An SVG plot (no map tiles, no new CSP origins, no
   library) with rings at 10/25/50/100 mi around the center and one dot per
   lead at its ZIP centroid; clicking a dot scrolls to its card. Hidden when
   there's no center.

@@ -27,6 +27,23 @@ function h(tag, attrs, ...kids) {
   return el;
 }
 
+function svgEl(tag, attrs, ...kids) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  if (attrs) {
+    for (const [key, value] of Object.entries(attrs)) {
+      if (value === undefined || value === null || value === false) continue;
+      if (key === "text") el.textContent = String(value);
+      else if (key.startsWith("on") && typeof value === "function") el.addEventListener(key.slice(2), value);
+      else el.setAttribute(key, String(value));
+    }
+  }
+  for (const kid of kids.flat()) {
+    if (kid === undefined || kid === null || kid === false) continue;
+    el.append(kid);
+  }
+  return el;
+}
+
 function clear(el) {
   while (el.firstChild) el.removeChild(el.firstChild);
 }
@@ -185,7 +202,9 @@ function findSaved(params) {
 }
 
 function fmtDate(iso) {
-  const d = new Date(iso);
+  // A bare YYYY-MM-DD is a calendar date, not UTC midnight: parse it as local.
+  const bare = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
+  const d = bare ? new Date(Number(bare[1]), Number(bare[2]) - 1, Number(bare[3])) : new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString();
 }
 
@@ -598,6 +617,8 @@ function resetForRun(params) {
   $("empty").hidden = true;
   $("summary").hidden = true;
   $("filters").hidden = true;
+  $("distmap").hidden = true;
+  clear($("distmap-plot"));
   $("filter-empty").hidden = true;
   $("more-wrap").hidden = true;
   $("recent").hidden = true;
@@ -951,6 +972,7 @@ function applyFilter() {
   for (const item of app.items) {
     const show = fn(item.lead);
     item.el.hidden = !show;
+    if (item.dot) item.dot.classList.toggle("is-hidden", !show);
     if (show) visible.set(item.group, (visible.get(item.group) || 0) + 1);
   }
   let any = false;
@@ -1013,6 +1035,85 @@ function renderResults(result) {
   app.moreQueue = [...result.more];
   renderMoreControls();
   applyFilter();
+  renderDistMap();
+}
+
+// ---- distance map ----------------------------------------------------------------------------------
+
+const MAP_R = 100;
+const MAP_RINGS = [10, 25, 50, 100];
+
+function mapRadius(miles) {
+  return MAP_R * Math.sqrt(Math.min(miles, 100) / 100);
+}
+
+function renderDistMap() {
+  const box = $("distmap");
+  const plot = $("distmap-plot");
+  clear(plot);
+  const o = app.origin;
+  const placed = o ? app.items.filter(item => item.lead.point) : [];
+  if (!o || placed.length === 0) {
+    box.hidden = true;
+    return;
+  }
+
+  const svg = svgEl("svg", { viewBox: "-110 -110 220 220", width: "100%", role: "img" });
+  for (const miles of MAP_RINGS) {
+    const r = mapRadius(miles);
+    svg.append(svgEl("circle", { class: "ring", cx: 0, cy: 0, r }));
+    svg.append(svgEl("text", { class: "ring-label", x: 0, y: -r - 1.5, text: `${miles} mi` }));
+  }
+  svg.append(svgEl("circle", { class: "origin-dot", cx: 0, cy: 0, r: 3.5 }));
+  svg.append(svgEl("text", { class: "ring-label", x: 0, y: 10, text: "You" }));
+
+  let shown = 0;
+  let far = 0;
+  for (const item of app.items) {
+    const lead = item.lead;
+    if (!lead.point) continue;
+    const dx = (lead.point.lon - o.lon) * Math.cos(o.lat * Math.PI / 180);
+    const dy = lead.point.lat - o.lat;
+    const miles = typeof lead.distanceMi === "number" ? lead.distanceMi : Math.hypot(dx, dy) * 69;
+    if (miles > 100) {
+      far += 1;
+      continue;
+    }
+    const angle = Math.atan2(dy, dx);
+    const r = mapRadius(miles);
+    const dot = svgEl("circle", {
+      class: `lead-dot ${lead.naics.length > 0 ? "coded" : "name-only"}`,
+      cx: (r * Math.cos(angle)).toFixed(2),
+      cy: (-r * Math.sin(angle)).toFixed(2),
+      r: 3,
+      onclick: () => {
+        scrollTo(item.el);
+        item.el.classList.add("flash");
+        window.setTimeout(() => item.el.classList.remove("flash"), 1500);
+      },
+    }, svgEl("title", { text: `${lead.name} · ${lead.distanceMi} mi` }));
+    item.dot = dot;
+    svg.append(dot);
+    shown += 1;
+  }
+  svg.setAttribute("aria-label", `Map of ${shown} businesses around ${o.label}. The list below has the same results.`);
+  plot.append(svg);
+
+  const unknown = app.items.filter(item => !item.lead.point).length;
+  const parts = [];
+  if (far > 0) parts.push(`${far} farther than 100 mi`);
+  if (unknown > 0) parts.push(`${unknown} without a location`);
+  let note = "Dots sit at ZIP or town centers, so positions are approximate. Rings are spaced for readability, not to scale.";
+  if (parts.length > 0) note += ` ${parts.join(" and ")} aren't shown.`;
+  $("distmap-note").textContent = note;
+  box.hidden = false;
+  applyDotFilter();
+}
+
+function applyDotFilter() {
+  for (const item of app.items) {
+    if (item.dot) item.dot.classList.toggle("is-hidden", item.el.hidden);
+  }
 }
 
 function renderMoreControls() {
@@ -1044,6 +1145,7 @@ function showMore() {
   }
   renderMoreControls();
   applyFilter();
+  renderDistMap();
 }
 
 // ---- lead presentation ---------------------------------------------------------------------------
