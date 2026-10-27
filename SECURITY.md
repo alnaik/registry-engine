@@ -129,7 +129,13 @@ Every limitation below is surfaced in the output, not hidden:
    record), "Not on state registry" (its name was really sent to the
    registry lookup and nothing joined), "Not checked against registry"
    (beyond the names looked up this search, or no lookup ran). The engine
-   replicates the driver's dedupe-and-cap to know who was checked.
+   replicates the driver's dedupe-and-cap to know who was checked. A fourth
+   case, "inactive": the registry has the name at a compatible locality but
+   not in good standing (Colorado appends ", Dissolved <date>" to the name);
+   the lead shows the registry's status ("Dissolved Oct 2026"), never "not
+   found", and never counts as confirmed. Opt-in per source
+   (`quirks.backfillInactive`); the extra SoQL clause uses the manifest's own
+   `statusValue`, no user or LLM input.
    - `planBackfill` and `registryCheck` in `packages/qualify/src/engine.ts`;
      labels in `apps/web/public/labels.js`, pinned by `tests/web/labels.test.ts`
 3. **Capped fetches** are flagged (`fetched.capped`) and shown as "500+

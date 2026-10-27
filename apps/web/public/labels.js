@@ -6,10 +6,22 @@
 // ---- trust: standing against the state registry ----------------------------
 
 // tone maps to the three trust tokens: ok = confirmed (green), unk = unchecked
-// (grey), no = not found (amber).
+// (grey), no = not found or not in good standing (amber).
 export function trustLabel(lead, lookup) {
   if (lead.registryCheck === "matched") {
     return { tone: "ok", pill: `On state registry · ${lead.status || "listed"}`, tag: null };
+  }
+  if (lead.registryCheck === "inactive") {
+    // The registry has it, at this locality, but not in good standing: say
+    // the registry's own fact ("Dissolved Oct 2026"), never "not found".
+    const st = lead.registryStanding || { status: "", since: null };
+    const word = standingWord(st.status);
+    const when = monthYear(st.since);
+    return {
+      tone: "no",
+      pill: when ? `${word} ${when}` : `${word} on state registry`,
+      tag: `The state registry lists it as ${st.status || "inactive"}. Confirm it still operates.`,
+    };
   }
   if (lead.registryCheck === "checked_not_found") {
     if (lead.registeredElsewhere) {
@@ -24,6 +36,19 @@ export function trustLabel(lead, lookup) {
   if (l.status === "ran" && l.namesChecked > 0) tag = `Beyond the ${l.namesChecked} names checked this search`;
   else if (l.status === "failed") tag = "The registry lookup failed this search";
   return { tone: "unk", pill: "Not checked against registry", tag };
+}
+
+// "Voluntarily Dissolved" -> "Dissolved"; other statuses as filed.
+export function standingWord(status) {
+  const s = String(status || "").trim();
+  if (/dissolved/i.test(s)) return "Dissolved";
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Inactive";
+}
+
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export function monthYear(iso) {
+  const m = /^(\d{4})-(\d{2})/.exec(String(iso || ""));
+  return m && Number(m[2]) >= 1 && Number(m[2]) <= 12 ? `${MONTHS_SHORT[Number(m[2]) - 1]} ${m[1]}` : "";
 }
 
 export function recordYear(iso) {

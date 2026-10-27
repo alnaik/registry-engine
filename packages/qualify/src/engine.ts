@@ -1,9 +1,9 @@
 import type { Entity, SourceSpec, DriverRegistry, FetchRetryOptions, LatLon } from "@registry-engine/registry-core";
-import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities, regionPlaces, resolveLocation, normalizeName, localityCompatible, naicsRelated } from "@registry-engine/registry-core";
+import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCities, regionPlaces, resolveLocation, normalizeName, localityCompatible, naicsRelated, splitStatusSuffix } from "@registry-engine/registry-core";
 import { createLlm, type Llm, type LlmConfig } from "./llm/adapter.js";
 import { mapQuery, type MapResult } from "./verbs/map.js";
 import { probeEntities, type ProbeResult } from "./verbs/probe.js";
-import { briefLeads, rankEntities, naicsFieldMap, type Lead, type RankContext, type RegistryCheck } from "./verbs/brief.js";
+import { briefLeads, rankEntities, naicsFieldMap, type Lead, type RankContext, type RegistryCheck, type RegistryStanding } from "./verbs/brief.js";
 import { findContacts, fileContactCache, providerFromEnv, type ContactCache, type WebSearchProvider } from "./verbs/contacts.js";
 
 // The whole product: map -> route -> fetch -> probe -> brief.
@@ -185,6 +185,10 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // the registry has, but only at an incompatible locality (not joined).
   const checkedKeys = new Set<string>();
   const elsewhereKeys = new Set<string>();
+  // Registry rows for a checked name whose status isn't the active one
+  // (quirks.backfillInactive): not merged, but they give the lead its real
+  // standing ("Dissolved Oct 2026") instead of "not found".
+  const inactiveRows: { keys: string[]; row: Entity; standing: RegistryStanding }[] = [];
   let registryLookup: RegistryLookup = { status: "none", namesChecked: 0, nameCap: null, candidates: 0 };
   if (existenceSpec !== undefined && existenceDriver?.fetchByNames !== undefined) {
     const unmatched = preliminary.filter(e => !e.source_ids.includes(existenceSpec.id));
@@ -206,11 +210,21 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
             byKey.set(k, [...(byKey.get(k) ?? []), u]);
           }
         }
-        const joined = found.filter(row =>
+        const inactive = found.filter(row => !isActiveRow(row, existenceSpec));
+        const active = found.filter(row => isActiveRow(row, existenceSpec));
+        const joined = active.filter(row =>
           [row.name, ...row.names].map(normalizeName).some(k =>
             (byKey.get(k) ?? []).some(u => localityCompatible(row, u))));
-        for (const row of found) {
-          for (const k of [row.name, ...row.names].map(normalizeName)) {
+        for (const row of inactive) {
+          // An inactive name carries its standing as a suffix: "ACME TENT &
+          // CANVAS CO., Dissolved October 23, 2026". Match on the bare name.
+          const suffix = splitStatusSuffix(row.name);
+          const keys = [suffix?.name ?? row.name, ...row.names].map(normalizeName).filter(k => k.length > 0);
+          inactiveRows.push({ keys, row, standing: { status: row.status !== "" ? row.status : (suffix?.status ?? ""), since: suffix?.date ?? null, filedName: row.name } });
+        }
+        const rowKeys = [...active.map(row => ({ row, keys: [row.name, ...row.names].map(normalizeName) })), ...inactiveRows];
+        for (const { row, keys } of rowKeys) {
+          for (const k of keys) {
             if ((byKey.get(k) ?? []).some(u => !localityCompatible(row, u))) elsewhereKeys.add(k);
           }
         }
@@ -223,18 +237,27 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
       } catch (err) {
         checkedKeys.clear();
         elsewhereKeys.clear();
+        inactiveRows.length = 0;
         registryLookup = { ...registryLookup, status: "failed", namesChecked: 0 };
         emit({ type: "source_error", sourceId: existenceSpec.id, message: err instanceof Error ? err.message : String(err) });
       }
     }
   }
   const keysOf = (e: Entity): string[] => [e.name, ...e.names].map(normalizeName).filter(k => k.length > 0);
+  // The locality guard applies here too: a dissolved namesake in another
+  // town says nothing about this business (it counts as "elsewhere" above).
+  const standingOf = (e: Entity): RegistryStanding | undefined => {
+    const keys = keysOf(e);
+    return inactiveRows.find(r => r.keys.some(k => keys.includes(k)) && localityCompatible(r.row, e))?.standing;
+  };
   const registryCheck = (e: Entity): RegistryCheck => {
     if (e.source_ids.some(id => existenceIds.includes(id))) return "matched";
-    return keysOf(e).some(k => checkedKeys.has(k)) ? "checked_not_found" : "not_checked";
+    if (!keysOf(e).some(k => checkedKeys.has(k))) return "not_checked";
+    return standingOf(e) !== undefined ? "inactive" : "checked_not_found";
   };
   const annotate = (lead: Lead): Lead => {
     lead.registryCheck = registryCheck(lead.entity);
+    if (lead.registryCheck === "inactive") lead.registryStanding = standingOf(lead.entity);
     if (lead.registryCheck === "checked_not_found" && keysOf(lead.entity).some(k => elsewhereKeys.has(k))) lead.registeredElsewhere = true;
     return lead;
   };
@@ -261,6 +284,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
     limit: cfg.probeLimit ?? Math.max(25, maxLeads),
     existenceSourceId: existenceSpec?.id,
     wasChecked: e => registryCheck(e) !== "not_checked",
+    inactiveStatus: e => (registryCheck(e) === "inactive" ? (standingOf(e)?.status ?? null) : null),
   });
   emit({ type: "probed", count: probes.size });
 
@@ -321,6 +345,15 @@ export function planBackfill(candidates: Entity[], driver: { maxBackfillNames?: 
     for (const n of e.names) take(n);
   }
   return { names, checked, keyCount: keys.size };
+}
+
+// A backfilled row is active when the source has no status filter, or its
+// status is the filter's value. Only sources that opt into inactive rows
+// (quirks.backfillInactive) ever return anything else.
+function isActiveRow(row: Entity, spec: SourceSpec): boolean {
+  const q = spec.quirks ?? {};
+  if (q["backfillInactive"] !== true || typeof q["statusValue"] !== "string") return true;
+  return row.status === q["statusValue"] || (typeof q["statusDisplay"] === "string" && row.status === q["statusDisplay"]);
 }
 
 function isInsideWordNoise(e: Entity, codes: string[], existenceIds: string[]): boolean {

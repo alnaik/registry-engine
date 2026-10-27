@@ -44,13 +44,23 @@ function bandFor(distanceMi: number | null): string {
 // Standing against the state registry, as actually checked this search:
 // matched (joined a registry record), checked_not_found (its name was looked
 // up and nothing joined), not_checked (beyond the names looked up, or no
-// lookup ran). Never inferred from the absence of a join alone.
-export type RegistryCheck = "matched" | "checked_not_found" | "not_checked";
+// lookup ran). Never inferred from the absence of a join alone. inactive: the
+// name was looked up and the registry has it at a compatible locality, but
+// not in good standing (dissolved, delinquent, ...); see registryStanding.
+export type RegistryCheck = "matched" | "inactive" | "checked_not_found" | "not_checked";
+
+// The registry's own record for an inactive lead.
+export interface RegistryStanding {
+  status: string;          // the registry's status field, e.g. "Voluntarily Dissolved"
+  since: string | null;    // ISO date from the filed name's suffix, if any
+  filedName: string;       // the name as filed, suffix included
+}
 
 export interface Lead {
   entity: Entity;
   registryCheck?: RegistryCheck | undefined;   // set by the engine; absent = unknown (tests, direct callers)
   registeredElsewhere?: boolean | undefined;   // checked_not_found, but a same-named record sits at another locality
+  registryStanding?: RegistryStanding | undefined;   // set when registryCheck is "inactive"
   score: number;
   probe: ProbeResult | undefined;
   web: WebPresence;
@@ -220,6 +230,8 @@ export async function briefLeads(
       : "industry: none — name match only";
     const registry = l.registryCheck === "not_checked"
       ? "state registry: not checked this search (unknown)"
+      : l.registryCheck === "inactive"
+        ? `state registry: ${l.registryStanding?.status ?? "inactive"}${l.registryStanding?.since ? ` since ${l.registryStanding.since}` : ""} (not in good standing)`
       : e.source_ids.some(id => opts.existenceIds?.includes(id) === true)
         ? `state registry: ${e.status !== "" ? e.status : "listed"}`
         : "state registry: not found";
@@ -312,6 +324,8 @@ export function templateBrief(lead: Lead, map: MapResult, ctx: BriefContext = {}
   const now = ctx.now ?? new Date();
   const alive = e.source_ids.some(id => ctx.existenceIds?.includes(id) === true)
     ? "On the state business registry"
+    : lead.registryCheck === "inactive"
+      ? `The state registry lists it as ${lead.registryStanding?.status ?? "inactive"}${lead.registryStanding?.since ? ` (${lead.registryStanding.since})` : ""} — confirm it still operates`
     : lead.registryCheck === "not_checked"
       ? `Not checked against the state registry this search${e.lastSeen !== undefined ? `; last record ${e.lastSeen}` : ""} — confirm it still operates`
       : e.lastSeen === undefined

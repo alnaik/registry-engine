@@ -11,7 +11,7 @@ import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/s
 
 const LEAD_VIEW_KEYS = [
   "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "what", "coded", "individual", "employees", "lastSeen", "formedDate",
-  "sources", "codeSources", "registryCheck", "registeredElsewhere", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
+  "sources", "codeSources", "registryCheck", "registeredElsewhere", "registryStanding", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
 function makeLead(i: number): Lead {

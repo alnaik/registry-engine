@@ -23,6 +23,7 @@
       "quirks": {
         "datasetId": "4ykn-tg5h",
         "statusValue": "Good Standing",
+        "backfillInactive": true,
         "cities": [
           "Colorado Springs", "Fort Collins", "Castle Rock", "Monte Vista", "Grand Junction",
           "Denver", "Boulder", "Aurora", "Lakewood", "Littleton", "Arvada", "Westminster",
