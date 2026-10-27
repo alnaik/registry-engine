@@ -12,5 +12,5 @@
       "@registry-engine/qualify": ["packages/qualify/src/index.ts"]
     }
   },
-  "include": ["packages/*/src/**/*.ts", "apps/cli/src/**/*.ts", "tests/**/*.ts"]
+  "include": ["packages/*/src/**/*.ts", "apps/cli/src/**/*.ts", "apps/web/src/**/*.ts", "tests/**/*.ts"]
 }

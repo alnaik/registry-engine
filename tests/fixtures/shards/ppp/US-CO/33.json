@@ -1,0 +1,5 @@
+{"source":"ppp","region":"US-CO","sector":"33","generated":"2026-10-22","protocol_note":"Test fixture in the PPP shard shape (not real loan data).","records":[
+{"loan_number":"1001","name":"FIXTURE FABRICATION LLC","address":"100 Test Way","city":"Boulder","state":"CO","zip":"80301","naics":"332312","jobs":8,"business_type":"Limited Liability Company(LLC)","business_age":"Existing or more than 2 years old","date_approved":"2021-02-10"},
+{"loan_number":"1002","name":"SAMPLE WELDING INC","address":"200 Sample Rd","city":"Denver","state":"CO","zip":"80202","naics":"332999","jobs":21,"business_type":"Corporation","business_age":"Existing or more than 2 years old","date_approved":"2021-03-05"},
+{"loan_number":"1003","name":"TOY MACHINERY CO","address":"300 Mock Ave","city":"Denver","state":"CO","zip":"80203","naics":"333111","jobs":5,"business_type":"Corporation","business_age":"Existing or more than 2 years old","date_approved":"2020-04-30"}
+]}

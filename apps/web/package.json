@@ -1,0 +1,16 @@
+{
+  "name": "@registry-engine/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite-node src/main.ts"
+  },
+  "dependencies": {
+    "@registry-engine/registry-core": "*",
+    "@registry-engine/qualify": "*"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  }
+}
