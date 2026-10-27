@@ -1,160 +1,124 @@
 # Registry Engine
 
-Type what your business needs, or what it sells, and get the local businesses
-that search engines under-show. Results come as a call sheet: what each one
-does, how big it is, whether it's still operating, and how to reach it.
+Find the local businesses search engines miss: type what you need or what
+you sell, and get a call sheet built from public records.
+
+<img src="docs/media/search.png" alt="A real search in the app: typing a request and a location, the progress steps, then results grouped by distance" width="800">
+
+## Run
 
 ```bash
 npm install
-npm start            # opens the app at http://localhost:4317  (add -- --open to launch the browser)
+npm start          # → http://localhost:4317
 ```
 
-Type what you need ("someone to sew 500 custom tote bags") or what you sell
-("who would buy my small-batch hot sauce"), add your ZIP or town, and get the
-whole state's matching businesses grouped by distance (within 10 mi, 10–25,
-25–50 …). Each comes as a card with what it does, size, whether it's still
-operating, how to reach it, call notes, an opener you can copy, and a
-tracker (New / Called / Interested / Not a fit, plus notes, saved in your
-browser). Export everything to CSV, export just your tracked list, or print
-a call sheet. Saved searches live in this browser and flag businesses that
-are new since the last run. A separate "Recently registered near you" list shows
-state-registry filings from the last 90 days within your radius whose names match
-(name matches only, since the registry records no industry).
+- **AI (optional).** If [Claude Code](https://claude.com/claude-code) is
+  installed and logged in, each search makes 2 calls through it. Without it,
+  tick **Skip AI**: supplier searches still work, and buyer searches need
+  industry codes (the app's **Find codes** helper looks them up).
+- **Contacts (optional).** Set `EXA_API_KEY` or `PARALLEL_API_KEY` before
+  `npm start`, and the top results get a web lookup for website, phone and email.
 
-**AI.** Two LLM calls per search, run through your Claude Code login
-(`claude -p`), with no API key. Without Claude Code, tick "Skip AI".
-Supplier searches still work from a built-in table, and buyer searches need
-industry codes (the app's "Find codes" helper looks them up).
-
-**Contacts.** Most of these businesses publish no phone or website in any
-record. Set `EXA_API_KEY` (or `PARALLEL_API_KEY`) before `npm start` and the
-top results get a web lookup for website, phone and email. Each value comes
-with its source page and a "verify" label. The lookup is cached for 30 days
-and never runs for an individual's record. Without a key, every card gets a
-ready-made search link.
-
-### CLI
-
-```bash
-npm run --workspace apps/cli start -- search "I need someone to sew 500 custom tote bags near Denver"
-npm run --workspace apps/cli start -- search "who would buy my small-batch hot sauce" --near=80302 --csv=leads.csv
-npm run --workspace apps/cli start -- search "metal fabrication" --near="Castle Rock" --radius=25 --no-llm --naics=332
-npm run --workspace apps/cli start -- codes canvas bag
-```
-
-Flags:
-- `--near=<ZIP|town>`: center for distance grouping. Default: a town named in the request.
-- `--radius=<mi>`: drop leads farther away than this.
-- `--naics=<c1,c2>`: use these industry codes instead of inferring them.
-- `--direction=buy|sell`: buy = find suppliers, sell = find buyers. Default: guessed from the request.
-- `--hidden`: only leads with no website listed in any record.
-- `--csv=<path>`: write every ranked lead.
-- `--leads=<n>`: number of briefed and looked-up leads (default 12).
-- `--no-contacts`: skip the web lookup.
-- `--verbose`: show the raw evidence.
-- `--region=<US-XX>`: region to search (default US-CO).
-- `--no-llm`, `--limit=<n>`, `--model=<m>`, `--shards=<url>`.
-
-> `node --experimental-strip-types apps/cli/src/index.ts` does **not** work.
-> The source uses `.js`-suffixed ESM imports. Use the `vite-node` script above.
-
-## Why this finds what search engines don't
-
-Search engines show businesses that market themselves. But every business
-leaves records it can't opt out of: loans, permits, inspections, licenses,
-crop liens. Regulators and lenders write those records, and they carry an
-**industry code (NAICS)** saying what the business does. Registry Engine
-searches those codes, not names or websites.
-
-| Source | What it adds | Coverage |
-|---|---|---|
-| SBA PPP loan records (2020–21) | Nearly every small business, incl. sole proprietors: NAICS, address, jobs | CO (153k businesses, `shards/ppp`) |
-| EPA ECHO | Every active regulated facility: NAICS, last inspection date | US (live API) |
-| CO farm-products financing list | Growers, their crops, their lenders | CO (live) |
-| USDA PACA | Licensed produce dealers, with published phone/email | CO, CT, NY (`shards/paca`) |
-| Secretary of State registries | Legal name, current standing, registered agent | CO, CT, NY (live) |
-
-Check (ADR 0015): in Denver County, Census counts 79 fabricated-metal
-establishments, and PPP lists 94. Only 27% of them have a metal-related word
-in their name, so a name or keyword search misses most of them.
+Tested on Node 24.
 
 ## How a search works
 
-```
-map(query)    1 cheap LLM call → the NAICS codes of the businesses to contact.
-              Need something → codes of businesses that make/supply it.
-              Sell something → codes of businesses that buy/use it.
-              Codes are validated against the official NAICS 2017 list.
-route(intent) pure manifest lookup: geo ∩ NAICS prefix. 0 tokens.
-fetch(...)    drivers pull the routed sources and merge on normalized name +
-              compatible locality; state registries are joined by name to
-              confirm standing. 0 tokens.
-probe(...)    published domains checked A+MX over DNS-over-HTTPS. 0 tokens.
-brief(...)    1 best-tier LLM call for the top leads: why it fits, what's
-              verified vs. not, how to reach it, an opening line.
-```
+**1. Say what you need, or what you sell.** One AI call turns the request into
+the industry codes (NAICS) of the businesses to contact: makers and
+suppliers if you need something, likely buyers if you sell something. Pick
+the direction yourself, or let it guess.
 
-Hard budget: **≤2 LLM calls per search, zero per lead**, enforced by a call
-counter that throws, and by tests.
+<img src="docs/media/search-form.png" alt="The search form with a request, the supplier/buyer switch and a location" width="640">
 
-Ranking is industry-code fit plus evidence that the business operates
-(independent sources, state standing, recent records). Having a website or
-contact info adds nothing: the point is to find businesses with no web
-footprint. Web presence is shown as a label, and `--hidden` filters on it.
+**2. Public records are searched by industry code, not by name.** Most
+of these businesses don't advertise and have no website. Each record is
+confirmed against the state business registry.
 
-## What it can't tell you
+<img src="docs/media/progress.png" alt="Progress: industries chosen, sources searched with counts, state registry matches" width="640">
 
-- An industry code says what a business **is**, not whether it can take your
-  job (capacity, minimums, certifications). That is the phone call.
-- Buyer leads fit by industry. No public record shows what a business is
-  currently buying.
-- PPP is a 2020–21 snapshot. A lead confirmed by the state registry or a
-  recent EPA inspection is more likely still operating, and each brief says
-  which applies.
-- Most of these businesses publish no phone or email in any record. With a
-  web-search key the top leads are looked up (website, phone and email from
-  pages that match the business's name *and* town, each with its source).
-  Otherwise you get the address, the registered agent or principals, and a
-  prefilled search link (not for individuals' records). Nothing is guessed.
-- Distance is measured from ZIP centroids, so it's approximate to a mile or
-  two.
+**3. You get a call sheet,** grouped by distance from you. Each card says what
+the business does and which record says so, how to reach it, a short note
+on why it fits, and an opener to copy. A second AI call writes the notes and
+openers for the top 12.
 
-## Adding a source or a state
+<img src="docs/media/lead-card.png" alt="A lead card: industry, source, registry status, address, call notes, opener and outreach tracker" width="640">
 
-Add an entry to `packages/registry-core/src/sources/manifest.json`: plane,
-coverage (geo ∩ NAICS codes, `["*"]` = any), endpoint, field map and quirks.
-It needs **zero code changes**, as `tests/registry-core/zero-code-state.test.ts`
-proves. Drivers: `socrata`, `echo`, `static_shard` (local or hosted JSON
-shards, optionally split per NAICS sector).
+<img src="docs/media/distance-map.svg" alt="Distance map: rings at 10, 25, 50 and 100 miles with one dot per business" width="300"> <img src="docs/media/recently-registered.png" alt="Recently registered near you: new state filings whose names match" width="480">
 
-Rebuild data:
-- `python3 -I scripts/data/build_naics.py` (NAICS titles + Census index)
-- `python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csvs…>`
-  (SBA PPP FOIA files from https://data.sba.gov/dataset/ppp-foia)
+The distance map is the app's own SVG. **Recently registered near you**
+lists state filings from the last 90 days whose names match your request.
 
-## Layout
+Also in the app: an outreach tracker and saved searches (both stored in your
+browser), CSV export, and a printable call sheet.
 
-```
-packages/registry-core/   MIT. Entity, NAICS lookup, drivers, manifest, route().
-packages/qualify/         LLM adapter, map/probe/brief verbs, engine.
-apps/web/                 Local web app (npm start): server.ts + vanilla public/ UI. It shows a distance map of the results when a location is given.
-apps/cli/                 CLI harness (LLM via headless claude -p).
-shards/                   PPP (per region/sector) and PACA (per region) data.
-packages/registry-core/src/geo/  Census ZIP + place centroids (build_geo.py).
-scripts/data/             Rebuild NAICS and PPP data from the public sources.
-```
+## Sources
+
+| Source | What it adds | Where | How fresh | Link |
+|---|---|---|---|---|
+| SBA Paycheck Protection Program loans | Industry code, address and job count for nearly every small business, including sole proprietors | Colorado (153,093 businesses) | 2020–21 snapshot, in `shards/ppp` | [data.sba.gov](https://data.sba.gov/dataset/ppp-foia) |
+| EPA ECHO | Regulated facilities: industry code, last inspection | US | Live | [echo.epa.gov](https://echo.epa.gov/) |
+| Colorado farm-products financing statements | Growers, their crops and their lenders | Colorado | Live | [data.colorado.gov](https://data.colorado.gov/d/ej2c-jkvh) |
+| USDA PACA licenses | Produce dealers, with the phone and email they filed | CO 132 · CT 115 · NY 1,324 | Recorded July 2026, in `shards/paca` | [apps.mrp.usda.gov](https://apps.mrp.usda.gov/public_search) |
+| Colorado Secretary of State | Legal name, standing, registered agent, trade names, formation date | Colorado | Live | [entities](https://data.colorado.gov/d/4ykn-tg5h) · [trade names](https://data.colorado.gov/d/u7sb-g482) |
+| Connecticut Secretary of the State | Legal name, standing, formation date | Connecticut | Live | [data.ct.gov](https://data.ct.gov/d/n7gp-d28j) |
+| New York Department of State | Legal name, registered agent, filing date | New York | Live | [data.ny.gov](https://data.ny.gov/d/n9v6-gdp6) |
+
+Each search uses only the sources that cover its state and industries.
+Colorado has all of them; Connecticut and New York have their registry plus PACA.
+
+Bundled reference data: [NAICS 2017 codes and index](https://www.census.gov/naics/)
+(Census) and [ZIP and place centroids](https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html)
+(Census 2024 Gazetteer), used for distances.
+Outside services: [Exa](https://exa.ai) or [Parallel](https://parallel.ai) for
+the optional contact lookup, and Cloudflare DNS-over-HTTPS to check domains a
+record lists.
+
+## Token usage
+
+Every search makes at most 2 AI calls, never one per business. Both go
+through `claude -p` with no tools loaded, so the prompt is only the request
+and the record facts. The app's summary shows the tokens each search used
+(hover for the per-call split), and the CLI prints them after the results.
+
+Measured on 2026-10-27:
+
+| Search | Map call (Claude Haiku 4.5) | Notes call (Claude Sonnet 5) | Total | API-price equivalent |
+|---|---|---|---|---|
+| Tote bags near Denver (web app, above) | 3,446 in / 1,643 out | 6,064 in / 2,321 out | 13,474 | $0.059 |
+| Tote bags near Denver (CLI) | 4,726 | 8,482 | 13,208 | $0.059 |
+| Who would buy my hot sauce, 80302 (CLI) | 4,776 | 8,216 | 12,992 | $0.055 |
+
+About 13k tokens per search. The notes call costs more because it reads the
+facts of the top 12 businesses.
+
+The cost column is the API-price equivalent that `claude -p` reports. With
+a Claude subscription, searches count against your plan's usage, not a per-token bill.
+**Skip AI** uses 0 tokens.
+
+## CLI
 
 ```bash
-npm test              # drivers, route, verbs, engine golden queries (hermetic)
-npm run typecheck     # strict TS across the workspace
+npm run --workspace apps/cli start -- search "someone to sew 500 tote bags near Denver"
+npm run --workspace apps/cli start -- search "who would buy my hot sauce" --near=80302 --csv=leads.csv
+npm run --workspace apps/cli start -- codes metal fabrication     # look up industry codes
+npm run --workspace apps/cli start -- help                       # all flags
 ```
 
-## Privacy
+## Know before you call
 
-Public records only, plus what a business published about itself on the web
-(found by searching its name, labeled "verify", with sources; ADR 0016). No
-web lookup ever runs for an individual's record. Registry-published domains
-with MX may get a pattern email guess, always marked UNVERIFIED.
-PPP and farm-financing records name some individuals (sole proprietors,
-farm debtors). They are shown exactly as filed and never enriched. They get
-no web-search link, and the AI brief never sees the person's name.
+- An industry code says what a business **is**, not whether it can take your job.
+- Buyer leads fit by industry. No public record shows what a business buys.
+- PPP is a 2020–21 snapshot. Cards show which leads the state registry still lists as active.
+- Public records only. Contacts found on the web are labeled "verify", with
+  sources. Individuals' records never get a web lookup.
+
+## Development
+
+```bash
+npm test && npm run typecheck
+```
+
+Architecture, conventions and the data rebuild scripts: [`CLAUDE.md`](CLAUDE.md).
+Threat model: [`SECURITY.md`](SECURITY.md). Decisions: [`docs/decisions/`](docs/decisions/).
+README media is captured from the running app with
+[`scripts/docs/capture.mjs`](scripts/docs/capture.mjs).
