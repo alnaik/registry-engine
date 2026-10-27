@@ -67,3 +67,20 @@ describe("lookupCodes", () => {
     expect(lookupCodes(["zzzzqqqq"])).toEqual([]);
   });
 });
+
+describe("naicsPhrase", () => {
+  it("rewrites titles as plain sentence fragments", async () => {
+    const { naicsPhrase } = await import("../../packages/registry-core/src/naics.js");
+    expect(naicsPhrase("Textile Bag and Canvas Mills")).toBe("Makes textile bag and canvas products");
+    expect(naicsPhrase("Fabricated Structural Metal Manufacturing")).toBe("Makes fabricated structural metal");
+    expect(naicsPhrase("Cut and Sew Apparel Contractors")).toBe("Cut and sew apparel contractor");
+    expect(naicsPhrase("Fresh Fruit and Vegetable Merchant Wholesalers")).toBe("Fresh fruit and vegetable wholesaler");
+    expect(naicsPhrase("Supermarkets and Other Grocery (except Convenience) Stores")).toBe("Runs supermarkets and grocery stores");
+    expect(naicsPhrase("Full-Service Restaurants")).toBe("Runs a full-service restaurant");
+    expect(naicsPhrase("Potato Farming")).toBe("Runs a potato farm");
+    expect(naicsPhrase("Beef Cattle Ranching and Farming")).toBe("Beef cattle ranching and farming");
+    expect(naicsPhrase("Janitorial Services")).toBe("Provides janitorial services");
+    expect(naicsPhrase("All Other Miscellaneous Textile Product Mills")).toBe("Makes miscellaneous textile products");
+    expect(naicsPhrase("")).toBe("");
+  });
+});

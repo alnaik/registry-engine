@@ -9,162 +9,170 @@
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <h1 class="brand">Registry Engine</h1>
-      <p class="tagline">Find the local businesses search engines miss &mdash; from the public records every business leaves behind.</p>
-    </div>
-  </header>
+  <div class="sheet">
+    <header class="mast">
+      <h1 class="brand-mark">Registry Engine</h1>
+      <div class="tabs" role="tablist" aria-label="Views">
+        <button type="button" class="tab" role="tab" id="tab-find" aria-controls="panel-find" aria-selected="true">Find</button>
+        <button type="button" class="tab" role="tab" id="tab-calls" aria-controls="panel-calls" aria-selected="false" tabindex="-1">My calls<span class="count" id="calls-count">0</span></button>
+      </div>
+    </header>
 
-  <main class="wrap" id="main">
-    <section class="card search-card" aria-labelledby="search-heading">
-      <h2 id="search-heading" class="visually-hidden">Search</h2>
-      <form id="search-form" novalidate>
-        <div class="field">
-          <label for="query" class="field-label big">What do you need, or what do you sell?</label>
-          <input id="query" name="query" type="text" class="input big" maxlength="300" autocomplete="off"
-                 placeholder="e.g. Someone to sew 500 custom tote bags" aria-describedby="query-error">
-          <p id="query-error" class="field-error" role="alert" hidden></p>
-          <div class="chips examples" aria-label="Examples">
-            <button type="button" class="chip-button example">Someone to sew 500 custom tote bags</button>
-            <button type="button" class="chip-button example">Who would buy my small-batch hot sauce?</button>
-            <button type="button" class="chip-button example">Metal fabrication shop for brackets</button>
+    <main>
+      <section id="panel-find" role="tabpanel" aria-labelledby="tab-find">
+        <form id="search-form" class="ask" novalidate aria-label="Search">
+          <div class="ask-row">
+            <div class="ask-field">
+              <label class="eyebrow" for="query">What you need, or what you sell</label>
+              <input id="query" class="ask-input q" type="text" maxlength="300" autocomplete="off"
+                     placeholder="Someone to sew 500 custom tote bags" aria-describedby="query-error">
+            </div>
+            <div class="ask-field">
+              <label class="eyebrow" for="near">Near</label>
+              <input id="near" class="ask-input" type="text" maxlength="60" autocomplete="postal-code" placeholder="ZIP or town">
+            </div>
           </div>
-          <div class="direction" role="group" aria-label="What are you looking for?">
-            <button type="button" class="dir-button" data-direction="auto" aria-pressed="true">Let us guess</button>
-            <button type="button" class="dir-button" data-direction="buy" aria-pressed="false">Find suppliers</button>
-            <button type="button" class="dir-button" data-direction="sell" aria-pressed="false">Find buyers</button>
+          <p id="query-error" class="ask-error" role="alert" hidden></p>
+          <div class="ask-actions">
+            <button type="submit" id="go" class="btn primary">Find businesses</button>
+            <button type="button" id="more-toggle" class="linkish tap" aria-expanded="false" aria-controls="options">More options</button>
+            <span class="quiet fine">Public records only. Your call notes stay on this computer.</span>
           </div>
-        </div>
+          <p class="examples-line" id="examples">
+            <span>Try:</span>
+            <button type="button" class="linkish example">Someone to sew 500 custom tote bags</button>
+            <button type="button" class="linkish example">Who would buy my small-batch hot sauce?</button>
+            <button type="button" class="linkish example">Metal fabrication shop for brackets</button>
+          </p>
 
-        <div class="field">
-          <label for="near" class="field-label">Your location</label>
-          <input id="near" name="near" type="text" class="input" maxlength="60" autocomplete="postal-code"
-                 placeholder="ZIP or town, e.g. 80202 or Castle Rock">
-          <p class="hint">Results are sorted by distance from here.</p>
-        </div>
-
-        <details id="options" class="options">
-          <summary>More options</summary>
-          <div class="options-grid">
-            <div class="field" id="region-field" hidden>
-              <label for="region" class="field-label">State</label>
-              <select id="region" class="input"></select>
-            </div>
-
-            <div class="field">
-              <label for="radius" class="field-label">How far</label>
-              <select id="radius" class="input">
-                <option value="">Anywhere in the state</option>
-                <option value="10">Within 10 miles</option>
-                <option value="25">Within 25 miles</option>
-                <option value="50">Within 50 miles</option>
-                <option value="100">Within 100 miles</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="leads" class="field-label">Detailed results</label>
-              <select id="leads" class="input">
-                <option value="12">Top 12 (fastest)</option>
-                <option value="25">Top 25</option>
-                <option value="50">Top 50</option>
-              </select>
-            </div>
-
-            <div class="field wide">
-              <label class="check"><input type="checkbox" id="hidden-only"> <span>Only businesses with no website on record</span></label>
-            </div>
-
-            <div class="field wide">
-              <label class="check"><input type="checkbox" id="find-contacts" checked> <span>Look up websites &amp; phones for the top results <span class="muted">(uses your Exa/Parallel credits)</span></span></label>
-              <p class="hint" id="contacts-hint" hidden>Set EXA_API_KEY or PARALLEL_API_KEY to enable</p>
-            </div>
-
-            <div class="field wide">
-              <label class="check"><input type="checkbox" id="no-llm"> <span>Skip AI <span class="muted">(faster; finding buyers then needs industry codes)</span></span></label>
-              <p class="hint" id="llm-hint" hidden>Claude Code isn&rsquo;t available on this computer, so AI is off.</p>
-            </div>
-
-            <div class="field wide">
-              <label for="naics" class="field-label">Industry codes (optional)</label>
-              <input id="naics" type="text" class="input" maxlength="100" autocomplete="off" placeholder="e.g. 314910, 315210">
-              <div class="code-finder">
-                <label for="code-q" class="visually-hidden">Find industry codes by words</label>
-                <input id="code-q" type="text" class="input" maxlength="100" autocomplete="off" placeholder="Find codes: e.g. metal fabrication">
-                <button type="button" id="code-search" class="button secondary">Find codes</button>
+          <div id="options" class="options-panel" hidden>
+            <div class="opt-grid">
+              <div class="opt-field">
+                <span class="eyebrow" id="direction-label">Looking for</span>
+                <div class="seg" role="group" aria-labelledby="direction-label" id="direction">
+                  <button type="button" data-direction="auto" aria-pressed="true">Let us guess</button>
+                  <button type="button" data-direction="buy" aria-pressed="false">Suppliers</button>
+                  <button type="button" data-direction="sell" aria-pressed="false">Buyers</button>
+                </div>
               </div>
-              <p id="code-status" class="hint" aria-live="polite"></p>
-              <ul id="code-results" class="code-results"></ul>
+              <div class="opt-field">
+                <label class="eyebrow" for="radius">How far</label>
+                <select id="radius" class="opt-select">
+                  <option value="">Anywhere in the state</option>
+                  <option value="10">Within 10 miles</option>
+                  <option value="25">Within 25 miles</option>
+                  <option value="50">Within 50 miles</option>
+                  <option value="100">Within 100 miles</option>
+                </select>
+              </div>
+              <div class="opt-field">
+                <label class="eyebrow" for="leads">Call notes for</label>
+                <select id="leads" class="opt-select">
+                  <option value="12">Top 12 (fastest)</option>
+                  <option value="25">Top 25</option>
+                  <option value="50">Top 50</option>
+                </select>
+              </div>
+              <div class="opt-field" id="region-field" hidden>
+                <label class="eyebrow" for="region">State</label>
+                <select id="region" class="opt-select"></select>
+              </div>
+            </div>
+            <label class="opt-check"><input type="checkbox" id="hidden-only"> <span>Only businesses with no website on record</span></label>
+            <div>
+              <label class="opt-check"><input type="checkbox" id="find-contacts" checked> <span>Look up websites and phones for the top results <span class="quiet">(uses your Exa or Parallel credits)</span></span></label>
+              <p class="fine quiet" id="contacts-hint" hidden>Set EXA_API_KEY or PARALLEL_API_KEY to turn this on.</p>
+            </div>
+            <div>
+              <label class="opt-check"><input type="checkbox" id="no-llm"> <span>Skip AI <span class="quiet">(faster; finding buyers then needs industry codes)</span></span></label>
+              <p class="fine quiet" id="llm-hint" hidden>Claude Code isn't available on this computer, so AI is off.</p>
             </div>
           </div>
-        </details>
 
-        <div class="actions">
-          <button type="submit" id="go" class="button primary">Find businesses</button>
+          <div id="code-box" class="code-box" hidden>
+            <p id="code-why" class="fine" hidden></p>
+            <div class="ask-field">
+              <label class="eyebrow" for="naics">Industry codes (optional)</label>
+              <input id="naics" class="ask-input" type="text" maxlength="100" autocomplete="off" placeholder="e.g. 314910, 315210">
+            </div>
+            <div class="code-row">
+              <label for="code-q" class="visually-hidden">Find industry codes by words</label>
+              <input id="code-q" class="ask-input" type="text" maxlength="100" autocomplete="off" placeholder="Find codes by words: metal fabrication">
+              <button type="button" id="code-search" class="btn">Find codes</button>
+            </div>
+            <p id="code-status" class="fine quiet" aria-live="polite"></p>
+            <ul id="code-results" class="code-hits"></ul>
+          </div>
+
+          <div id="saved" class="saved-box" hidden>
+            <h2 class="eyebrow">Saved searches</h2>
+            <ul id="saved-list" class="saved-list"></ul>
+          </div>
+        </form>
+
+        <section id="how" class="how-box" aria-label="How it works">
+          <p>Businesses leave records they can't opt out of: loans, permits, inspections, registrations. Those records say what a business does. We search them by industry, not by name, so you find the shops that never advertise.</p>
+        </section>
+
+        <section id="reading" class="reading" aria-label="How we read your request" hidden>
+          <div id="reading-lines"></div>
+          <ul id="steps" class="steps-list" aria-label="Progress"></ul>
+          <ul id="notes" class="notes-list"></ul>
+        </section>
+
+        <section id="error-box" class="state-box err" role="alert" hidden>
+          <h2>Something went wrong</h2>
+          <p id="error-text"></p>
+          <div><button type="button" id="retry" class="btn sm">Try again</button></div>
+        </section>
+
+        <section id="empty" class="state-box" hidden>
+          <h2>No businesses found</h2>
+          <p>We searched the public records and nothing coded for this work matched. A few things to try:</p>
+          <ul id="empty-tips"></ul>
+        </section>
+
+        <div id="results-area" hidden>
+          <p id="sum" class="sum"></p>
+          <div id="tools" class="tools">
+            <div class="seg" role="group" aria-label="Show" id="filters"></div>
+            <button type="button" id="print" class="btn sm">Print sheet</button>
+            <a id="csv" class="btn sm" href="/api/csv" download="leads.csv">CSV</a>
+            <button type="button" id="save" class="btn sm">Save search</button>
+          </div>
+          <p id="new-since" class="fine quiet" hidden></p>
+          <p class="print-only print-head" id="print-head"></p>
+          <div id="bands"></div>
+          <p id="filter-empty" class="state-box quiet" hidden>No businesses in this list match the filter.</p>
+          <div id="groups"></div>
+          <details id="about" class="about">
+            <summary>About this search</summary>
+            <table class="about-table"><tbody id="about-rows"></tbody></table>
+          </details>
         </div>
+      </section>
 
-        <div id="saved" class="saved" hidden>
-          <h3 class="saved-title">Saved searches</h3>
-          <ul id="saved-list" class="saved-list"></ul>
+      <section id="panel-calls" role="tabpanel" aria-labelledby="tab-calls" hidden>
+        <div class="calls-head">
+          <h2 class="eyebrow" id="calls-title">My calls</h2>
+          <button type="button" id="calls-csv" class="btn sm">Download CSV</button>
         </div>
-      </form>
-    </section>
+        <p id="calls-empty" class="state-box quiet" hidden>No calls yet. Open a business on the Find tab, mark how the call went, or add a note, and it shows up here.</p>
+        <div class="calls-wrap" id="calls-wrap" tabindex="0" role="region" aria-labelledby="calls-title">
+          <table class="calls-table">
+            <thead><tr><th scope="col">Business</th><th scope="col">From search</th><th scope="col">Outcome</th><th scope="col">Note</th><th scope="col">Updated</th></tr></thead>
+            <tbody id="calls-rows"></tbody>
+          </table>
+        </div>
+        <p class="fine quiet calls-foot">Stored in this browser only. Outcomes across all your searches, newest first.</p>
+      </section>
+    </main>
 
-    <section id="how" class="how" aria-label="How it works">
-      <ol>
-        <li><strong>Tell us what you need.</strong> We work out which kinds of business do it.</li>
-        <li><strong>We search public records.</strong> Every business that is legally registered, not just the ones that advertise.</li>
-        <li><strong>You get a call sheet.</strong> Sorted by distance, with phone numbers, what to say, and a place to track your calls.</li>
-      </ol>
-    </section>
-
-    <section id="interp" class="interp" aria-label="How we read your request" hidden></section>
-
-    <section id="progress" class="card progress" aria-live="polite" aria-labelledby="progress-title" hidden>
-      <h2 id="progress-title" class="section-title">Working on it&hellip;</h2>
-      <ol id="steps" class="steps"></ol>
-      <ul id="warnings" class="warnings"></ul>
-    </section>
-
-    <section id="error-box" class="card notice error" role="alert" hidden>
-      <h2 class="section-title">Something went wrong</h2>
-      <p id="error-text"></p>
-      <button type="button" id="retry" class="button secondary">Try again</button>
-    </section>
-
-    <section id="summary" class="summary" aria-label="Summary" hidden></section>
-
-    <nav id="filters" class="filters" aria-label="Filter results" hidden></nav>
-
-    <details id="distmap" class="card distmap" open hidden>
-      <summary>Map of results by distance</summary>
-      <div id="distmap-plot" class="distmap-plot"></div>
-      <p id="distmap-note" class="muted small"></p>
-    </details>
-
-    <p id="toast" class="toast" role="status" aria-live="polite"></p>
-
-    <section id="empty" class="card notice" hidden>
-      <h2 class="section-title">No businesses found</h2>
-      <p>We searched the public records and nothing matched. A few things to try:</p>
-      <ul id="empty-tips" class="tips"></ul>
-    </section>
-
-    <section id="results" class="results" aria-label="Results"></section>
-    <p id="filter-empty" class="muted center" hidden>No loaded results match this filter.</p>
-    <div id="more-wrap" class="more-wrap" hidden></div>
-    <section id="recent" class="card recent" aria-labelledby="recent-title" hidden>
-      <h2 id="recent-title" class="section-title">Recently registered near you</h2>
-      <p id="recent-note" class="muted small"></p>
-      <div id="recent-rows" class="band-rows"></div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <p>Public records only. Phone numbers and websites marked &ldquo;verify&rdquo; were found on the web, not in a registry &mdash; check them before you rely on them.</p>
-    </div>
-  </footer>
+    <footer class="foot">
+      <p>Public records only. Phone numbers and websites marked "verify" were found on the web, not in a registry. Check them before you rely on them.</p>
+    </footer>
+  </div>
+  <p id="toast" class="sheet-toast" role="status" aria-live="polite"></p>
+  <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
 </body>
 </html>

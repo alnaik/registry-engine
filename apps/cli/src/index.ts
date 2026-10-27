@@ -1,8 +1,10 @@
 import { writeFileSync } from "node:fs";
-import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
+import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { Lead, FoundContact } from "@registry-engine/qualify";
 import { SOURCES, knownRegions, lookupCodes, naicsLabel, isNaicsCode } from "@registry-engine/registry-core";
 import type { Entity } from "@registry-engine/registry-core";
+
+const DEFAULT_LEADS = 12;   // the engine's default --leads
 
 // Validation harness: the full pipeline, with LLM calls through the Claude
 // Code CLI (headless) — subscription-billed, no API key.
@@ -109,8 +111,8 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
           console.log(`route   ${event.sources.map(s => `${s.id}(${s.plane})`).join(" + ") || "no sources for this category∩geo"}`);
           break;
         case "fetched":
-          fetchedCounts.push(`${event.sourceId} ${event.count}`);
-          console.log(`fetch   ${event.sourceId}: ${event.count} records`);
+          fetchedCounts.push(`${event.sourceId} ${event.count}${event.capped ? "+ (capped)" : ""}`);
+          console.log(`fetch   ${event.sourceId}: ${event.capped ? `${event.count}+ records (capped)` : `${event.count} records`}`);
           break;
         case "source_error":
           console.error(`fetch   ${event.sourceId} ERROR: ${event.message}`);
@@ -136,8 +138,20 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     },
   });
 
+  // Diagnostics only: the rejected map answer is untrusted model text, shown
+  // as-is (control characters already replaced) and never reused.
+  if (out.mapRawAnswer !== null) {
+    if (flags["verbose"] === "true") {
+      console.log(`map raw answer (unusable, ${out.mapRawAnswer.length} chars shown):\n${out.mapRawAnswer.split("\n").map(l => `  | ${l}`).join("\n")}`);
+    } else {
+      console.log("map     the AI answer couldn't be used; run with --verbose to see it");
+    }
+  }
+
   const existenceIds = out.routed.filter(r => r.plane === "existence").map(r => r.id);
   const naicsFields = naicsFieldMap(out.routed);
+  const lookup = out.registryLookup;
+  const checkedNames = lookup.status === "ran" ? lookup.namesChecked : 0;
   console.log(`\n${"═".repeat(64)}`);
   for (const line of summaryLines(out.ranked, out.map.intent.naics)) console.log(line);
   if (out.contactLookups !== null) {
@@ -146,7 +160,11 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   } else if (flags["no-contacts"] !== "true") {
     console.log("Contact lookups: off — set EXA_API_KEY or PARALLEL_API_KEY to find websites and phones for the top leads.");
   }
-  console.log(`Showing ${out.leads.length} | fetched: ${fetchedCounts.join(", ") || "no sources"} | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}${out.llmUsage === null ? "\n" : ""}`);
+  // The web app's split: coded businesses, then individuals' records (shown
+  // as filed: no search link, no maps link), then a count of name matches.
+  const groups = partitionLeads(out.ranked, out.map.intent.naics);
+  const shown = groups.businesses.slice(0, leads ?? DEFAULT_LEADS);
+  console.log(`Showing ${shown.length} | fetched: ${fetchedCounts.join(", ") || "no sources"} | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}${out.llmUsage === null ? "\n" : ""}`);
   if (out.llmUsage !== null) {
     const u = out.llmUsage;
     const byLabel = (label: string) => u.calls.filter(k => k.label === label).reduce((n, k) => n + k.inputTokens + k.outputTokens, 0);
@@ -154,13 +172,24 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     console.log(`AI tokens: ${u.inputTokens.toLocaleString()} in / ${u.outputTokens.toLocaleString()} out (map ${byLabel("map").toLocaleString()}, brief ${byLabel("brief").toLocaleString()})${cost} — billed to your Claude subscription via claude -p\n`);
   }
   let band = "";
-  out.leads.forEach((lead, i) => {
+  shown.forEach((lead, i) => {
     if (lead.band !== "" && lead.band !== band) {
       band = lead.band;
       console.log(`── ${band} ──\n`);
     }
-    printLead(lead, i + 1, existenceIds, naicsFields, flags["verbose"] === "true");
+    printLead(lead, i + 1, existenceIds, naicsFields, flags["verbose"] === "true", checkedNames);
   });
+
+  if (groups.individuals.length > 0) {
+    console.log(`── Individuals' records (shown as filed) · ${groups.individuals.length} ──`);
+    console.log("   Sole proprietors and others filed under a person's name. No web search, no map link.\n");
+    const cap = leads ?? DEFAULT_LEADS;
+    for (const lead of groups.individuals.slice(0, cap)) printIndividual(lead, existenceIds, checkedNames);
+    if (groups.individuals.length > cap) console.log(`   (${groups.individuals.length - cap} more in the CSV)\n`);
+  }
+  if (groups.nameOnly.length > 0) {
+    console.log(`── Name matches only: ${groups.nameOnly.length} (no industry code for this work; in the CSV) ──\n`);
+  }
 
   if (out.recent.length > 0 && out.recentWindow !== null) {
     console.log(`── Recently registered within ${out.recentWindow.radiusMi} mi (last ${out.recentWindow.days} days; name matches, no industry code) ──`);
@@ -178,7 +207,23 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   }
 }
 
-function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields: Record<string, string>, verbose: boolean): void {
+// Same tri-state wording as the web app's trust pills.
+function aliveText(lead: Lead, existenceIds: string[], checkedNames: number): string {
+  const e = lead.entity;
+  if (existenceIds.length === 0) return "";
+  const check = lead.registryCheck ?? (e.source_ids.some(id => existenceIds.includes(id)) ? "matched" : "not_checked");
+  if (check === "matched") return `on state registry · ${e.status !== "" ? e.status : "listed"} ✓`;
+  if (check === "inactive") {
+    const st = lead.registryStanding;
+    return `on state registry as ${st?.status ?? "inactive"}${st?.since ? ` (${st.since})` : ""}, not in good standing`;
+  }
+  if (check === "checked_not_found") {
+    return lead.registeredElsewhere === true ? "not on state registry at this address (a same-named record is elsewhere)" : "not on state registry";
+  }
+  return checkedNames > 0 ? `not checked against registry (beyond the ${checkedNames} names checked this search)` : "not checked against registry";
+}
+
+function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields: Record<string, string>, verbose: boolean, checkedNames: number): void {
   const e = lead.entity;
   const place = [e.address.city, e.address.zip].filter(v => v !== undefined && v !== "").join(" ");
   const head = [place, e.employees !== undefined ? `${e.employees} ${e.employees === 1 ? "job" : "jobs"}` : ""].filter(Boolean).join(" · ");
@@ -191,7 +236,7 @@ function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields
     : `name match only · ${e.source_ids.join(" + ")}`}`);
 
   const alive = [
-    existenceIds.length === 0 ? "" : e.source_ids.some(id => existenceIds.includes(id)) ? "on state registry ✓" : "not matched on state registry",
+    aliveText(lead, existenceIds, checkedNames),
     e.lastSeen !== undefined ? `last record ${e.lastSeen}` : "no dated record",
   ].filter(Boolean).join(" · ");
   console.log(`      alive  ${alive}`);
@@ -216,6 +261,22 @@ function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields
   if (lead.brief !== "") console.log(`      brief  ${lead.brief}`);
   if (lead.opener !== "") console.log(`      say    "${lead.opener}"`);
   if (verbose) printEvidence(e);
+  console.log();
+}
+
+// An individual's record, shown as filed: what the record says and where it
+// was filed, with no web search, no map link and no principal lookup.
+function printIndividual(lead: Lead, existenceIds: string[], checkedNames: number): void {
+  const e = lead.entity;
+  const place = [e.address.city, e.address.zip].filter(v => v !== undefined && v !== "").join(" ");
+  console.log(`   ${e.name}${place !== "" ? ` — ${place}` : ""}${lead.distanceMi !== null ? ` · ${lead.distanceMi} mi` : ""}`);
+  const codes = e.naics.slice(0, 2).map(c => `${c} ${naicsLabel(c) ?? ""}`.trim()).join(", ");
+  if (codes !== "") console.log(`      what   ${codes}`);
+  const alive = aliveText(lead, existenceIds, checkedNames);
+  if (alive !== "") console.log(`      alive  ${alive}`);
+  const address = [e.address.street, e.address.city, e.address.state, e.address.zip].filter(v => v !== undefined && v !== "").join(" ");
+  if (address !== "") console.log(`      filed  ${address}`);
+  if (e.contacts.length > 0) console.log(`      reach  ${e.contacts.join(" · ")} (as filed)`);
   console.log();
 }
 

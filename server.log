@@ -1,0 +1,9 @@
+
+> start
+> npm run --workspace apps/web start
+
+
+> @registry-engine/web@0.1.0 start
+> vite-node src/main.ts
+
+Registry Engine running at http://localhost:4318

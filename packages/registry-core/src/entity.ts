@@ -40,6 +40,25 @@ export const ORG_SUFFIXES = new Set([
   "LTD", "LIMITED", "CO", "COMPANY", "LLP", "LP", "PLLC", "PC", "PLC",
 ]);
 
+// Some registries append the standing to the legal name of an inactive
+// entity. Colorado's SoS dataset (4ykn-tg5h, checked 2026-10-27) uses
+// "<name>, Dissolved October 23, 2026", "<name>, Delinquent January 1, 2025",
+// "<name>, Colorado Authority Terminated September 1, 2005" and
+// "<name>, Colorado Authority Relinquished October 23, 2026". Returns the bare
+// name, the suffix's status words and its date (ISO), or null when the name
+// has no such suffix.
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+const STATUS_SUFFIX = new RegExp(
+  `^(.+?),\\s+((?:[A-Za-z]+\\s+){0,3}(?:Dissolved|Delinquent|Terminated|Relinquished|Revoked|Withdrawn|Expired))\\s+(${MONTHS.join("|")})\\s+(\\d{1,2}),\\s*(\\d{4})\\s*$`, "i");
+export function splitStatusSuffix(raw: string): { name: string; status: string; date: string | null } | null {
+  const m = STATUS_SUFFIX.exec(raw.trim());
+  if (m === null) return null;
+  const month = MONTHS.indexOf(m[3]!.toLowerCase()) + 1;
+  const day = Number(m[4]);
+  const date = day >= 1 && day <= 31 ? `${m[5]}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}` : null;
+  return { name: m[1]!.trim(), status: m[2]!.replace(/\s+/g, " "), date };
+}
+
 export function normalizeName(raw: string): string {
   const tokens = raw
     .toUpperCase()

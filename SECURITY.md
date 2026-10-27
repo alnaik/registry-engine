@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.4 (v5, activity-coded discovery + web app)
+Version: 3.7 (v6, field sheet, audit fixes)
 Last updated: 2026-10-27
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -34,7 +34,15 @@ user's request, in `map` and `brief`. The other is registry text inside
    - `packages/qualify/src/llm/adapter.ts`
 5. **Minimal data to the model.** Officers, agents and addresses are never
    sent to the LLM.
-6. **No tools for the headless model.** `claude -p` runs with `--tools ""`
+6. **Rejected map answers are logged, not reused.** When `parseMapResponse`
+   rejects the model's answer, the raw text is clipped to 2,000 chars with
+   control characters (terminal escapes) replaced (`rawAnswerForLog`) and
+   travels only as `SearchOutcome.mapRawAnswer`: the engine strips it from
+   the map result before the brief call, the CLI prints it under
+   `--verbose`, and the web server writes it to stderr, never into the
+   NDJSON stream or the page. It never feeds a prompt or a query.
+   - `mapQuery` in `map.ts`, `search` in `engine.ts`, `handleSearch` in `apps/web/src/server.ts`
+7. **No tools for the headless model.** `claude -p` runs with `--tools ""`
    and `--strict-mcp-config`, so injected request or registry text can't
    trigger tool use.
    - `packages/qualify/src/llm/claudeCodeBackend.ts`
@@ -79,7 +87,7 @@ registry-derived text that users open in spreadsheets.
 **Mitigation:** every cell is double-quoted with embedded quotes doubled. A
 cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 - `packages/qualify/src/csv.ts`, tested in `tests/qualify/csv.test.ts`
-- The browser-side "my list" export uses the same rules (`csvCell` in
+- The browser-side My calls export uses the same rules (`csvCell` in
   `apps/web/public/app.js`).
 
 ---
@@ -124,18 +132,32 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 Every limitation below is surfaced in the output, not hidden:
 1. **Industry code ≠ capability.** A code says what a business is, not
    whether it can take a given job. The brief prompt requires saying so.
-2. **PPP is a 2020–21 snapshot.** The "alive" line says whether the lead is
-   confirmed by the state registry or a recent dated record, or should be
-   confirmed by phone.
-3. **Buyer leads fit by industry**, never by confirmed demand. A static
+2. **PPP is a 2020–21 snapshot.** Standing is tri-state and never inferred
+   from a missing join alone: "On state registry" (joined a registry
+   record), "Not on state registry" (its name was really sent to the
+   registry lookup and nothing joined), "Not checked against registry"
+   (beyond the names looked up this search, or no lookup ran). The engine
+   replicates the driver's dedupe-and-cap to know who was checked. A fourth
+   case, "inactive": the registry has the name at a compatible locality but
+   not in good standing (Colorado appends ", Dissolved <date>" to the name);
+   the lead shows the registry's status ("Dissolved Oct 2026"), never "not
+   found", and never counts as confirmed. Opt-in per source
+   (`quirks.backfillInactive`); the extra SoQL clause uses the manifest's own
+   `statusValue`, no user or LLM input.
+   - `planBackfill` and `registryCheck` in `packages/qualify/src/engine.ts`;
+     labels in `apps/web/public/labels.js`, pinned by `tests/web/labels.test.ts`
+3. **Capped fetches** are flagged (`fetched.capped`) and shown as "500+
+   (capped)", never as a full count.
+4. **Buyer leads fit by industry**, never by confirmed demand. A static
    caveat is attached to every sell-direction search.
-4. **Name matches without a code** are counted separately in the summary
-   and scored below coded matches.
-5. **"No website"** means none is listed in the records searched, not that
+5. **Name matches without a code** never enter the headline count or the
+   main list; the web app shows them in a collapsed "Name matches only"
+   group.
+6. **"No website"** means none is listed in the records searched, not that
    none exists. Each such lead gets a search link.
-6. **Registered agent ≠ contact person.** SoS agent fields are often law
+7. **Registered agent ≠ contact person.** SoS agent fields are often law
    firms or agent services. The CLI labels them "agent/principals".
-7. **Name merges** require compatible locality (same zip or city), so
+8. **Name merges** require compatible locality (same zip or city), so
    same-named businesses in different towns stay separate.
 
 ---
@@ -214,3 +236,14 @@ credits is a target for other websites open in the same browser.
   withheld from the LLM brief.
 - v3.3 (2026-10-27, Phase 7c): recent-filings query (fetchRecent); date literal validated.
 - v3.4 (2026-10-27): claude -p runs with no tools and no MCP servers; per-search token usage reported.
+- v3.5 (2026-10-27, v6 Phase A / ADR 0017): tri-state registry standing, capped-fetch
+  flag, name-only matches out of the headline. Individuals' records get `mapsUrl: null`
+  and `searchUrl: null` from the server (`leadView` in `apps/web/src/server.ts`), and
+  the web app lists them in a collapsed group. Openers no longer quote NAICS titles.
+- v3.6 (2026-10-27, v6 Phase D): My calls export (was "my list") keeps the CSV rules and adds
+  the trust label at call time. The accessibility check (`scripts/a11y/axe.ts`) runs the real
+  server against a fictional fixture search, with no network and no AI.
+- v3.7 (2026-10-27, v6 Phase E audit fixes): rejected map answers are kept for diagnosis
+  only (Threat 1, item 6). Registry standing gains "inactive" (dissolved, delinquent),
+  opt-in per source via `quirks.backfillInactive`; its extra SoQL clause uses only the
+  manifest's `statusValue` (Threat 6, item 2). CSV adds `individual_record`.

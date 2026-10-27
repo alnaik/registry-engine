@@ -5,8 +5,8 @@
 export type Tier = "cheap" | "best";
 
 export const TIER_MODELS: Record<Tier, string> = {
-  cheap: "claude-haiku-4-5-20251001",
-  best: "claude-sonnet-5",
+  cheap: "claude-haiku-5-5",
+  best: "claude-sonnet-5-5",
 };
 
 export interface LlmUsage {
