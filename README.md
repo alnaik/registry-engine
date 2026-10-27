@@ -137,7 +137,7 @@ Rebuild data:
 ```
 packages/registry-core/   MIT. Entity, NAICS lookup, drivers, manifest, route().
 packages/qualify/         LLM adapter, map/probe/brief verbs, engine.
-apps/web/                 Local web app (npm start): server.ts + vanilla public/ UI.
+apps/web/                 Local web app (npm start): server.ts + vanilla public/ UI. It shows a distance map of the results when a location is given.
 apps/cli/                 CLI harness (LLM via headless claude -p).
 shards/                   PPP (per region/sector) and PACA (per region) data.
 packages/registry-core/src/geo/  Census ZIP + place centroids (build_geo.py).

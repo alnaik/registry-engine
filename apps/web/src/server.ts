@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ClaudeCodeBackend, leadsToCsv, summaryCounts, codeSourceIds, naicsFieldMap } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, normalizeName } from "@registry-engine/registry-core";
+import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, normalizeName, entityPoint } from "@registry-engine/registry-core";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
 // lookup, and one streaming search endpoint. Everything is loopback-only
@@ -57,6 +57,7 @@ export interface LeadView {
   aka: string[];
   address: { street: string; city: string; state: string; zip: string };
   distanceMi: number | null;
+  point: { lat: number; lon: number } | null;   // ZIP or city centroid, for the distance map
   band: string;
   naics: { code: string; title: string }[];
   employees: number | null;
@@ -354,7 +355,8 @@ function buildResult(outcome: SearchOutcome, existenceIds: string[], topN: numbe
   const names = new Map(sourceNames);
   for (const s of outcome.routed) names.set(s.id, s.name);
   const naicsFields = naicsFieldMap(outcome.routed);
-  const view = (lead: Lead, i: number, withEvidence: boolean): LeadView => leadView(lead, i + 1, existenceIds, names, naicsFields, withEvidence);
+  const region = outcome.map.intent.geo.region;
+  const view = (lead: Lead, i: number, withEvidence: boolean): LeadView => leadView(lead, i + 1, existenceIds, names, naicsFields, region, withEvidence);
   return {
     type: "result",
     origin: outcome.origin,
@@ -368,10 +370,11 @@ function buildResult(outcome: SearchOutcome, existenceIds: string[], topN: numbe
   };
 }
 
-function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<string, string>, naicsFields: Record<string, string>, withEvidence: boolean): LeadView {
+function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<string, string>, naicsFields: Record<string, string>, region: string, withEvidence: boolean): LeadView {
   const e = lead.entity;
   const a = e.address;
   const address = { street: a.street ?? "", city: a.city ?? "", state: a.state ?? "", zip: a.zip ?? "" };
+  const p = entityPoint(e, region);
   const place = [e.name, address.street, address.city, address.state, address.zip].filter(v => v !== "").join(" ");
   const view: LeadView = {
     id: e.id,
@@ -382,6 +385,7 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
     aka: e.names,
     address,
     distanceMi: lead.distanceMi,
+    point: p === undefined ? null : { lat: Math.round(p.lat * 1e4) / 1e4, lon: Math.round(p.lon * 1e4) / 1e4 },
     band: lead.band,
     naics: e.naics.map(code => ({ code, title: naicsLabel(code) ?? "" })),
     employees: e.employees ?? null,

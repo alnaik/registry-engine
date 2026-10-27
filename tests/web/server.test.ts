@@ -10,7 +10,7 @@ import type { AppDeps } from "../../apps/web/src/server.js";
 import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
-  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "employees", "lastSeen", "formedDate",
+  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "point", "band", "naics", "employees", "lastSeen", "formedDate",
   "sources", "codeSources", "onStateRegistry", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
@@ -223,6 +223,23 @@ describe("web app server", () => {
       const top = result["leads"] as Record<string, unknown>[];
       expect(top.map(l => l["id"])).toEqual(["co_sos:1", "ppp:2"]);
       expect(top.map(l => l["key"])).toEqual(["ACME TENT AND CANVAS|80203", "ACME TENT AND CANVAS|80203"]);
+    });
+
+    it("gives each lead a map point from its ZIP or city, or null when neither is known", async () => {
+      const a = makeLead(0);
+      const b = makeLead(1);
+      b.entity = { ...b.entity, address: { street: "", city: "Nowhereville", state: "CO", zip: "" } };
+      const outcome = makeOutcome(2);
+      outcome.ranked = [a, b];
+      outcome.entities = [a.entity, b.entity];
+      outcome.leads = [a, b];
+      behavior = async () => outcome;
+      const r = await post({ query: "tents", leads: 2 });
+      const result = lines(r).pop() as Record<string, unknown>;
+      const top = result["leads"] as { point: { lat: number; lon: number } | null }[];
+      expect(top[0]?.point?.lat).toBeCloseTo(39.75, 1);
+      expect(top[0]?.point?.lon).toBeCloseTo(-104.99, 1);
+      expect(top[1]?.point).toBeNull();
     });
 
     it("passes options through: noLlm drops the backend, findContacts:false turns contacts off", async () => {
