@@ -135,3 +135,28 @@ Record here: the date, the searches, n per tone, reached per tone, and any
 lead where the label proved wrong (for example a "Not on state registry"
 business that is operating under a new entity). If "no" is reached about as
 often as "ok", the amber tone overstates risk and should soften.
+
+## Addendum (2026-10-27, audit fixes)
+
+- **Dissolved is its own label.** Colorado's SoS appends ", Dissolved
+  <date>" (also Delinquent, Colorado Authority Terminated/Relinquished) to
+  an inactive entity's name, and the backfill asked only for Good Standing
+  rows, so dissolved businesses read "Not on state registry". With
+  `quirks.backfillInactive` (co_sos only; CT and NY unchanged) the backfill
+  also asks for inactive rows, matches them on the bare name with the same
+  locality guard, and sets `registryCheck: "inactive"`. The pill states the
+  registry's fact, "Dissolved Oct 2026" (or "<status> on state registry"
+  without a date), in the amber "no" tone, with the tag "The state registry
+  lists it as <status>. Confirm it still operates." It never counts as
+  confirmed. A dissolved namesake at another locality still reads "Not on
+  state registry at this address" (ACME TENT & CANVAS: PPP in Denver, the
+  dissolved SoS record in Englewood).
+- **One population for the sentence and the chips.** The summary sentence
+  counted all coded records, individuals' records included, while the
+  filter chips counted business rows, so one screen said "18 confirmed"
+  and "Confirmed 17". `partitionLeads` (qualify) is now the one split behind
+  `sheetCounts`, the server's lists and the CLI: the sentence counts coded
+  businesses, closes with "N individuals' records are listed separately",
+  and says when the list is capped ("The sheet lists the top N; the CSV has
+  all of them"). `tests/web/sheet-fixture.test.ts` pins the agreement.
+

@@ -212,14 +212,53 @@ round), one commit per phase, each after `npm test` + `npm run typecheck`.
   call was unusable, so the brief was skipped. (3) One diagnostic map call
   for (2): 5.2k tokens.
 
+### Phase E — audit fixes ✅
+An independent audit of the branch found six issues; one commit each.
+1. **Sentence vs chips.** `partitionLeads` (qualify `summary.ts`) is the one
+   split (coded businesses / individuals' records / name-only) behind
+   `sheetCounts`, the server's lists and the CLI. The sentence counts coded
+   businesses ("35 businesses ... 17 are confirmed"), ends with "11
+   individuals' records are listed separately", and notes a capped list.
+   `sheetCounts` gains `businesses` and `listed`; confirmed, phones and
+   within-radius are over businesses. Pinned in
+   `tests/web/sheet-fixture.test.ts` (the fixture's individual is now
+   matched, so the old count would fail).
+2. **Dissolved businesses.** Live check of CO SoS (4ykn-tg5h): inactive names
+   carry ", Dissolved October 23, 2026", ", Delinquent January 1, 2025",
+   ", Colorado Authority Terminated/Relinquished <date>"; `entitystatus`
+   says "Voluntarily Dissolved" etc. New manifest quirk `backfillInactive`
+   (co_sos only) adds a second per-chunk query `entitystatus<>'Good
+   Standing'`; the engine matches those rows on the bare name
+   (`splitStatusSuffix`), locality guard kept, without merging them, and
+   sets `registryCheck: "inactive"` + `registryStanding`. Pill "Dissolved
+   Oct 2026" (amber), tag "The state registry lists it as <status>. Confirm
+   it still operates." Brief, probe evidence and CLI say the status too.
+   ACME TENT & CANVAS itself stays "Not on state registry at this address":
+   its dissolved record is in Englewood, the PPP record in Denver.
+3. **CLI individuals.** The CLI prints coded businesses, then
+   "Individuals' records (shown as filed)" (no search or maps link), then a
+   name-only count. CSV gains a last column `individual_record`.
+4. **Recent filings "sew".** `recentNameMatch`: whole-word hit that isn't
+   only a static collision (sew/sewer, car/care, pet/peter, bar/bare). Not
+   done: dropping request words under 4 letters, because "sew" would then
+   also drop the real sewing shops (no NAICS title carries "sewing"). The
+   group stays collapsed and its heading is muted.
+5. **Caveats** sit under a "Before you call" eyebrow (only when present)
+   and print.
+6. **Raw map answer.** On a parse failure `SearchOutcome.mapRawAnswer` holds
+   the answer (2,000 chars, newlines kept, control characters replaced).
+   CLI `--verbose` prints it; the web server logs it to stderr only. It
+   never reaches the brief call (the engine strips it from the map
+   result). SECURITY.md 3.7.
+
 ### Left out, and why
 - Live web contact lookup (Exa / Parallel): there's still no key; untested
   live, as in v5.
 - Better individual detection (personal names filed with a business entity
   type): an engine change, not a UI one; recorded in ADR 0017.
 - The transient unusable map answer: it couldn't be reproduced within the
-  live-run budget. The fallback UI is honest, and the next step is logging
-  the raw map answer when parsing fails (no code yet).
+  live-run budget. The raw answer is now logged when parsing fails (Phase
+  E), so the next occurrence can be diagnosed.
 - Saved searches still re-run with the form's current AI and radius
   options (Phase 8 note, unchanged).
 - Moderate axe finding on `/design` (`landmark-unique`, a side effect of
