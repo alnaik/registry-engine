@@ -7,7 +7,7 @@ export type { MapResult } from "./verbs/map.js";
 export { probeEntities, publishedDomain } from "./verbs/probe.js";
 export type { ProbeResult, ProbeOptions } from "./verbs/probe.js";
 export { briefLeads, rankEntities, DISTANCE_BANDS, scoreEntity, webPresence, templateBrief, templateOpener, parseBriefResponse, webSearchUrl, fitRank, codeSourceIds, naicsFieldMap, BRIEF_SYSTEM } from "./verbs/brief.js";
-export type { Lead, WebPresence, RankContext, BriefContext, RegistryCheck } from "./verbs/brief.js";
+export type { Lead, WebPresence, RankContext, BriefContext, RegistryCheck, RegistryStanding } from "./verbs/brief.js";
 export { exaProvider, parallelProvider, providerFromEnv, extractContact, isLikelyIndividual, fileContactCache, memoryContactCache, findContacts } from "./verbs/contacts.js";
 export type { WebResult, WebSearchProvider, FoundContact, ContactCache } from "./verbs/contacts.js";
 export { ClaudeCodeBackend } from "./llm/claudeCodeBackend.js";

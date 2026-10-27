@@ -265,6 +265,20 @@ describe("SocrataDriver.fetchByNames", () => {
     expect(where).not.toContain("principalcity");
   });
 
+  it("with quirks.backfillInactive, also asks for rows not in the active status, in a separate query", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [] } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await driver.fetchByNames({ ...CO_SOS, quirks: { ...CO_SOS.quirks, backfillInactive: true } }, ["ACME TENT & CANVAS"]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const wheres = urls.slice(-2).map(u => decodeURIComponent(u.split("$where=")[1]!.split("&")[0]!));
+    expect(wheres.some(w => w.includes("entitystatus='Good Standing'"))).toBe(true);
+    expect(wheres.some(w => w.includes("entitystatus<>'Good Standing'"))).toBe(true);
+    expect(wheres.every(w => w.includes("%ACME%TENT%CANVAS%"))).toBe(true);
+  });
+
   it("returns [] with zero requests when no name survives normalization", async () => {
     const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as unknown as Response);
     vi.stubGlobal("fetch", fetchMock);

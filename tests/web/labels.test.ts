@@ -22,6 +22,10 @@ const PINS: { label: string; kind: "pill" | "tag" | "web"; lead: LabelLead; look
   { label: "No dated record. Confirm it still operates.", kind: "tag", lead: { ...base, registryCheck: "checked_not_found", lastSeen: null } },
   { label: "Not on state registry at this address", kind: "pill", lead: { ...base, registryCheck: "checked_not_found", registeredElsewhere: true } },
   { label: "A business with this name is registered elsewhere. Confirm it's the same one.", kind: "tag", lead: { ...base, registryCheck: "checked_not_found", registeredElsewhere: true } },
+  // inactive: the registry has the name here, but not in good standing (audit finding 2)
+  { label: "Dissolved Oct 2026", kind: "pill", lead: { ...base, registryCheck: "inactive", registryStanding: { status: "Voluntarily Dissolved", since: "2026-10-23" } } },
+  { label: "Delinquent on state registry", kind: "pill", lead: { ...base, registryCheck: "inactive", registryStanding: { status: "Delinquent", since: null } } },
+  { label: "The state registry lists it as Voluntarily Dissolved. Confirm it still operates.", kind: "tag", lead: { ...base, registryCheck: "inactive", registryStanding: { status: "Voluntarily Dissolved", since: "2026-10-23" } } },
   // not_checked: never looked up
   { label: "Not checked against registry", kind: "pill", lead: { ...base, registryCheck: "not_checked" }, lookup: ran },
   { label: "Beyond the 80 names checked this search", kind: "tag", lead: { ...base, registryCheck: "not_checked" }, lookup: ran },
@@ -47,17 +51,18 @@ describe("trust labels follow LeadView predicates", () => {
       const t = trustLabel(pin.lead, pin.lookup);
       expect(pin.kind === "pill" ? t.pill : t.tag).toBe(pin.label);
       // the tone is fixed by the registry check alone
-      const tone = { matched: "ok", checked_not_found: "no", not_checked: "unk" }[pin.lead.registryCheck as string];
+      const tone = { matched: "ok", inactive: "no", checked_not_found: "no", not_checked: "unk" }[pin.lead.registryCheck as string];
       expect(t.tone).toBe(tone);
     });
   }
 
   it("green only for a real join; amber only after a real lookup; grey never claims 'not found'", () => {
-    for (const check of ["matched", "checked_not_found", "not_checked", undefined]) {
+    for (const check of ["matched", "inactive", "checked_not_found", "not_checked", undefined]) {
       for (const lookup of [ran, { status: "failed", namesChecked: 0 }, { status: "none", namesChecked: 0 }, null]) {
         const t = trustLabel({ ...base, registryCheck: check, lastSeen: "2021-01-01" }, lookup);
         if (t.tone === "ok") expect(check).toBe("matched");
-        if (t.tone === "no") expect(check).toBe("checked_not_found");
+        if (t.tone === "no") expect(["checked_not_found", "inactive"]).toContain(check);
+        if (check === "inactive") expect(`${t.pill} ${t.tag}`).not.toMatch(/not on state registry|not found/i);
         if (t.tone === "unk") expect(`${t.pill} ${t.tag}`).not.toMatch(/not on state registry|not found/i);
       }
     }

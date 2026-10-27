@@ -186,6 +186,10 @@ function aliveText(lead: Lead, existenceIds: string[], checkedNames: number): st
   if (existenceIds.length === 0) return "";
   const check = lead.registryCheck ?? (e.source_ids.some(id => existenceIds.includes(id)) ? "matched" : "not_checked");
   if (check === "matched") return `on state registry · ${e.status !== "" ? e.status : "listed"} ✓`;
+  if (check === "inactive") {
+    const st = lead.registryStanding;
+    return `on state registry as ${st?.status ?? "inactive"}${st?.since ? ` (${st.since})` : ""}, not in good standing`;
+  }
   if (check === "checked_not_found") {
     return lead.registeredElsewhere === true ? "not on state registry at this address (a same-named record is elsewhere)" : "not on state registry";
   }

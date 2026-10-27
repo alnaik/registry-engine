@@ -29,6 +29,7 @@ export interface ProbeOptions {
   concurrency?: number | undefined;
   existenceSourceId?: string | undefined;  // flag entities missing this source
   wasChecked?: ((entity: Entity) => boolean) | undefined;  // false = its name was never looked up in that source
+  inactiveStatus?: ((entity: Entity) => string | null) | undefined;  // the registry's status when it has this name but not in good standing
   fetchImpl?: typeof fetch | undefined;
 }
 
@@ -49,6 +50,16 @@ export async function probeEntities(entities: Entity[], opts: ProbeOptions = {})
             field: "existence",
             value: opts.existenceSourceId,
             note: `not checked against ${opts.existenceSourceId} — beyond the names looked up this search`,
+          });
+          return;
+        }
+        const inactive = opts.inactiveStatus?.(entity) ?? null;
+        if (inactive !== null) {
+          entity.evidence.push({
+            source: "probe",
+            field: "existence",
+            value: opts.existenceSourceId,
+            note: `on ${opts.existenceSourceId} as "${inactive}" — not in good standing; confirm it still operates`,
           });
           return;
         }

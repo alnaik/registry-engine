@@ -77,6 +77,7 @@ export interface LeadView {
   codeSources: { id: string; name: string }[];   // the sources that carry the industry code
   registryCheck: RegistryCheck;
   registeredElsewhere: boolean;   // checked_not_found, but a same-named registration is at another locality
+  registryStanding: { status: string; since: string | null } | null;   // inactive: the registry's status and date
   status: string;
   contacts: string[];
   web: Lead["web"];
@@ -444,6 +445,7 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
     // back to the join alone and never claims a lookup that may not have run.
     registryCheck: lead.registryCheck ?? (onRegistry ? "matched" : "not_checked"),
     registeredElsewhere: lead.registeredElsewhere === true,
+    registryStanding: lead.registryStanding === undefined ? null : { status: lead.registryStanding.status, since: lead.registryStanding.since },
     status: e.status,
     contacts: e.contacts,
     web: lead.web,
