@@ -86,6 +86,8 @@ describe("web app server", () => {
     writeFileSync(join(publicDir, "index.html"), "<!doctype html><title>t</title>");
     writeFileSync(join(publicDir, "app.js"), "console.log(1);");
     writeFileSync(join(publicDir, "app.css"), "body{}");
+    writeFileSync(join(publicDir, "design.html"), "<!doctype html><title>d</title>");
+    writeFileSync(join(publicDir, "design.js"), "console.log(2);");
     server = createServer();
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     port = (server.address() as AddressInfo).port;
@@ -129,6 +131,17 @@ describe("web app server", () => {
       expect(r.headers["x-frame-options"]).toBe("DENY");
       const alt = await send({ path: "/", headers: { Host: `127.0.0.1:${port}` } });
       expect(alt.status).toBe(200);
+    });
+
+    it("serves the /design component sheet with the same CSP and Host check", async () => {
+      const r = await send({ path: "/design" });
+      expect(r.status).toBe(200);
+      expect(String(r.headers["content-type"])).toContain("text/html");
+      expect(String(r.headers["content-security-policy"])).toContain("default-src 'self'");
+      expect(String(r.headers["content-security-policy"])).toContain("script-src 'self'");
+      expect((await send({ path: "/design.js" })).status).toBe(200);
+      expect((await send({ path: "/design", headers: { Host: "evil.example.com" } })).status).toBe(403);
+      expect((await send({ path: "/design/../app.js" })).status).not.toBe(500);
     });
 
     it("serves the whitelisted assets, 404s the rest, and ignores traversal", async () => {
