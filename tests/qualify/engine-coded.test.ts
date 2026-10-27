@@ -89,6 +89,19 @@ function stubDns() {
 
 afterEach(() => vi.unstubAllGlobals());
 
+describe("engine — AI step failure", () => {
+  it("a throwing map call sets llmError and spends no brief call", async () => {
+    stubDns();
+    let calls = 0;
+    const backend: RawLlm = { complete: async () => { calls++; throw new Error("not logged in"); } };
+    const out = await search("metal fabrication in denver", {
+      sources: SOURCES, drivers: stubDrivers([]), region: "US-CO", llm: { backend },
+    });
+    expect(out.map.llmError).toContain("not logged in");
+    expect(calls).toBe(1);
+  });
+});
+
 describe("engine — activity-coded discovery", () => {
   it("finds code-matched businesses with no keyword in their name, merges planes, and stays within 2 LLM calls", async () => {
     stubDns();

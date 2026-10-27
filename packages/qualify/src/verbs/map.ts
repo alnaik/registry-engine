@@ -14,6 +14,7 @@ export interface MapResult {
   usedLlm: boolean;
   via: "llm" | "override" | "table" | "none";
   directionFixed: boolean;   // true when the caller fixed the direction instead of it being guessed
+  llmError?: string | undefined;   // set when an LLM was configured and its map call failed or was unusable
 }
 
 // token -> NAICS codes of the businesses to contact (suppliers) + name/crop
@@ -178,8 +179,10 @@ export async function mapQuery(
     t.length >= 3 && !STOPWORDS.has(t) && !cityWords.has(t) && !STATE_WORDS.has(t) && !/^\d+$/.test(t));
 
   const caveats: string[] = direction === "sell" ? [SELL_CAVEAT] : [];
+  let llmError: string | undefined;
   const done = (naics: string[], keywords: string[], via: MapResult["via"]): MapResult =>
-    ({ intent: { naics, geo, direction }, keywords, caveats, usedLlm: false, via, directionFixed: opts.direction !== undefined });
+    ({ intent: { naics, geo, direction }, keywords, caveats, usedLlm: false, via, directionFixed: opts.direction !== undefined,
+      ...(llmError !== undefined ? { llmError } : {}) });
 
   // 1) Explicit codes from the user win over everything.
   const override = (opts.naics ?? []).filter(isNaicsCode).slice(0, 6);
@@ -195,14 +198,16 @@ export async function mapQuery(
       const raw = await llm.call(prompt, { tier: "cheap", maxTokens: 400, system: MAP_SYSTEM });
       const parsed = parseMapResponse(raw, region, direction, caveats, opts.direction);
       if (parsed !== null) return parsed;
-    } catch {
+      llmError = "the AI answer couldn't be used";
+    } catch (err) {
       // fall through to the no-LLM paths
+      llmError = (err instanceof Error ? err.message : String(err)).slice(0, 200);
     }
   }
 
   // 3) No LLM (or it failed).
   if (direction === "sell") {
-    caveats.push('finding buyers needs the LLM step (it decides which industries use your product) — or pass --naics=<buyer industry codes>; run "codes <words>" to look codes up');
+    caveats.push('finding buyers needs the AI step (it decides which industries use your product) or industry codes you enter yourself');
     return done([], [], "none");
   }
 
@@ -219,7 +224,7 @@ export async function mapQuery(
   }
   if (naics.length > 0) return done(naics, keywords, "table");
 
-  caveats.push('no industry code found for this request without the LLM — showing name matches only; pass --naics=<codes> (see "codes <words>")');
+  caveats.push('no industry code found for this request without the AI step — showing name matches only; enter industry codes to search by industry');
   return done([], content.slice(0, 6), "none");
 }
 

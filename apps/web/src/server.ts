@@ -329,6 +329,7 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
         caveats: event.map.caveats,
         via: event.map.via,
         directionFixed: event.map.directionFixed,
+        ...(event.map.llmError !== undefined ? { llmError: event.map.llmError } : {}),
       };
     case "origin":
       return { type: "origin", origin: event.origin };

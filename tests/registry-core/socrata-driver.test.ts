@@ -98,6 +98,7 @@ describe("SocrataDriver", () => {
     expect(entityUrl).toContain("entitystatus='Good Standing'");
     expect(entityUrl).toContain("upper(entityname) LIKE '%JEWEL%'");
     expect(entityUrl).toContain("upper(principalcity) LIKE '%DENVER%'");
+    expect(entityUrl).toContain("$order=:id");
   });
 
   it("escapes SoQL injection attempts in keywords and cities", async () => {

@@ -66,6 +66,15 @@ const RECENT_DAYS = 90;                 // formation-date window for "recently r
 const RECENT_DEFAULT_RADIUS_MI = 25;
 const RECENT_MAX = 25;
 
+// A keyword counts in a name only as a whole word, optionally with a
+// common English ending: "tote" matches "Totes", "sew" matches "Sewing",
+// "bag" does not match "Bagel".
+export function nameHasWord(name: string, keyword: string): boolean {
+  const kw = keyword.trim().split(/\s+/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s+");
+  if (kw.length === 0) return false;
+  return new RegExp(`(^|[^a-z0-9])${kw}(s|es|e|ed|er|ers|ery|ry|ries|ing|ings|y|ies)?([^a-z0-9]|$)`, "i").test(name);
+}
+
 export async function search(query: string, cfg: SearchConfig = {}): Promise<SearchOutcome> {
   const emit = (e: EngineEvent) => cfg.onEvent?.(e);
   const sources = cfg.sources ?? SOURCES;
@@ -198,6 +207,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   const radius = cfg.radiusMi ?? RECENT_DEFAULT_RADIUS_MI;
   const recent = rankEntities(await recentPromise, new Map(), ctx)
     .filter(l => !isInsideWordNoise(l.entity, map.intent.naics, existenceIds))
+    .filter(l => [l.entity.name, ...l.entity.names].some(n => map.keywords.some(k => nameHasWord(n, k))))
     .filter(l => l.distanceMi !== null && l.distanceMi <= radius)
     .sort((a, b) => (b.entity.formedDate ?? "").localeCompare(a.entity.formedDate ?? "")
       || (a.distanceMi ?? Infinity) - (b.distanceMi ?? Infinity))
@@ -228,7 +238,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   }
 
   const sourceNames = Object.fromEntries(routed.map(s => [s.id, s.name]));
-  await briefLeads(ranked, map, llm, { maxLeads, sourceNames, naicsFields: naicsFieldMap(routed), existenceIds, query });
+  await briefLeads(ranked, map, map.llmError !== undefined ? null : llm, { maxLeads, sourceNames, naicsFields: naicsFieldMap(routed), existenceIds, query });
   const leads = ranked.slice(0, maxLeads);
   emit({ type: "done", leads });
 

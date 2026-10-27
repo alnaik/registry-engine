@@ -253,7 +253,7 @@ export class SocrataDriver implements Driver {
         $where: where,
         $limit: String(PAGE_SIZE),
         $offset: String(offset),
-        ...(order !== undefined ? { $order: order } : {}),
+        $order: order ?? ":id",
       });
       const resp = await limiter.run(() => fetchWithRetry(url, opts));
       const page = (await resp.json()) as Record<string, unknown>[];

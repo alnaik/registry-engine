@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Driver, DriverRegistry, Entity, RecentRequest, SourceSpec } from "../../packages/registry-core/src/index.js";
-import { search, type EngineEvent, type SearchConfig } from "../../packages/qualify/src/engine.js";
+import { search, nameHasWord, type EngineEvent, type SearchConfig } from "../../packages/qualify/src/engine.js";
 import { memoryContactCache } from "../../packages/qualify/src/verbs/contacts.js";
 
 // Recently registered filings over stub drivers: no network, no LLM.
@@ -46,7 +46,30 @@ const base: SearchConfig = {
   now: new Date("2026-10-27T12:00:00Z"),
 };
 
+describe("nameHasWord", () => {
+  it("matches whole words with common endings only", () => {
+    expect(nameHasWord("BagelBytes, LLC", "bag")).toBe(false);
+    expect(nameHasWord("Greenfoot Totes LLC", "tote")).toBe(true);
+    expect(nameHasWord("Denver Industrial Sewing LLC", "sew")).toBe(true);
+    expect(nameHasWord("SEWGRID INC", "sew")).toBe(false);
+    expect(nameHasWord("Direct Deliveries LLC", "deli")).toBe(false);
+    expect(nameHasWord("QUEEN CITY HOT SAUCE LLC", "hot sauce")).toBe(true);
+    expect(nameHasWord("Mitho Himalayan Grill L.L.C.", "grill")).toBe(true);
+  });
+});
+
 describe("engine — recently registered", () => {
+  it("drops recent rows whose name only contains the keyword inside a word", async () => {
+    const socrata: Driver = {
+      kind: "socrata",
+      fetch: async () => [],
+      fetchRecent: async () => [ent("9", "BagelBytes", { city: "Denver", zip: "80202" }, "2026-10-20")],
+    };
+    const out = await search("bag restaurant near denver", { ...base, drivers: { socrata }, naics: ["722513"] });
+    expect(out.map.keywords).toContain("bag");
+    expect(out.recent).toEqual([]);
+  });
+
   it("keeps in-radius name matches formed in the last 90 days, newest first, without touching the LLM budget", async () => {
     const reqs: RecentRequest[] = [];
     const events: EngineEvent[] = [];

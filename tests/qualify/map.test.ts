@@ -48,7 +48,7 @@ describe("mapQuery — no LLM: supplier-side static table", () => {
     expect(r.via).toBe("none");
     expect(r.intent.naics).toEqual([]);
     expect(r.keywords).toEqual(["quantum", "widget"]);
-    expect(r.caveats.some(c => c.includes("--naics"))).toBe(true);
+    expect(r.caveats.some(c => c.includes("enter industry codes"))).toBe(true);
   });
 });
 
@@ -64,7 +64,7 @@ describe("mapQuery — sell direction", () => {
     expect(r.via).toBe("none");
     expect(r.intent.naics).toEqual([]);
     expect(r.keywords).toEqual([]);
-    expect(r.caveats.some(c => c.includes("finding buyers needs the LLM step"))).toBe(true);
+    expect(r.caveats.some(c => c.includes("finding buyers needs the AI step"))).toBe(true);
     expect(r.caveats.some(c => c.includes("never what it currently buys"))).toBe(true);
   });
 });
@@ -135,6 +135,17 @@ describe("mapQuery — LLM", () => {
     const backend: RawLlm = { complete: async () => { throw new Error("boom"); } };
     const r = await mapQuery("restaurants in boulder", createLlm({ backend }), CO);
     expect(r.via).toBe("table");
+    expect(r.llmError).toContain("boom");
+  });
+
+  it("garbage output sets llmError; success and no-LLM leave it undefined", async () => {
+    const bad = await mapQuery("quantum widget makers", countingLlm("not json").llm, CO);
+    expect(bad.llmError).toBe("the AI answer couldn't be used");
+    const good = await mapQuery("restaurants in boulder", countingLlm('{"naics":["7225"],"keywords":["grill"]}').llm, CO);
+    expect(good.llmError).toBeUndefined();
+    expect((await mapQuery("restaurants in boulder", null, CO)).llmError).toBeUndefined();
+    const over = await mapQuery("restaurants in boulder", countingLlm("x").llm, { ...CO, naics: ["7225"] });
+    expect(over.llmError).toBeUndefined();
   });
 });
 
@@ -258,7 +269,7 @@ describe("mapQuery — fixed direction (7a)", () => {
     expect(r.directionFixed).toBe(true);
     expect(r.intent.naics).toEqual([]);
     expect(r.caveats.some(c => c.includes("never what it currently buys"))).toBe(true);
-    expect(r.caveats.some(c => c.includes("finding buyers needs the LLM step"))).toBe(true);
+    expect(r.caveats.some(c => c.includes("finding buyers needs the AI step"))).toBe(true);
   });
 
   it("fixed direction wins over the model's and is told to the model", async () => {
