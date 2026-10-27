@@ -112,3 +112,37 @@ describe("label sources", () => {
     }
   });
 });
+
+describe("call tracker", () => {
+  it("migrates pre-v6 outcomes: called → Reached, interested → Reached with a note prefix, notfit stays, new → Not called", async () => {
+    const { migrateTracker, callStatusText, isTracked, FILTERS } = await import("../../apps/web/public/labels.js");
+    expect(migrateTracker({ status: "called", note: "x" })).toEqual({ entry: { status: "reached", note: "x" }, changed: true });
+    expect(migrateTracker({ status: "interested", note: "call Tue" })).toEqual({ entry: { status: "reached", note: "Interested. call Tue" }, changed: true });
+    expect(migrateTracker({ status: "interested" }).entry).toEqual({ status: "reached", note: "Interested." });
+    expect(migrateTracker({ status: "notfit", note: "" })).toEqual({ entry: { status: "notfit", note: "" }, changed: false });
+    expect(migrateTracker({ status: "new", note: "n" }).entry).toEqual({ status: "notcalled", note: "n" });
+    expect(migrateTracker({ status: "reached" }).changed).toBe(false);
+    expect(migrateTracker({ status: "bogus" }).entry).toEqual({ status: "notcalled" });
+    expect(migrateTracker(null).entry).toBeNull();
+    // a migrated entry never loses its note, and an already-prefixed note is not doubled
+    expect(migrateTracker({ status: "interested", note: "Interested. again" }).entry).toEqual({ status: "reached", note: "Interested. again" });
+    expect(isTracked({ status: "notcalled", note: "" })).toBe(false);
+    expect(isTracked({ status: "notcalled", note: "x" })).toBe(true);
+    expect(callStatusText({ status: "reached", updatedAt: "2026-10-24T14:10:00" })).toBe("Reached 10/24");
+    expect(callStatusText({ status: "notcalled" })).toBe("");
+    const pred = (id: string) => FILTERS.find(f => f[0] === id)![2];
+    expect(pred("confirmed")({ registryCheck: "matched" })).toBe(true);
+    expect(pred("confirmed")({ registryCheck: "checked_not_found" })).toBe(false);
+    expect(pred("notcalled")({}, "notcalled")).toBe(true);
+    expect(pred("notcalled")({}, "noanswer")).toBe(false);
+    expect(pred("noweb")({ web: "none", found: null })).toBe(true);
+  });
+
+  it("the reach line never shows a principal for an individual's record", async () => {
+    const { reachSummary } = await import("../../apps/web/public/labels.js");
+    const lead = { contacts: [], found: null, address: { street: "1 Main St", city: "Denver" }, officers: ["JANE DOE"] };
+    expect(reachSummary({ ...lead, individual: false })).toMatchObject({ place: "1 Main St, Denver", principal: "JANE DOE" });
+    expect(reachSummary({ ...lead, individual: true })).toMatchObject({ place: "Address as filed: 1 Main St, Denver", principal: "" });
+    expect(reachSummary({ ...lead, contacts: ["(303) 555-0100"] })).toMatchObject({ phone: "(303) 555-0100", source: "on public record" });
+  });
+});

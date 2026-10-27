@@ -8,6 +8,35 @@ round), one commit per phase, each after `npm test` + `npm run typecheck`.
 
 ## Phases
 
+### Phase B — three surfaces on one page ✅
+- `index.html`, `app.js` and `app.css` rewritten to the field sheet: masthead
+  with Find / My calls tabs (ARIA tabs, arrow keys), ask bar (request +
+  Near + primary button + "More options"), reading line with "(guessed) ·
+  find buyers instead", ruled bands with eyebrow headings and "N more in
+  this band · Show them", dense rows that expand inline (one open at a
+  time, Escape closes), segmented filters All / Confirmed / Not yet called /
+  No web presence with counts.
+- Direction: auto is implicit; the explicit override lives in More options.
+  The code finder shows itself inline when Skip AI + Buyers, or when the
+  map found no codes (`updateCodeBox`).
+- My calls: a table over every tracker entry (business, from search,
+  outcome, note, updated), CSV export kept. Outcomes are Not called /
+  Reached / No answer / Not a fit; old entries migrate on read
+  (`migrateTracker`: called→Reached, interested→Reached + "Interested. ",
+  notfit→Not a fit, new→Not called). New entries store `search: {query,
+  near}`; migrated ones show "an earlier search".
+- Distance map removed: code, CSS, `docs/media/distance-map.svg`, the README
+  reference.
+- Legacy token aliases and the old card CSS are gone.
+- Deviations:
+  - Call outcomes in My calls are plain bold text, not trust-colored pills
+    as in the mockup: the design rule reserves color for trust state, and an
+    outcome is not a trust state.
+  - The row's call status ("Reached 10/24") is ink, not teal: teal is for
+    actions and links only.
+  - Rows render all coded leads (top N + up to 300 more) and collapse the
+    rest of each band; a band with none of the top N previews its first 5.
+
 ### Phase A — honest labels ✅
 - **Tri-state standing.** `Lead.registryCheck` = `matched` |
   `checked_not_found` | `not_checked`, set by the engine.

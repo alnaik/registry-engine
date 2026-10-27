@@ -43,10 +43,10 @@ openers for the top 12.
 
 <img src="docs/media/lead-card.png" alt="A lead card: industry, source, registry status, address, call notes, opener and outreach tracker" width="640">
 
-<img src="docs/media/distance-map.svg" alt="Distance map: rings at 10, 25, 50 and 100 miles with one dot per business" width="300"> <img src="docs/media/recently-registered.png" alt="Recently registered near you: new state filings whose names match" width="480">
+<img src="docs/media/recently-registered.png" alt="Recently registered near you: new state filings whose names match" width="480">
 
-The distance map is the app's own SVG. **Recently registered near you**
-lists state filings from the last 90 days whose names match your request.
+**Recently registered near you** lists state filings from the last 90 days
+whose names match your request.
 
 Also in the app: an outreach tracker and saved searches (both stored in your
 browser), CSV export, and a printable call sheet.
