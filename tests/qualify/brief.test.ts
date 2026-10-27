@@ -167,7 +167,7 @@ describe("briefLeads", () => {
     expect(out[0]!.opener).toBe("Hi Alpha, do you take on small runs?");
     expect(out[1]!.brief).toBe("Second.");
     // no opener returned -> the template opener stays
-    expect(out[1]!.opener).toContain("Beta");
+    expect(out[1]!.opener).toBe("Hi, I'm looking for a local shop to cut 500 metal brackets. Is that work you take on, and what's your lead time?");
     expect(seen!.opts.model).toContain("sonnet");
     expect(seen!.prompt).toContain("capacity and minimum order");
     expect(seen!.prompt).toContain("332312 Fabricated Structural Metal Manufacturing");
@@ -281,6 +281,20 @@ describe("templateBrief / templateOpener", () => {
     expect(templateBrief(lead(entity({})), MAP, ctx)).toContain("No dated record — confirm it still operates.");
   });
 
+  it("alive: a lead never looked up says 'not checked', not 'not found'", () => {
+    expect(templateBrief(lead(entity({ lastSeen: "2020-05-01" }), { registryCheck: "not_checked" }), MAP, ctx))
+      .toContain("Not checked against the state registry this search; last record 2020-05-01 — confirm it still operates.");
+  });
+
+  it("LLM packing: not_checked leads say the standing is unknown", async () => {
+    let prompt = "";
+    const backend: RawLlm = { complete: async p => { prompt = p; return "[]"; } };
+    const ranked = rankEntities([entity({ id: "a", name: "Alpha" })], new Map(), CTX).map(l => ({ ...l, registryCheck: "not_checked" as const }));
+    await briefLeads(ranked, MAP, createLlm({ backend }), { existenceIds: ["co_sos"] });
+    expect(prompt).toContain("state registry: not checked this search (unknown)");
+    expect(prompt).not.toContain("state registry: not found");
+  });
+
   it("no codes -> matched by name; no contacts -> use the address / officers / search link; no jobs -> omitted", () => {
     const text = templateBrief(lead(entity({ officers: ["JANE DOE"] })), MAP, ctx);
     expect(text).toContain("Matched by name in SBA PPP.");
@@ -294,13 +308,26 @@ describe("templateBrief / templateOpener", () => {
     expect(templateBrief(lead(entity({})), wordy, ctx).split(/\s+/).length).toBeLessThanOrEqual(91);
   });
 
-  it("opener follows the direction", () => {
+  it("opener follows the direction, in the user's words, never a NAICS title", () => {
     const e = entity({ name: "Heggem Lundquist", naics: ["332312"] });
+    const denver: MapResult = { ...MAP, intent: { ...MAP.intent, geo: { ...MAP.intent.geo, cities: ["denver"] } } };
+    expect(templateOpener(lead(e), denver, "I need someone to sew 500 custom tote bags near Denver")).toBe(
+      "Hi, I'm looking for a local shop to sew 500 custom tote bags. Is that work you take on, and what's your lead time?");
+    expect(templateOpener(lead(e), MAP, "Metal fabrication shop for brackets")).toBe(
+      "Hi, I'm looking for a local supplier for metal fabrication for brackets. Is that work you take on, and what's your lead time?");
+    expect(templateOpener(lead(e), denver, "produce supplier in Denver")).toBe(
+      "Hi, I'm looking for a local supplier for produce. Is that work you take on, and what's your lead time?");
     expect(templateOpener(lead(e), MAP)).toBe(
-      "Hi — I found Heggem Lundquist listed as Fabricated Structural Metal Manufacturing. I'm looking for a local supplier for this; is it something you take on?");
-    const sell: MapResult = { ...MAP, intent: { ...MAP.intent, direction: "sell" } };
+      "Hi, I'm looking for a local business for a job. Is that work you take on, and what's your lead time?");
+    const sell: MapResult = { ...MAP, intent: { ...MAP.intent, direction: "sell", geo: { ...MAP.intent.geo, cities: ["boulder"] } } };
+    expect(templateOpener(lead(entity({ name: "Plain Co" })), sell, "Who would buy my small-batch hot sauce in Boulder?")).toBe(
+      "Hi, I sell small-batch hot sauce locally. Is that something you'd carry or use, and who handles purchasing?");
     expect(templateOpener(lead(entity({ name: "Plain Co" })), sell)).toBe(
-      "Hi — I found Plain Co listed as a local business. I sell to businesses like yours; who handles purchasing?");
+      "Hi, I sell to local businesses like yours. Is that something you'd carry or use, and who handles purchasing?");
+    for (const text of [templateOpener(lead(e), MAP, "metal brackets"), templateOpener(lead(e), sell, "hot sauce")]) {
+      expect(text).not.toContain("Manufacturing");
+      expect(text).not.toContain("Heggem");
+    }
   });
 });
 
@@ -467,10 +494,10 @@ describe("individuals (M7)", () => {
   });
 
   it("the template opener omits the personal name", () => {
-    const text = templateOpener(lead(person()), MAP);
-    expect(text).toContain("Hi — I found your business listed as Fabricated Structural Metal Manufacturing.");
+    const text = templateOpener(lead(person()), MAP, "someone to weld brackets");
+    expect(text).toBe("Hi, I'm looking for a local shop to weld brackets. Is that work you take on, and what's your lead time?");
     expect(text).not.toContain("SMITH");
-    expect(templateOpener(lead(entity({ name: "Smith, John", naics: [] })), MAP)).toContain("listed as a local business.");
+    expect(templateOpener(lead(entity({ name: "Smith, John", naics: [] })), MAP)).not.toContain("Smith");
   });
 
   it("the LLM packing replaces the name and the system prompt says not to use it", async () => {

@@ -9,7 +9,7 @@ const DEFAULT_LIMIT = 500;
 const MAX_KEYWORDS = 8;
 const ID_CHUNK = 100;
 const CONCURRENCY = 4;
-const MAX_BACKFILL_NAMES = 80;    // cap on distinct name patterns per call
+export const MAX_BACKFILL_NAMES = 80;    // cap on distinct name patterns per call
 const NAME_CHUNK = 25;            // OR'd LIKE patterns per request
 const BACKFILL_PAGE_LIMIT = 200;  // row cap per chunk request
 const RECENT_LIMIT = 1000;        // default row cap for fetchRecent: one Socrata page, so the 90-day window isn't cut short statewide before the radius filter
@@ -29,6 +29,7 @@ interface SocrataQuirks {
   statusValue?: string | undefined;       // absent = no status filter anywhere
   keywordFields?: string[] | undefined;   // source fields keywords are LIKE'd against; default [fields.name]
   tradeNames?: TradeNameQuirks | undefined;
+  backfillInactive?: boolean | undefined; // fetchByNames also returns rows whose status isn't statusValue
 }
 
 // Keywords and cities are interpolated into SoQL LIKE clauses. Strip anything
@@ -63,6 +64,12 @@ function keywordClause(fields: string[], values: string[]): string {
 
 export class SocrataDriver implements Driver {
   readonly kind = "socrata" as const;
+  readonly defaultLimit: number = DEFAULT_LIMIT;
+  readonly maxBackfillNames: number = MAX_BACKFILL_NAMES;
+
+  backfillKey(name: string): string | null {
+    return namePattern(name);
+  }
 
   async fetch(source: SourceSpec, req: FetchRequest, opts: FetchRetryOptions = {}): Promise<Entity[]> {
     const quirks = readQuirks(source);
@@ -178,10 +185,19 @@ export class SocrataDriver implements Driver {
     const statusWhere = statusClause(source, quirks);
     const limiter = new Limiter(CONCURRENCY);
 
-    const chunkResults = await Promise.all(chunks(capped, NAME_CHUNK).map(chunk => {
-      const where = [...statusWhere, likeClause(f["name"]!, chunk)].join(" AND ");
-      return this.pages(source, quirks.datasetId, where, BACKFILL_PAGE_LIMIT, limiter, opts);
-    }));
+    // With quirks.backfillInactive, a second query per chunk returns the
+    // rows NOT in the active status (dissolved, delinquent, ...), so a lead
+    // can say "Dissolved Oct 2026" instead of "not on the registry". It is a
+    // separate query so inactive rows can't crowd active ones out of the
+    // per-chunk row cap; active rows come first in the result.
+    const inactiveWhere = quirks.backfillInactive === true && statusWhere.length > 0
+      ? [`${f["status"]!}<>'${quirks.statusValue!}'`] : null;
+    const queries = chunks(capped, NAME_CHUNK).flatMap(chunk => [
+      [...statusWhere, likeClause(f["name"]!, chunk)].join(" AND "),
+      ...(inactiveWhere === null ? [] : [[...inactiveWhere, likeClause(f["name"]!, chunk)].join(" AND ")]),
+    ]);
+    const chunkResults = await Promise.all(queries.map(where =>
+      this.pages(source, quirks.datasetId, where, BACKFILL_PAGE_LIMIT, limiter, opts)));
 
     const idField = f["id"]!;
     const byId = new Map<string, Record<string, unknown>>();
@@ -283,7 +299,7 @@ function readQuirks(source: SourceSpec): SocrataQuirks {
       throw new Error(`source "${source.id}": quirks.tradeNames needs datasetId, statusValue, fields`);
     }
   }
-  return { datasetId, statusValue, keywordFields, tradeNames };
+  return { datasetId, statusValue, keywordFields, tradeNames, backfillInactive: q["backfillInactive"] === true };
 }
 
 // The existence-status filter, or nothing when the source has no status.

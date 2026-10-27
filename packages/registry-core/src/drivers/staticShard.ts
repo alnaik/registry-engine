@@ -43,6 +43,7 @@ const REPO_ROOT = new URL("../../../../", import.meta.url);
 
 export class StaticShardDriver implements Driver {
   readonly kind = "static_shard" as const;
+  readonly defaultLimit = DEFAULT_LIMIT;
 
   async fetch(source: SourceSpec, req: FetchRequest, opts: FetchRetryOptions = {}): Promise<Entity[]> {
     // The region becomes part of a file path or URL: refuse anything that

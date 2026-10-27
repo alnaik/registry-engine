@@ -1,5 +1,6 @@
 import { naicsLabel } from "@registry-engine/registry-core";
 import type { Lead } from "./verbs/brief.js";
+import { isLikelyIndividual } from "./verbs/contacts.js";
 
 // CSV export of every ranked lead. Every cell is double-quoted. Registry
 // names are attacker-controllable text that ends up in a spreadsheet, so a
@@ -7,9 +8,10 @@ import type { Lead } from "./verbs/brief.js";
 
 export const CSV_HEADER = [
   "rank", "score", "name", "other_names", "street", "city", "state", "zip",
-  "naics", "naics_titles", "employees", "last_seen", "sources", "on_state_registry",
+  "naics", "naics_titles", "employees", "last_seen", "sources", "on_state_registry", "registry_check",
   "contacts", "web", "search_url", "officers", "brief", "opener",
   "distance_mi", "band", "found_status", "found_phone", "found_email", "found_website", "found_sources",
+  "individual_record",
 ] as const;
 
 export function csvCell(value: string | number | undefined): string {
@@ -36,6 +38,7 @@ export function leadsToCsv(leads: Lead[], existenceIds: string[]): string {
       e.lastSeen,
       e.source_ids.join("; "),
       e.source_ids.some(id => existenceIds.includes(id)) ? "yes" : "no",
+      lead.registryCheck ?? "",
       e.contacts.join("; "),
       lead.web,
       lead.searchUrl ?? "",
@@ -49,6 +52,7 @@ export function leadsToCsv(leads: Lead[], existenceIds: string[]): string {
       lead.found?.email,
       lead.found?.website,
       lead.found?.sourceUrls.join("; ") ?? "",
+      isLikelyIndividual(e) ? "yes" : "no",
     ].map(csvCell).join(",");
   });
   return [CSV_HEADER.map(csvCell).join(","), ...rows].join("\n") + "\n";

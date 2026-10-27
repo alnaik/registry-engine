@@ -12,7 +12,7 @@ export const defaultDrivers: DriverRegistry = {
   echo: new EchoDriver(),
 };
 
-export { SocrataDriver, soqlSafeLiteral } from "./socrata.js";
+export { SocrataDriver, soqlSafeLiteral, namePattern, MAX_BACKFILL_NAMES } from "./socrata.js";
 export { StaticShardDriver } from "./staticShard.js";
 export { EchoDriver } from "./echo.js";
 export { rowToEntity } from "./mapRow.js";

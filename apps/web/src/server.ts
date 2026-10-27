@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ClaudeCodeBackend, leadsToCsv, summaryCounts, codeSourceIds, naicsFieldMap } from "@registry-engine/qualify";
-import type { search, EngineEvent, Lead, SearchOutcome } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, normalizeName, entityPoint } from "@registry-engine/registry-core";
+import { ClaudeCodeBackend, leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
+import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck } from "@registry-engine/qualify";
+import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhrase, naicsRelated, normalizeName } from "@registry-engine/registry-core";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
 // lookup, and one streaming search endpoint. Everything is loopback-only
@@ -20,7 +20,11 @@ export interface AppDeps {
 
 const MAX_BODY_BYTES = 10 * 1024;
 const MORE_LEADS = 300;
+const GROUP_LEADS = 100;      // individuals' records and name-only matches sent per search
 const DEFAULT_LEADS = 12;
+const DEFAULT_RADIUS_MI = 25; // the summary's "within N miles" when no radius is set
+
+const REGION_NAMES: Record<string, string> = { "US-CO": "Colorado", "US-CT": "Connecticut", "US-NY": "New York" };
 
 const HTML_CSP = "default-src 'self'; img-src 'self' data:; connect-src 'self'; style-src 'self'; script-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
@@ -29,6 +33,10 @@ const STATIC_FILES: Record<string, { file: string; type: string }> = {
   "/": { file: "index.html", type: "text/html; charset=utf-8" },
   "/app.js": { file: "app.js", type: "text/javascript; charset=utf-8" },
   "/app.css": { file: "app.css", type: "text/css; charset=utf-8" },
+  "/labels.js": { file: "labels.js", type: "text/javascript; charset=utf-8" },
+  // Component sheet: every UI component with fictional data, light and dark.
+  "/design": { file: "design.html", type: "text/html; charset=utf-8" },
+  "/design.js": { file: "design.js", type: "text/javascript; charset=utf-8" },
 };
 
 interface SearchParams {
@@ -57,22 +65,26 @@ export interface LeadView {
   aka: string[];
   address: { street: string; city: string; state: string; zip: string };
   distanceMi: number | null;
-  point: { lat: number; lon: number } | null;   // ZIP or city centroid, for the distance map
   band: string;
   naics: { code: string; title: string }[];
+  what: string;          // the best-fitting code's title as a plain phrase ("Makes textile bag and canvas products"); "" = no code
+  coded: boolean;        // carries an industry code related to the request (false = name match only)
+  individual: boolean;   // an individual's record: shown as filed, no map link, no web search
   employees: number | null;
   lastSeen: string | null;
   formedDate: string | null;
   sources: { id: string; name: string }[];
   codeSources: { id: string; name: string }[];   // the sources that carry the industry code
-  onStateRegistry: boolean;
+  registryCheck: RegistryCheck;
+  registeredElsewhere: boolean;   // checked_not_found, but a same-named registration is at another locality
+  registryStanding: { status: string; since: string | null } | null;   // inactive: the registry's status and date
   status: string;
   contacts: string[];
   web: Lead["web"];
   found: Lead["found"] | null;
   officers: string[];
   searchUrl: string | null;
-  mapsUrl: string;
+  mapsUrl: string | null;   // null for individuals' records
   brief: string;
   opener: string;
   evidence?: { source: string; field: string; value: string; note: string }[];
@@ -111,7 +123,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       res.writeHead(200, {
         "Content-Type": entry.type,
         "Cache-Control": "no-store",
-        ...(path === "/" ? { "Content-Security-Policy": HTML_CSP } : {}),
+        ...(entry.type.startsWith("text/html") ? { "Content-Security-Policy": HTML_CSP } : {}),
       });
       res.end(head ? undefined : body);
       return;
@@ -186,6 +198,8 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
 
     try {
       const sourceNames = new Map(SOURCES.map(s => [s.id, s.name]));
+      // Per-source counts for "About this search", gathered from the stream.
+      const fetchedBy = new Map<string, { count: number; capped: boolean; error: boolean }>();
       const outcome = await deps.search(params.query, {
         llm: params.noLlm ? undefined : { backend: new ClaudeCodeBackend() },
         near: params.near,
@@ -197,14 +211,21 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         direction: params.direction,
         contacts: params.findContacts ? undefined : null,
         onEvent: event => {
+          if (event.type === "fetched") fetchedBy.set(event.sourceId, { count: event.count, capped: event.capped, error: false });
+          if (event.type === "source_error" && !fetchedBy.has(event.sourceId)) fetchedBy.set(event.sourceId, { count: 0, capped: false, error: true });
           const line = translateEvent(event);
           if (line !== null) write(line);
         },
       });
 
+      // The rejected map answer goes to the server's stderr for diagnosis,
+      // never into the result line or the page.
+      if (outcome.mapRawAnswer !== null) {
+        console.error(`[map] the AI answer couldn't be used. Raw answer (untrusted):\n${outcome.mapRawAnswer}\n[map] end of raw answer`);
+      }
       const existenceIds = outcome.routed.filter(s => s.plane === "existence").map(s => s.id);
       last = { ranked: outcome.ranked, existenceIds };
-      write(buildResult(outcome, existenceIds, params.leads, sourceNames));
+      write(buildResult(outcome, existenceIds, params, sourceNames, fetchedBy));
     } catch (err) {
       write({ type: "error", message: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -336,7 +357,7 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
     case "routed":
       return { type: "routed", sources: event.sources.map(s => ({ id: s.id, name: s.name })) };
     case "fetched":
-      return { type: "fetched", sourceId: event.sourceId, count: event.count };
+      return { type: "fetched", sourceId: event.sourceId, count: event.count, capped: event.capped };
     case "source_error":
       return { type: "source_error", sourceId: event.sourceId, message: event.message };
     case "merged":
@@ -352,32 +373,60 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
   }
 }
 
-function buildResult(outcome: SearchOutcome, existenceIds: string[], topN: number, sourceNames: Map<string, string>): Record<string, unknown> {
+function buildResult(
+  outcome: SearchOutcome,
+  existenceIds: string[],
+  params: SearchParams,
+  sourceNames: Map<string, string>,
+  fetchedBy: Map<string, { count: number; capped: boolean; error: boolean }>
+): Record<string, unknown> {
   const names = new Map(sourceNames);
   for (const s of outcome.routed) names.set(s.id, s.name);
   const naicsFields = naicsFieldMap(outcome.routed);
+  const codes = outcome.map.intent.naics;
+  const topN = params.leads;
+  const view = (lead: Lead, rank: number, withEvidence: boolean): LeadView => leadView(lead, rank, existenceIds, names, naicsFields, codes, withEvidence);
+
+  // Three lists from one ranking: coded businesses (the sheet), coded
+  // individuals' records (a collapsed group), and name-only matches (a
+  // collapsed group that never enters the headline count).
+  // partitionLeads is the same split sheetCounts counts over.
+  const ranks = new Map(outcome.ranked.map((l, i) => [l, i + 1]));
+  const { businesses: main, individuals, nameOnly } = partitionLeads(outcome.ranked, codes);
+  const radiusMi = params.radiusMi ?? DEFAULT_RADIUS_MI;
   const region = outcome.map.intent.geo.region;
-  const view = (lead: Lead, i: number, withEvidence: boolean): LeadView => leadView(lead, i + 1, existenceIds, names, naicsFields, region, withEvidence);
+
   return {
     type: "result",
     origin: outcome.origin,
-    summary: summaryCounts(outcome.ranked, outcome.map.intent.naics),
+    region,
+    regionName: REGION_NAMES[region] ?? region.replace(/^US-/, ""),
+    summary: summaryCounts(outcome.ranked, codes),
+    sheet: sheetCounts(outcome.ranked, codes, { radiusMi, hasOrigin: outcome.origin !== null, listCap: topN + MORE_LEADS }),
+    registryLookup: outcome.registryLookup,
+    sources: outcome.routed.map(s => ({ id: s.id, name: s.name, plane: s.plane, ...(fetchedBy.get(s.id) ?? { count: 0, capped: false, error: false }) })),
     contactLookups: outcome.contactLookups,
     llmCalls: outcome.llmCalls,
     llmUsage: outcome.llmUsage,
-    leads: outcome.ranked.slice(0, topN).map((l, i) => view(l, i, true)),
-    more: outcome.ranked.slice(topN, topN + MORE_LEADS).map((l, i) => view(l, topN + i, false)),
-    recent: outcome.recent.map((l, i) => view(l, i, false)),
+    leads: main.slice(0, topN).map(l => view(l, ranks.get(l) ?? 0, true)),
+    more: main.slice(topN, topN + MORE_LEADS).map(l => view(l, ranks.get(l) ?? 0, true)),
+    individuals: individuals.slice(0, GROUP_LEADS).map(l => view(l, ranks.get(l) ?? 0, true)),
+    nameOnly: nameOnly.slice(0, GROUP_LEADS).map(l => view(l, ranks.get(l) ?? 0, false)),
+    recent: outcome.recent.map((l, i) => view(l, i + 1, false)),
     recentWindow: outcome.recentWindow,
   };
 }
 
-function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<string, string>, naicsFields: Record<string, string>, region: string, withEvidence: boolean): LeadView {
+function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<string, string>, naicsFields: Record<string, string>, codes: string[], withEvidence: boolean): LeadView {
   const e = lead.entity;
   const a = e.address;
   const address = { street: a.street ?? "", city: a.city ?? "", state: a.state ?? "", zip: a.zip ?? "" };
-  const p = entityPoint(e, region);
+  const individual = isLikelyIndividual(e);
   const place = [e.name, address.street, address.city, address.state, address.zip].filter(v => v !== "").join(" ");
+  // The code that best fits the request leads the plain-language line.
+  const related = e.naics.filter(c => codes.some(q => naicsRelated(c, q)));
+  const best = related[0] ?? e.naics[0];
+  const onRegistry = e.source_ids.some(id => existenceIds.includes(id));
   const view: LeadView = {
     id: e.id,
     key: `${normalizeName(e.name)}|${(e.address.zip ?? "").trim().slice(0, 5)}`,
@@ -387,22 +436,28 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
     aka: e.names,
     address,
     distanceMi: lead.distanceMi,
-    point: p === undefined ? null : { lat: Math.round(p.lat * 1e4) / 1e4, lon: Math.round(p.lon * 1e4) / 1e4 },
     band: lead.band,
     naics: e.naics.map(code => ({ code, title: naicsLabel(code) ?? "" })),
+    what: best === undefined ? "" : naicsPhrase(naicsLabel(best) ?? ""),
+    coded: related.length > 0,
+    individual,
     employees: e.employees ?? null,
     lastSeen: e.lastSeen ?? null,
     formedDate: e.formedDate ?? null,
     sources: e.source_ids.map(id => ({ id, name: names.get(id) ?? id })),
     codeSources: codeSourceIds(e, naicsFields).map(id => ({ id, name: names.get(id) ?? id })),
-    onStateRegistry: e.source_ids.some(id => existenceIds.includes(id)),
+    // The engine sets the tri-state; a lead from a caller that didn't falls
+    // back to the join alone and never claims a lookup that may not have run.
+    registryCheck: lead.registryCheck ?? (onRegistry ? "matched" : "not_checked"),
+    registeredElsewhere: lead.registeredElsewhere === true,
+    registryStanding: lead.registryStanding === undefined ? null : { status: lead.registryStanding.status, since: lead.registryStanding.since },
     status: e.status,
     contacts: e.contacts,
     web: lead.web,
     found: lead.found ?? null,
     officers: e.officers,
-    searchUrl: lead.searchUrl,
-    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`,
+    searchUrl: individual ? null : lead.searchUrl,
+    mapsUrl: individual ? null : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`,
     brief: lead.brief,
     opener: lead.opener,
   };
