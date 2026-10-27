@@ -600,6 +600,9 @@ function resetForRun(params) {
   $("filters").hidden = true;
   $("filter-empty").hidden = true;
   $("more-wrap").hidden = true;
+  $("recent").hidden = true;
+  clear($("recent-rows"));
+  clear($("recent-note"));
   clear($("results"));
   clear($("summary"));
   clear($("filters"));
@@ -709,6 +712,7 @@ function showResult(result) {
 
   if (result.leads.length === 0 && result.more.length === 0) {
     renderEmpty();
+    renderRecent(result);
     return;
   }
 
@@ -732,6 +736,24 @@ function showResult(result) {
   renderSummary(result);
   renderFilters();
   renderResults(result);
+  renderRecent(result);
+}
+
+// State-registry entities formed in the last few months whose names match.
+// Not part of app.items, so the filters never touch them.
+function renderRecent(result) {
+  const box = $("recent");
+  const rows = $("recent-rows");
+  clear(rows);
+  const w = result.recentWindow;
+  const list = Array.isArray(result.recent) ? result.recent : [];
+  if (!w || list.length === 0) {
+    box.hidden = true;
+    return;
+  }
+  $("recent-note").textContent = `New filings with the state in the last ${w.days} days, within ${w.radiusMi} miles, whose names match your search. The state registry doesn't record what a business does, so these are name matches — check before you call. Addresses are the registry's filing address.`;
+  for (const lead of list) rows.append(compactRow(lead, { registered: true }));
+  box.hidden = false;
 }
 
 function renderEmpty() {
@@ -781,6 +803,13 @@ function renderSummary(result) {
   });
   save.addEventListener("click", () => saveCurrentSearch(save, result));
   box.append(h("div", { class: "summary-actions" }, csv, mine, print, save));
+  if (Array.isArray(result.recent) && result.recent.length > 0) {
+    box.append(h("p", { class: "small" }, h("button", {
+      type: "button",
+      class: "link-button",
+      onclick: () => scrollTo($("recent")),
+    }, `${result.recent.length} recently registered nearby`)));
+  }
   if (app.newSince !== null) {
     const n = app.newKeys.size;
     const date = fmtDate(app.newSince);
@@ -1056,9 +1085,10 @@ function industryText(lead, max) {
   return titles.join(", ");
 }
 
-function compactRow(lead) {
+function compactRow(lead, opts = {}) {
   const chip = webChip(lead);
   const meta = h("div", { class: "row-meta" },
+    opts.registered && fmtDate(lead.formedDate) ? h("span", { text: `Registered ${fmtDate(lead.formedDate)}` }) : null,
     app.newKeys.has(lead.key) ? h("span", { class: "chip new", text: `New since ${fmtDate(app.newSince)}` }) : null,
     lead.distanceMi !== null ? h("span", { text: `${lead.distanceMi} mi` }) : null,
     h("span", { text: industryText(lead, 1) || "Name match only" }),

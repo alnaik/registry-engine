@@ -10,7 +10,7 @@ import type { AppDeps } from "../../apps/web/src/server.js";
 import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
-  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "employees", "lastSeen",
+  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "employees", "lastSeen", "formedDate",
   "sources", "codeSources", "onStateRegistry", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
@@ -45,6 +45,8 @@ function makeOutcome(n = 3): SearchOutcome {
     llmCalls: 0,
     origin: { label: "Denver, CO", lat: 39.7, lon: -104.9 },
     contactLookups: null,
+    recent: [],
+    recentWindow: null,
   };
 }
 
@@ -187,6 +189,23 @@ describe("web app server", () => {
       });
       expect(String(top[0]?.["mapsUrl"])).toBe(
         `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("ACME 0 FABRICATION 0 Main St Denver CO 80202")}`);
+    });
+
+    it("sends recently registered leads and the window in the result line", async () => {
+      const outcome = makeOutcome(1);
+      const r1 = makeLead(5);
+      r1.entity = { ...r1.entity, id: "co_sos:9", naics: [], formedDate: "2026-09-01" };
+      outcome.recent = [r1];
+      outcome.recentWindow = { days: 90, radiusMi: 25 };
+      behavior = async () => outcome;
+      const r = await post({ query: "tents" });
+      const all = lines(r);
+      const result = all.pop() as Record<string, unknown>;
+      expect(result["recentWindow"]).toEqual({ days: 90, radiusMi: 25 });
+      const recent = result["recent"] as Record<string, unknown>[];
+      expect(recent).toHaveLength(1);
+      expect(recent[0]).toMatchObject({ id: "co_sos:9", formedDate: "2026-09-01", rank: 1 });
+      expect(recent[0]?.["evidence"]).toBeUndefined();
     });
 
     it("gives the same stable key to the same business under different ids", async () => {

@@ -1,7 +1,7 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.2 (v5, activity-coded discovery + web app)
-Last updated: 2026-10-22
+Version: 3.3 (v5, activity-coded discovery + web app)
+Last updated: 2026-10-27
 
 The known threats, their mitigations, and where each mitigation lives in the
 code. Update the code locations when code moves.
@@ -47,6 +47,10 @@ queries.
   and collapses whitespace. Keywords under 3 chars are dropped, and there are
   at most 8.
   - `packages/registry-core/src/drivers/socrata.ts`
+- **Formation-date filter (recent filings).** The `since` literal is built from
+  the engine clock and validated as `YYYY-MM-DD` before it is interpolated
+  into SoQL; keywords still go through `soqlSafeLiteral`.
+  - `SocrataDriver.fetchRecent` in `packages/registry-core/src/drivers/socrata.ts`
 - **EPA ECHO.** Only codes matching `/^\d{3,6}$/` are sent (and the map has
   already validated them against the NAICS list). All parameters go through
   `URLSearchParams`.
@@ -204,3 +208,4 @@ credits is a target for other websites open in the same browser.
   (`packages/qualify/src/csv.ts`) and listed the browser-side export.
   Individuals' records no longer get a name-search link, and their names are
   withheld from the LLM brief.
+- v3.3 (2026-10-27, Phase 7c): recent-filings query (fetchRecent); date literal validated.

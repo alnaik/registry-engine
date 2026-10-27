@@ -17,7 +17,8 @@
         "zip": "principalzipcode",
         "officer_first": "agentfirstname",
         "officer_last": "agentlastname",
-        "officer_org": "agentorganizationname"
+        "officer_org": "agentorganizationname",
+        "formedDate": "entityformdate"
       },
       "quirks": {
         "datasetId": "4ykn-tg5h",
@@ -54,7 +55,8 @@
         "street": "billingstreet",
         "city": "billingcity",
         "state": "billingstate",
-        "zip": "billingpostalcode"
+        "zip": "billingpostalcode",
+        "formedDate": "date_registration"
       },
       "quirks": {
         "datasetId": "n7gp-d28j",
@@ -83,7 +85,8 @@
         "city": "dos_process_city",
         "state": "dos_process_state",
         "zip": "dos_process_zip",
-        "officer_org": "registered_agent_name"
+        "officer_org": "registered_agent_name",
+        "formedDate": "initial_dos_filing_date"
       },
       "quirks": {
         "datasetId": "n9v6-gdp6",

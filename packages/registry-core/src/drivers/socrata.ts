@@ -1,4 +1,4 @@
-import type { Driver, SourceSpec, FetchRequest } from "../driver.js";
+import type { Driver, SourceSpec, FetchRequest, RecentRequest } from "../driver.js";
 import type { Entity } from "../entity.js";
 import { ORG_SUFFIXES } from "../entity.js";
 import { buildSoqlUrl, fetchWithRetry, Limiter, type FetchRetryOptions } from "../util/http.js";
@@ -12,6 +12,7 @@ const CONCURRENCY = 4;
 const MAX_BACKFILL_NAMES = 80;    // cap on distinct name patterns per call
 const NAME_CHUNK = 25;            // OR'd LIKE patterns per request
 const BACKFILL_PAGE_LIMIT = 200;  // row cap per chunk request
+const RECENT_LIMIT = 1000;        // default row cap for fetchRecent: one Socrata page, so the 90-day window isn't cut short statewide before the radius filter
 
 // Socrata quirks carried by the manifest entry. The optional tradeNames block
 // wires a second dataset whose descriptions are keyword-searched and whose
@@ -202,13 +203,48 @@ export class SocrataDriver implements Driver {
     return entities;
   }
 
+  // Existence entities formed on or after `since`, newest first, whose name
+  // matches a keyword. `since` is interpolated into SoQL, so it is validated.
+  async fetchRecent(source: SourceSpec, req: RecentRequest, opts: FetchRetryOptions = {}): Promise<Entity[]> {
+    const formedField = source.fields["formedDate"];
+    if (formedField === undefined) return [];
+    const keywords = req.keywords.map(soqlSafeLiteral).filter(k => k.length >= 3).slice(0, MAX_KEYWORDS);
+    if (keywords.length === 0) return [];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(req.since)) throw new Error("fetchRecent: since must be YYYY-MM-DD");
+
+    const quirks = readQuirks(source);
+    const f = source.fields;
+    const where = [
+      ...statusClause(source, quirks),
+      likeClause(f["name"]!, keywords),
+      `${formedField} >= '${req.since}T00:00:00'`,
+    ].join(" AND ");
+    const rows = await this.pages(source, quirks.datasetId, where, req.limit ?? RECENT_LIMIT, new Limiter(CONCURRENCY), opts, `${formedField} DESC`);
+
+    const idField = f["id"]!;
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const row of rows) {
+      const id = str(row[idField]);
+      if (!byId.has(id)) byId.set(id, row);
+    }
+    const entities: Entity[] = [];
+    for (const row of byId.values()) {
+      const entity = rowToEntity(source, row);
+      entity.evidence.push(...keywordEvidence(source, f["name"]!, str(row[f["name"]!]), keywords));
+      entity.evidence.push(...fieldEvidence(source, row));
+      entities.push(entity);
+    }
+    return entities;
+  }
+
   private async pages(
     source: SourceSpec,
     datasetId: string,
     where: string,
     limit: number,
     limiter: Limiter,
-    opts: FetchRetryOptions
+    opts: FetchRetryOptions,
+    order?: string
   ): Promise<Record<string, unknown>[]> {
     const rows: Record<string, unknown>[] = [];
     let offset = 0;
@@ -217,6 +253,7 @@ export class SocrataDriver implements Driver {
         $where: where,
         $limit: String(PAGE_SIZE),
         $offset: String(offset),
+        ...(order !== undefined ? { $order: order } : {}),
       });
       const resp = await limiter.run(() => fetchWithRetry(url, opts));
       const page = (await resp.json()) as Record<string, unknown>[];

@@ -109,7 +109,7 @@ it turns into infrastructure.
   (normalized name + ZIP5), **not** `Entity.id`, which depends on which
   source merged first. PPP is a fixed snapshot, so new matches come only
   from live sources (SoS, ECHO, farm products); the UI must say so.
-- **7c New-business watch.** A "Recently registered near you" section:
+- ✅ **7c New-business watch.** A "Recently registered near you" section:
   state-registry entities formed in the last 90 days (CO `entityformdate`,
   CT `date_registration`, NY `initial_dos_filing_date`), within the radius,
   whose name matches the map's keywords. CO and NY filings carry no industry

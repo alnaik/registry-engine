@@ -1,6 +1,6 @@
 export type { Entity, EntityAddress, Evidence } from "./entity.js";
 export { normalizeName, mergeEntities, localityCompatible } from "./entity.js";
-export type { Plane, DriverKind, SourceSpec, Intent, FetchRequest, Driver, DriverRegistry } from "./driver.js";
+export type { Plane, DriverKind, SourceSpec, Intent, FetchRequest, RecentRequest, Driver, DriverRegistry } from "./driver.js";
 export { loadManifest, ManifestError } from "./manifest.js";
 export { SOURCES } from "./sources/index.js";
 export { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated, lookupCodes } from "./naics.js";

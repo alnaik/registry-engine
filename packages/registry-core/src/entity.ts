@@ -30,6 +30,7 @@ export interface Entity {
   evidence: Evidence[];
   employees?: number | undefined;   // largest headcount any source reported
   lastSeen?: string | undefined;    // ISO YYYY-MM-DD, most recent dated record
+  formedDate?: string | undefined;  // ISO YYYY-MM-DD the registry says the entity was formed
 }
 
 // Trailing org-form tokens stripped before comparing names. Repeated pops
