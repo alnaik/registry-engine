@@ -76,7 +76,8 @@ with name-only matches in one trailing group.
 
 Hard budget: **≤2 LLM calls per search, zero per-candidate calls**
 (`MAX_LLM_CALLS_PER_SEARCH` in `engine.ts`), enforced by the adapter's call
-counter and by tests.
+counter and by tests. Token usage per search is reported
+(`SearchOutcome.llmUsage`, the web summary and the CLI).
 
 **Ranking** (`scoreEntity` in `brief.ts`) = code fit (respects the map's
 best-first order) + keyword match + independent sources + state standing +

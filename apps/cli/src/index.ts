@@ -146,7 +146,13 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   } else if (flags["no-contacts"] !== "true") {
     console.log("Contact lookups: off — set EXA_API_KEY or PARALLEL_API_KEY to find websites and phones for the top leads.");
   }
-  console.log(`Showing ${out.leads.length} | fetched: ${fetchedCounts.join(", ") || "no sources"} | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}\n`);
+  console.log(`Showing ${out.leads.length} | fetched: ${fetchedCounts.join(", ") || "no sources"} | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}${out.llmUsage === null ? "\n" : ""}`);
+  if (out.llmUsage !== null) {
+    const u = out.llmUsage;
+    const byLabel = (label: string) => u.calls.filter(k => k.label === label).reduce((n, k) => n + k.inputTokens + k.outputTokens, 0);
+    const cost = u.costUsd !== null ? ` · ~$${u.costUsd.toFixed(4)} at API prices` : "";
+    console.log(`AI tokens: ${u.inputTokens.toLocaleString()} in / ${u.outputTokens.toLocaleString()} out (map ${byLabel("map").toLocaleString()}, brief ${byLabel("brief").toLocaleString()})${cost} — billed to your Claude subscription via claude -p\n`);
+  }
   let band = "";
   out.leads.forEach((lead, i) => {
     if (lead.band !== "" && lead.band !== band) {

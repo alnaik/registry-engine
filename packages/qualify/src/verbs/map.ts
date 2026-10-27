@@ -195,7 +195,7 @@ export async function mapQuery(
       let prompt = hint ? `${query}\n\nUser's location: ${hint}` : query;
       if (opts.direction === "buy") prompt += "\n\nDirection (fixed by the user): buy — they need a product or service; return supplier codes.";
       else if (opts.direction === "sell") prompt += "\n\nDirection (fixed by the user): sell — they sell something; return buyer codes.";
-      const raw = await llm.call(prompt, { tier: "cheap", maxTokens: 400, system: MAP_SYSTEM });
+      const raw = await llm.call(prompt, { tier: "cheap", label: "map", maxTokens: 400, system: MAP_SYSTEM });
       const parsed = parseMapResponse(raw, region, direction, caveats, opts.direction);
       if (parsed !== null) return parsed;
       llmError = "the AI answer couldn't be used";
