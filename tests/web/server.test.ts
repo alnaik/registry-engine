@@ -223,7 +223,7 @@ describe("web app server", () => {
 
       const result = out[out.length - 1] as Record<string, unknown>;
       expect(result["type"]).toBe("result");
-      expect(result["summary"]).toEqual({ total: 3, coded: 3, nameOnly: 0, noWebsite: 3 });
+      expect(result["summary"]).toEqual({ total: 3, coded: 3, businesses: 3, individuals: 0, nameOnly: 0, noWebsite: 3 });
       expect(result["llmCalls"]).toBe(0);
       expect(result["llmUsage"]).toBeNull();
       const top = result["leads"] as Record<string, unknown>[];

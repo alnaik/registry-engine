@@ -21,6 +21,14 @@ describe("summaryLines", () => {
     ]);
   });
 
+  it("counts individuals' records apart from businesses", () => {
+    const person = lead(["332312"], "none");
+    person.entity = { ...person.entity, name: "SMITH, JOHN A" };
+    expect(summaryLines([lead(["332312"], "none"), person], ["332"])).toEqual([
+      "Found 1 businesses with an industry code for this request (+1 individuals' records, listed separately)",
+    ]);
+  });
+
   it("omits the name-match clause when there are none, and the no-website line when it is true of all", () => {
     const ranked = [lead(["332312"], "none"), lead(["33"], "none")];
     expect(summaryLines(ranked, ["332"])).toEqual(["Found 2 businesses with an industry code for this request"]);
