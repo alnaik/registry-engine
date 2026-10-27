@@ -118,6 +118,9 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
         case "probed":
           console.log(`probe   ${event.count} entities checked (DNS A+MX)`);
           break;
+        case "recent":
+          console.log(`recent  ${event.count} registered in the last 90 days nearby`);
+          break;
         case "contacts":
           console.log(`contacts ${event.provider}: ${event.looked} looked up, ${event.found} found`);
           break;
@@ -146,6 +149,16 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     }
     printLead(lead, i + 1, existenceIds, naicsFields, flags["verbose"] === "true");
   });
+
+  if (out.recent.length > 0 && out.recentWindow !== null) {
+    console.log(`── Recently registered within ${out.recentWindow.radiusMi} mi (last ${out.recentWindow.days} days; name matches, no industry code) ──`);
+    for (const lead of out.recent.slice(0, 10)) {
+      const e = lead.entity;
+      const place = [e.address.city, e.address.zip].filter(v => v !== undefined && v !== "").join(" ");
+      console.log(`  ${e.name} — ${place} · ${lead.distanceMi} mi · registered ${e.formedDate ?? ""}`);
+    }
+    console.log();
+  }
 
   if (flags["csv"] !== undefined && flags["csv"] !== "true") {
     writeFileSync(flags["csv"], leadsToCsv(out.ranked, existenceIds));

@@ -61,6 +61,7 @@ export interface LeadView {
   naics: { code: string; title: string }[];
   employees: number | null;
   lastSeen: string | null;
+  formedDate: string | null;
   sources: { id: string; name: string }[];
   codeSources: { id: string; name: string }[];   // the sources that carry the industry code
   onStateRegistry: boolean;
@@ -340,6 +341,8 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
     case "backfilled":
     case "probed":
       return { type: event.type, count: event.count };
+    case "recent":
+      return { type: "recent", count: event.count };
     case "contacts":
       return { ...event };
     default:
@@ -360,6 +363,8 @@ function buildResult(outcome: SearchOutcome, existenceIds: string[], topN: numbe
     llmCalls: outcome.llmCalls,
     leads: outcome.ranked.slice(0, topN).map((l, i) => view(l, i, true)),
     more: outcome.ranked.slice(topN, topN + MORE_LEADS).map((l, i) => view(l, topN + i, false)),
+    recent: outcome.recent.map((l, i) => view(l, i, false)),
+    recentWindow: outcome.recentWindow,
   };
 }
 
@@ -381,6 +386,7 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
     naics: e.naics.map(code => ({ code, title: naicsLabel(code) ?? "" })),
     employees: e.employees ?? null,
     lastSeen: e.lastSeen ?? null,
+    formedDate: e.formedDate ?? null,
     sources: e.source_ids.map(id => ({ id, name: names.get(id) ?? id })),
     codeSources: codeSourceIds(e, naicsFields).map(id => ({ id, name: names.get(id) ?? id })),
     onStateRegistry: e.source_ids.some(id => existenceIds.includes(id)),

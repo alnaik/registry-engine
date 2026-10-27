@@ -60,6 +60,7 @@ map(query)    1 cheap LLM call → NAICS codes of the LEADS (direction-aware:
 route(intent) pure manifest lookup: geo ∩ NAICS prefix (naicsRelated). 0 tokens.
 fetch(...)    drivers fetch + normalize to Entity; merge on normalized name
               only when locality is compatible; existence backfill by name. 0 tokens.
+              recent filings: existence entities formed in the last 90 days near the center, name-matched (fetchRecent). 0 tokens.
 probe(...)    published domains checked A+MX via DNS-over-HTTPS. 0 tokens.
 contacts(...) top N leads: one web search each (Exa/Parallel, env key),
               deterministic extraction + provenance, 30-day cache, never for
@@ -103,7 +104,7 @@ Adding a source or a state is a JSON entry in
 changes required**, guaranteed by `tests/registry-core/zero-code-state.test.ts`.
 `SourceSpec` (`driver.ts`) is the schema. Canonical field-map keys: `id`,
 `name`, `status`, `street`, `city`, `state`, `zip`, `address_line`, `naics`,
-`employees`, `date`, `officer*`. Common quirks: `defaultNaics`,
+`employees`, `date`, `formedDate`, `officer*`. Common quirks: `defaultNaics`,
 `evidenceFields`, `keywordFields`, `statusValue` (optional), `shardBy:
 "naics2"`, `shardRegions`, `cities`.
 

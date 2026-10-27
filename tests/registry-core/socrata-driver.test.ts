@@ -332,3 +332,53 @@ describe("SocrataDriver.fetchByNames", () => {
     expect(results).toHaveLength(1);
   });
 });
+
+describe("SocrataDriver.fetchRecent", () => {
+  const driver = new SocrataDriver();
+  const RECENT_SOS: SourceSpec = { ...CO_SOS, fields: { ...CO_SOS.fields, formedDate: "entityformdate" } };
+  const recentRow = (id: string, name: string, formed: string) => ({
+    entityid: id, entityname: name, entitystatus: "Good Standing", principalcity: "Denver", principalzipcode: "80202", entityformdate: formed,
+  });
+
+  it("queries status, name LIKE and the formation date, newest first", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [
+        recentRow("1", "NEW TACO LLC", "2026-09-10T00:00:00.000"),
+        recentRow("1", "NEW TACO LLC", "2026-09-10T00:00:00.000"),
+        recentRow("2", "TACO TWO LLC", "2026-08-05T00:00:00.000"),
+      ] } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const out = await driver.fetchRecent(RECENT_SOS, { keywords: ["taco"], since: "2026-07-29" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const where = decodeURIComponent(urls[0]!.split("$where=")[1]!.split("&")[0]!);
+    expect(where).toContain("entitystatus='Good Standing'");
+    expect(where).toContain("upper(entityname) LIKE '%TACO%'");
+    expect(where).toContain("entityformdate >= '2026-07-29T00:00:00'");
+    expect(urls[0]).toContain("$order=entityformdate%20DESC");
+    expect(out.map(e => e.id)).toEqual(["co_sos:1", "co_sos:2"]);
+    expect(out.map(e => e.formedDate)).toEqual(["2026-09-10", "2026-08-05"]);
+    expect(out[0]!.evidence.some(ev => ev.note === 'matched "taco"')).toBe(true);
+  });
+
+  it("returns [] with zero requests when no keyword survives", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await driver.fetchRecent(RECENT_SOS, { keywords: ["a", "'%_"], since: "2026-07-29" })).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns [] when the source has no formedDate field", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await driver.fetchRecent(CO_SOS, { keywords: ["taco"], since: "2026-07-29" })).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("throws on a since that is not YYYY-MM-DD", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    await expect(driver.fetchRecent(RECENT_SOS, { keywords: ["taco"], since: "2026-07-29' OR 1=1" }))
+      .rejects.toThrow("fetchRecent: since must be YYYY-MM-DD");
+  });
+});

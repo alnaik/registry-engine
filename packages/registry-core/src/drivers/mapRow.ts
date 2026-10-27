@@ -13,6 +13,8 @@ import type { SourceSpec } from "../driver.js";
 //                  field value in entity.status (filters still use the raw field)
 //   date           the record's date -> lastSeen; "YYYY-MM-DD..." or
 //                  "MM/DD/YYYY", anything else is ignored
+//   formedDate     the date the registry says the entity was formed ->
+//                  entity.formedDate; parsed like `date`, set only when it parses
 //   address_line   single-line "street, city, state, zip"; fills only the
 //                  street/city/state/zip keys not mapped on their own
 // Any field listed in spec.contact_fields lands in contacts[].
@@ -74,6 +76,8 @@ export function rowToEntity(source: SourceSpec, row: Record<string, unknown>): E
   };
   if (Number.isFinite(employees) && employees >= 0) entity.employees = employees;
   if (lastSeen !== undefined) entity.lastSeen = lastSeen;
+  const formedDate = parseDate(get("formedDate"));
+  if (formedDate !== undefined) entity.formedDate = formedDate;
   return entity;
 }
 

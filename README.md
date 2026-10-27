@@ -17,7 +17,9 @@ operating, how to reach it, call notes, an opener you can copy, and a
 tracker (New / Called / Interested / Not a fit, plus notes, saved in your
 browser). Export everything to CSV, export just your tracked list, or print
 a call sheet. Saved searches live in this browser and flag businesses that
-are new since the last run.
+are new since the last run. A separate "Recently registered near you" list shows
+state-registry filings from the last 90 days within your radius whose names match
+(name matches only, since the registry records no industry).
 
 **AI.** Two LLM calls per search, run through your Claude Code login
 (`claude -p`), with no API key. Without Claude Code, tick "Skip AI".

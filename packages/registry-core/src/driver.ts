@@ -40,6 +40,12 @@ export interface FetchRequest {
   limit?: number | undefined;
 }
 
+export interface RecentRequest {
+  keywords: string[];
+  since: string;        // YYYY-MM-DD, inclusive
+  limit?: number | undefined;
+}
+
 // A driver is generic over sources: the same socrata driver serves CO today
 // and CT/WA/NY later, differing only by SourceSpec.
 export interface Driver {
@@ -49,6 +55,9 @@ export interface Driver {
   // given business names. Used to backfill the existence join for entities
   // discovered on other planes. Optional — drivers without it are skipped.
   fetchByNames?(source: SourceSpec, names: string[], opts?: FetchRetryOptions): Promise<Entity[]>;
+  // Entities formed on or after `since` (YYYY-MM-DD) whose name matches a
+  // keyword, newest first. Optional — needs a formedDate field in the manifest.
+  fetchRecent?(source: SourceSpec, req: RecentRequest, opts?: FetchRetryOptions): Promise<Entity[]>;
 }
 
 export type DriverRegistry = Partial<Record<DriverKind, Driver>>;

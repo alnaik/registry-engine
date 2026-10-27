@@ -21,6 +21,7 @@ export type EngineEvent =
   | { type: "merged"; count: number }
   | { type: "backfilled"; sourceId: string; count: number }
   | { type: "probed"; count: number }
+  | { type: "recent"; count: number }
   | { type: "contacts"; provider: string; looked: number; found: number; costDollars: number }
   | { type: "done"; leads: Lead[] };
 
@@ -40,6 +41,7 @@ export interface SearchConfig {
   contacts?: WebSearchProvider | null | undefined;  // web contact lookup; undefined -> from env keys, null -> off
   contactCache?: ContactCache | undefined;          // default: ~/.cache/registry-engine/contacts.json
   fetchOpts?: FetchRetryOptions | undefined;
+  now?: Date | undefined;           // clock for the recent-filings window (tests)
   onEvent?: ((e: EngineEvent) => void) | undefined;
 }
 
@@ -52,12 +54,17 @@ export interface SearchOutcome {
   llmCalls: number;
   origin: Origin | null;   // where distances are measured from, if anywhere
   contactLookups: { provider: string; looked: number; found: number; costDollars: number } | null;
+  recent: Lead[];    // state-registry entities formed in the last RECENT_DAYS near the origin, name matches only
+  recentWindow: { days: number; radiusMi: number } | null;   // null = the recent-filings query did not run
 }
 
 export const MAX_LLM_CALLS_PER_SEARCH = 2;
 
 const DEFAULT_MAX_LEADS = 12;
 const BACKFILL_ENTITIES = 150;   // names sent to the existence registry per search
+const RECENT_DAYS = 90;                 // formation-date window for "recently registered"
+const RECENT_DEFAULT_RADIUS_MI = 25;
+const RECENT_MAX = 25;
 
 export async function search(query: string, cfg: SearchConfig = {}): Promise<SearchOutcome> {
   const emit = (e: EngineEvent) => cfg.onEvent?.(e);
@@ -94,6 +101,23 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // Existence-plane sources fetch (and merge) first so legal names and
   // statuses win the merged record.
   const ordered = [...routed].sort((a, b) => planeRank(a) - planeRank(b));
+  const existenceSpec = ordered.find(s => s.plane === "existence");
+  const existenceDriver = existenceSpec === undefined ? undefined : drivers[existenceSpec.driver];
+
+  // Recent filings run in parallel with the main fetch: existence entities
+  // formed in the last RECENT_DAYS whose names match a keyword. Awaited below.
+  const recentRuns = origin !== null && map.keywords.length > 0
+    && existenceSpec?.fields["formedDate"] !== undefined && existenceDriver?.fetchRecent !== undefined;
+  let recentPromise: Promise<Entity[]> = Promise.resolve([]);
+  if (recentRuns && existenceSpec !== undefined && existenceDriver?.fetchRecent !== undefined) {
+    const since = new Date((cfg.now ?? new Date()).getTime() - RECENT_DAYS * 86_400_000).toISOString().slice(0, 10);
+    const spec = existenceSpec;
+    recentPromise = existenceDriver.fetchRecent(spec, { keywords: map.keywords, since }, cfg.fetchOpts).catch(err => {
+      emit({ type: "source_error", sourceId: spec.id, message: `recent filings: ${err instanceof Error ? err.message : String(err)}` });
+      return [] as Entity[];
+    });
+  }
+
   const fetched: Entity[] = [];
   await Promise.all(ordered.map(async spec => {
     const driver = drivers[spec.driver];
@@ -130,8 +154,6 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // keyword were never fetched from the existence registry, so the merge had
   // nothing to join. Look the strongest candidates' names up directly and
   // re-merge.
-  const existenceSpec = ordered.find(s => s.plane === "existence");
-  const existenceDriver = existenceSpec === undefined ? undefined : drivers[existenceSpec.driver];
   if (existenceSpec !== undefined && existenceDriver?.fetchByNames !== undefined) {
     const unmatched = preliminary.filter(e => !e.source_ids.includes(existenceSpec.id));
     if (unmatched.length > 0) {
@@ -173,6 +195,14 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // Probe in rank order so the request budget goes to the strongest
   // candidates; the final rank below carries the probe results as labels.
   const maxLeads = cfg.maxLeads ?? DEFAULT_MAX_LEADS;
+  const radius = cfg.radiusMi ?? RECENT_DEFAULT_RADIUS_MI;
+  const recent = rankEntities(await recentPromise, new Map(), ctx)
+    .filter(l => !isInsideWordNoise(l.entity, map.intent.naics, existenceIds))
+    .filter(l => l.distanceMi !== null && l.distanceMi <= radius)
+    .sort((a, b) => (b.entity.formedDate ?? "").localeCompare(a.entity.formedDate ?? "")
+      || (a.distanceMi ?? Infinity) - (b.distanceMi ?? Infinity))
+    .slice(0, RECENT_MAX);
+  if (recentRuns) emit({ type: "recent", count: recent.length });
   const toProbe = rankEntities(entities, new Map(), ctx).map(l => l.entity);
   const probes: Map<string, ProbeResult> = await probeEntities(toProbe, {
     limit: cfg.probeLimit ?? Math.max(25, maxLeads),
@@ -202,7 +232,8 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   const leads = ranked.slice(0, maxLeads);
   emit({ type: "done", leads });
 
-  return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0, origin, contactLookups };
+  return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0, origin, contactLookups,
+    recent, recentWindow: recentRuns ? { days: RECENT_DAYS, radiusMi: radius } : null };
 }
 
 function isInsideWordNoise(e: Entity, codes: string[], existenceIds: string[]): boolean {

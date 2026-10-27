@@ -107,3 +107,17 @@ describe("rowToEntity — statusDisplay", () => {
     expect(rowToEntity(spec({ status: "juris" }), { id: "1", name: "A", juris: "New York" }).status).toBe("New York");
   });
 });
+
+describe("rowToEntity — formedDate", () => {
+  const s = spec({ formedDate: "formed" });
+
+  it("parses the formation date into ISO formedDate", () => {
+    expect(rowToEntity(s, { id: "1", name: "A", formed: "2026-08-05T00:00:00.000" }).formedDate).toBe("2026-08-05");
+  });
+
+  it("is undefined when unmapped, empty or unparseable", () => {
+    expect(rowToEntity(spec({}), { id: "1", name: "A", formed: "2026-08-05" }).formedDate).toBeUndefined();
+    expect(rowToEntity(s, { id: "1", name: "A", formed: "" }).formedDate).toBeUndefined();
+    expect(rowToEntity(s, { id: "1", name: "A", formed: "last spring" }).formedDate).toBeUndefined();
+  });
+});
