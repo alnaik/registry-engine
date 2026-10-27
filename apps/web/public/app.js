@@ -6,7 +6,7 @@
 // label comes from labels.js, where tests pin it to its predicate.
 
 import {
-  trustLabel, webTag, fetchedText, whatLine,
+  trustLabel, trustAtCall, webTag, fetchedText, whatLine,
   OUTCOMES, OUTCOME_LABEL, migrateTracker, isTracked, shortDate, callStatusText,
   FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost, summaryParts, aboutRows,
 } from "/labels.js";
@@ -216,9 +216,9 @@ function csvCell(value) {
 }
 
 function trackedCsv(rows) {
-  const header = ["name", "outcome", "note", "phone", "email", "website", "address", "search_query", "search_near", "updated_at"];
+  const header = ["name", "outcome", "trust_at_call", "trust_tone_at_call", "note", "phone", "email", "website", "address", "search_query", "search_near", "updated_at"];
   const lines = rows.map(r => [
-    r.name, OUTCOME_LABEL[r.status] || r.status, r.note, r.phone, r.email, r.website, r.address,
+    r.name, OUTCOME_LABEL[r.status] || r.status, r.trust ? r.trust.pill : "", r.trust ? r.trust.tone : "", r.note, r.phone, r.email, r.website, r.address,
     r.search ? r.search.query : "", r.search ? r.search.near : "", r.updatedAt,
   ].map(csvCell).join(","));
   return [header.map(csvCell).join(","), ...lines].join("\n") + "\n";
@@ -773,6 +773,7 @@ function showResult(result) {
 }
 
 function renderEmpty() {
+  $("announce").textContent = "Search done. No businesses found.";
   const tips = $("empty-tips");
   clear(tips);
   const p = app.lastParams || {};
@@ -793,6 +794,8 @@ function renderSummary(result) {
   clear(box);
   const parts = summaryParts(result, { radiusSet: Boolean(app.lastParams && app.lastParams.radiusMi) });
   for (const [text, strong] of parts) box.append(strong ? h("strong", { text }) : text);
+  // Screen readers: the results arrive without a page change, so say so.
+  $("announce").textContent = `Search done. ${box.textContent}`;
   const p = app.lastParams || {};
   $("print-head").textContent = `Call sheet · ${p.query || ""}${app.origin ? ` · from ${app.origin.label}` : ""} · ${new Date().toLocaleDateString()}`;
 }
@@ -1248,6 +1251,7 @@ function callBox(ctrl) {
       website: contacts.website,
       address: [a.street, [a.city, [a.state, a.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")].filter(Boolean).join(", "),
       search: prior && prior.search ? prior.search : { query: String(p.query || ""), near: String(p.near || "") },
+      trust: trustAtCall(prior, status, trustLabel(lead, app.result ? app.result.registryLookup : null)),
       updatedAt: new Date().toISOString(),
     };
     const ok = writeTracker(lead.key, entry);

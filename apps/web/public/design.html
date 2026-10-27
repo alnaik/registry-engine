@@ -11,8 +11,8 @@
 <body class="design-page">
   <!-- Component sheet. Every name, address, person and number on this page is
        fictional. design.js clones the light column into a dark one. -->
-  <div class="design-cols" id="cols">
-  <main class="design-col" id="light" data-theme="light" aria-label="Light theme">
+  <main class="design-cols" id="cols">
+  <section class="design-col" id="light" data-theme="light" aria-label="Light theme">
     <div class="sheet">
       <p class="eyebrow design-label">Light</p>
 
@@ -90,14 +90,14 @@
           </button>
           <div class="detail">
             <section>
-              <h4 class="eyebrow">Why it fits</h4>
+              <h3 class="eyebrow">Why it fits</h3>
               <p>The SBA loan record (2020–21) lists this business as a textile bag and canvas mill. The state registry shows it in good standing. The code says what the business is, not whether it can take a 500-unit run.</p>
-              <h4 class="eyebrow">What to say</h4>
+              <h3 class="eyebrow">What to say</h3>
               <blockquote class="opener-quote">Hi, I'm looking for a local shop to sew 500 custom tote bags. Is that work you take on, and what's your lead time?</blockquote>
               <div><button class="btn sm" type="button">Copy</button></div>
             </section>
             <section>
-              <h4 class="eyebrow">Reach</h4>
+              <h3 class="eyebrow">Reach</h3>
               <dl class="reach-dl">
                 <dt>Phone</dt><dd class="quiet">Not on any public record</dd>
                 <dt>Address</dt><dd>100 Example Ave, Lakeview, CO 80000 · <a href="#cols">Map</a></dd>
@@ -105,7 +105,7 @@
                 <dt>Web</dt><dd><a href="#cols">Search the web for this business</a></dd>
               </dl>
               <div class="call-box">
-                <h4 class="eyebrow">Your call</h4>
+                <h3 class="eyebrow">Your call</h3>
                 <div class="seg" role="group" aria-label="Call outcome">
                   <button type="button" aria-pressed="false">Not called</button>
                   <button type="button" aria-pressed="true">Reached</button>
@@ -210,7 +210,7 @@
 
       <h2 class="eyebrow design-label">My calls</h2>
       <div class="calls-head"><h3 class="eyebrow">My calls · 3</h3><button class="btn sm" type="button">Download CSV</button></div>
-      <div class="calls-wrap">
+      <div class="calls-wrap" tabindex="0" role="region" aria-label="Calls table">
         <table class="calls-table">
           <thead><tr><th scope="col">Business</th><th scope="col">From search</th><th scope="col">Outcome</th><th scope="col">Note</th><th scope="col">Updated</th></tr></thead>
           <tbody>
@@ -241,7 +241,7 @@
       <h2 class="eyebrow design-label">Print preview note</h2>
       <p class="print-note">Printed, the sheet keeps the rows and the trust line, drops the tools and the ask, keeps band headings, and adds a blank notes line under each row.</p>
     </div>
+  </section>
   </main>
-  </div>
 </body>
 </html>

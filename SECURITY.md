@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.4 (v5, activity-coded discovery + web app)
+Version: 3.6 (v6, field sheet)
 Last updated: 2026-10-27
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -79,7 +79,7 @@ registry-derived text that users open in spreadsheets.
 **Mitigation:** every cell is double-quoted with embedded quotes doubled. A
 cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 - `packages/qualify/src/csv.ts`, tested in `tests/qualify/csv.test.ts`
-- The browser-side "my list" export uses the same rules (`csvCell` in
+- The browser-side My calls export uses the same rules (`csvCell` in
   `apps/web/public/app.js`).
 
 ---
@@ -226,3 +226,6 @@ credits is a target for other websites open in the same browser.
   flag, name-only matches out of the headline. Individuals' records get `mapsUrl: null`
   and `searchUrl: null` from the server (`leadView` in `apps/web/src/server.ts`), and
   the web app lists them in a collapsed group. Openers no longer quote NAICS titles.
+- v3.6 (2026-10-27, v6 Phase D): My calls export (was "my list") keeps the CSV rules and adds
+  the trust label at call time. The accessibility check (`scripts/a11y/axe.ts`) runs the real
+  server against a fictional fixture search, with no network and no AI.

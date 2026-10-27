@@ -21,6 +21,7 @@ npm test                                                         # full suite (h
 npx vitest run tests/registry-core/zero-code-state.test.ts       # single test file
 npm run test:watch
 npm run typecheck                                                # strict TS across the workspace
+npm run a11y                                                     # axe-core over the web app (fixture search, headless Chromium; CHROME=…)
 
 # Web app (localhost:4317; vite-node, no build) — the customer-facing surface
 npm start
@@ -126,7 +127,10 @@ a `mergeEntities` bug.
 The local web app (`apps/web`) plus the CLI. The chat-artifact app was
 removed (ADR 0012) because the claude.ai artifact sandbox blocks outbound
 fetch (ADR 0011). The web app works because its server runs locally. UI rule:
-never put data into `innerHTML`; build DOM with `textContent`.
+never put data into `innerHTML`; build DOM with `textContent`. The UI is a
+"field sheet" (ADR 0017): trust labels live in `apps/web/public/labels.js`,
+pinned to their predicates by `tests/web/labels.test.ts`; `/design` shows
+every component.
 
 ### Privacy / data policy
 
@@ -161,4 +165,5 @@ holds the current phase and open items):
   reports failures verbatim.
 - Decisions are ADRs in `docs/decisions/`. 0015 covers activity-coded
   discovery and its validation numbers vs Census CBP. 0016 covers location,
-  web contacts and the local web app.
+  web contacts and the local web app. 0017 covers the field-sheet UI and
+  tri-state registry labels.

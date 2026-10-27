@@ -158,7 +158,7 @@
           <button type="button" id="calls-csv" class="btn sm">Download CSV</button>
         </div>
         <p id="calls-empty" class="state-box quiet" hidden>No calls yet. Open a business on the Find tab, mark how the call went, or add a note, and it shows up here.</p>
-        <div class="calls-wrap" id="calls-wrap">
+        <div class="calls-wrap" id="calls-wrap" tabindex="0" role="region" aria-labelledby="calls-title">
           <table class="calls-table">
             <thead><tr><th scope="col">Business</th><th scope="col">From search</th><th scope="col">Outcome</th><th scope="col">Note</th><th scope="col">Updated</th></tr></thead>
             <tbody id="calls-rows"></tbody>
@@ -173,5 +173,6 @@
     </footer>
   </div>
   <p id="toast" class="sheet-toast" role="status" aria-live="polite"></p>
+  <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
 </body>
 </html>

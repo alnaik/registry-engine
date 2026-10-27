@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { trustLabel, webTag, hasSite, fetchedText, whatLine } from "../../apps/web/public/labels.js";
+import { trustLabel, trustAtCall, webTag, hasSite, fetchedText, whatLine } from "../../apps/web/public/labels.js";
 import type { LabelLead } from "../../apps/web/public/labels.js";
 
 // Label-to-predicate pins (v6 Phase A): every trust pill and tag the web app
@@ -193,5 +193,35 @@ describe("summary sentence and About this search", () => {
     expect(skip).toContainEqual(["AI calls", "None (AI step skipped)"]);
     expect(skip).toContainEqual(["Names checked against the state registry", "The lookup failed this search"]);
     expect(skip).toContainEqual(["Web contact lookup", "Off for this search"]);
+  });
+});
+
+describe("trust label at the time of a call (validation log)", () => {
+  const confirmed = trustLabel({ ...base, registryCheck: "matched", status: "Good Standing" }, ran);
+  const unchecked = trustLabel(base, ran);
+
+  it("records the label shown when an outcome is first set", () => {
+    expect(trustAtCall(null, "reached", confirmed)).toEqual({ pill: "On state registry · Good Standing", tone: "ok" });
+    expect(trustAtCall({ status: "notcalled", note: "x", updatedAt: "2026-10-01" }, "noanswer", unchecked)).toEqual({ pill: unchecked.pill, tone: "unk" });
+  });
+
+  it("keeps the recorded label across note edits, even if the label changed since", () => {
+    const prior = { status: "reached", trust: { pill: confirmed.pill, tone: confirmed.tone }, updatedAt: "2026-10-01" };
+    expect(trustAtCall(prior, "reached", unchecked)).toEqual(prior.trust);
+  });
+
+  it("re-records on a new outcome, and records nothing for Not called", () => {
+    const prior = { status: "noanswer", trust: { pill: unchecked.pill, tone: unchecked.tone }, updatedAt: "2026-10-01" };
+    expect(trustAtCall(prior, "reached", confirmed)?.tone).toBe("ok");
+    expect(trustAtCall(prior, "notcalled", confirmed)).toBeNull();
+  });
+
+  it("never invents a label for an entry logged before labels were recorded", () => {
+    expect(trustAtCall({ status: "reached", updatedAt: "2026-09-01" }, "reached", confirmed)).toBeNull();
+  });
+
+  it("the My calls export carries the label columns", () => {
+    const app = readFileSync(join(import.meta.dirname, "../../apps/web/public/app.js"), "utf8");
+    expect(app).toMatch(/"outcome", "trust_at_call", "trust_tone_at_call"/);
   });
 });
