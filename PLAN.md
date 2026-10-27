@@ -251,6 +251,20 @@ An independent audit of the branch found six issues; one commit each.
    never reaches the brief call (the engine strips it from the map
    result). SECURITY.md 3.7.
 
+- API model tiers (`TIER_MODELS` in `qualify/src/llm/adapter.ts`) moved to
+  `claude-haiku-5-5` (map) and `claude-sonnet-5-5` (brief). Only the API-key
+  path uses them; the default `claude -p` path is unchanged.
+
+### Next — the 20-call validation gate (decided 2026-10-27)
+No new source (FMCSA, SAM.gov, business licenses, Places) and no new UI
+work until the ADR 0017 call log is filled: 20 leads from real searches, at
+least 6 per trust tone where possible, each called and marked Reached / No
+answer / Not a fit in My calls, then the CSV exported and the reached rate
+computed per `trust_tone_at_call`. The result goes into ADR 0017
+"Validation". That number decides whether the next step is liveness data
+(low reached rate on PPP-only leads), a softer amber label (no reached-rate
+gap between tones), or a new coded source with phones (FMCSA).
+
 ### Left out, and why
 - Live web contact lookup (Exa / Parallel): there's still no key; untested
   live, as in v5.
