@@ -1,4 +1,4 @@
-export { search, MAX_LLM_CALLS_PER_SEARCH, planBackfill } from "./engine.js";
+export { search, MAX_LLM_CALLS_PER_SEARCH, planBackfill, nameHasWord, recentNameMatch, RECENT_COLLISIONS } from "./engine.js";
 export type { SearchConfig, SearchOutcome, EngineEvent, Origin, RegistryLookup } from "./engine.js";
 export { createLlm, Llm, LlmCallBudgetError, TIER_MODELS } from "./llm/adapter.js";
 export type { Tier, RawLlm, RawCompleteOptions, LlmConfig, LlmCallOptions } from "./llm/adapter.js";

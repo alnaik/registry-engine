@@ -980,9 +980,10 @@ function renderBands(result) {
 
 function renderGroups(result) {
   const box = $("groups");
-  const group = (title, count, why, leads, note, rowOpts) => {
+  const group = (title, count, why, leads, note, rowOpts, minor = false) => {
     if (count === 0) return;
-    box.append(h("details", { class: "group" },
+    // Collapsed by default (no "open"); a minor group reads quieter than the bands.
+    box.append(h("details", { class: minor ? "group minor" : "group" },
       h("summary", null, h("span", { class: "eyebrow", text: `${title} · ${count.toLocaleString()}` }), h("span", { class: "why", text: why })),
       h("div", { class: "inner" },
         note ? h("p", { class: "group-note", text: note }) : null,
@@ -1000,7 +1001,7 @@ function renderGroups(result) {
   if (w && Array.isArray(result.recent)) {
     group(`Registered in the last ${w.days} days`, result.recent.length,
       `New state filings within ${w.radiusMi} miles whose names match your words. The registry records no industry code, so these are name matches. Addresses are the filing address.`,
-      result.recent, "", { registered: true });
+      result.recent, "", { registered: true }, true);
   }
 }
 

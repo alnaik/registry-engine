@@ -91,6 +91,29 @@ export function nameHasWord(name: string, keyword: string): boolean {
   return new RegExp(`(^|[^a-z0-9])${kw}(s|es|e|ed|er|ers|ery|ry|ries|ing|ings|y|ies)?([^a-z0-9]|$)`, "i").test(name);
 }
 
+// Words a short keyword's allowed endings turn into an unrelated common
+// word ("sew" + "ers" = "Sewers"). A recent filing whose only hits are these
+// words is dropped. No LLM involved: the list is static and small on purpose;
+// add a pair when a live run shows a new collision. ("bag"/"Bagel" and
+// "deli"/"Delivery" never match: the ending isn't an allowed one.)
+export const RECENT_COLLISIONS: Readonly<Record<string, readonly string[]>> = {
+  sew: ["sewer", "sewers", "sewery", "sewage", "sewerage"],
+  car: ["care", "cares", "cared", "carer", "carers", "carry", "caries"],
+  pet: ["peter", "peters"],
+  bar: ["bare", "bares", "bared", "barry", "baries"],
+};
+
+// The recent-filings name test: a whole-word hit (nameHasWord) that isn't
+// only a known collision.
+export function recentNameMatch(name: string, keyword: string): boolean {
+  if (!nameHasWord(name, keyword)) return false;
+  const kw = keyword.trim().toLowerCase();
+  const collisions = RECENT_COLLISIONS[kw];
+  if (collisions === undefined) return true;
+  const words = name.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 0);
+  return words.some(w => nameHasWord(w, kw) && !collisions.includes(w));
+}
+
 export async function search(query: string, cfg: SearchConfig = {}): Promise<SearchOutcome> {
   const emit = (e: EngineEvent) => cfg.onEvent?.(e);
   const sources = cfg.sources ?? SOURCES;
@@ -272,7 +295,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   const radius = cfg.radiusMi ?? RECENT_DEFAULT_RADIUS_MI;
   const recent = rankEntities(await recentPromise, new Map(), ctx)
     .filter(l => !isInsideWordNoise(l.entity, map.intent.naics, existenceIds))
-    .filter(l => [l.entity.name, ...l.entity.names].some(n => map.keywords.some(k => nameHasWord(n, k))))
+    .filter(l => [l.entity.name, ...l.entity.names].some(n => map.keywords.some(k => recentNameMatch(n, k))))
     .filter(l => l.distanceMi !== null && l.distanceMi <= radius)
     .sort((a, b) => (b.entity.formedDate ?? "").localeCompare(a.entity.formedDate ?? "")
       || (a.distanceMi ?? Infinity) - (b.distanceMi ?? Infinity))
