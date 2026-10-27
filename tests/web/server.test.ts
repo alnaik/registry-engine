@@ -10,7 +10,7 @@ import type { AppDeps } from "../../apps/web/src/server.js";
 import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
-  "id", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "employees", "lastSeen",
+  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "employees", "lastSeen",
   "sources", "codeSources", "onStateRegistry", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
@@ -187,6 +187,23 @@ describe("web app server", () => {
       });
       expect(String(top[0]?.["mapsUrl"])).toBe(
         `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("ACME 0 FABRICATION 0 Main St Denver CO 80202")}`);
+    });
+
+    it("gives the same stable key to the same business under different ids", async () => {
+      const a = makeLead(0);
+      const b = makeLead(1);
+      a.entity = { ...a.entity, id: "co_sos:1", name: "Acme Tent & Canvas, Inc.", address: { ...a.entity.address, zip: "80203-1234" } };
+      b.entity = { ...b.entity, id: "ppp:2", name: "ACME TENT AND CANVAS", address: { ...b.entity.address, zip: "80203" } };
+      const outcome = makeOutcome(2);
+      outcome.ranked = [a, b];
+      outcome.entities = [a.entity, b.entity];
+      outcome.leads = [a, b];
+      behavior = async () => outcome;
+      const r = await post({ query: "tents", leads: 2 });
+      const result = lines(r).pop() as Record<string, unknown>;
+      const top = result["leads"] as Record<string, unknown>[];
+      expect(top.map(l => l["id"])).toEqual(["co_sos:1", "ppp:2"]);
+      expect(top.map(l => l["key"])).toEqual(["ACME TENT AND CANVAS|80203", "ACME TENT AND CANVAS|80203"]);
     });
 
     it("passes options through: noLlm drops the backend, findContacts:false turns contacts off", async () => {

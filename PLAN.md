@@ -103,7 +103,7 @@ it turns into infrastructure.
   `SearchConfig.direction` overrides the map's guess; the map LLM prompt
   receives it as fixed, and the static path uses it in place of
   `SELL_PATTERN`. Default: auto (today's behavior), showing what was guessed.
-- **7b Saved searches.** Save query + near + codes + direction in the
+- ✅ **7b Saved searches.** Save query + near + codes + direction in the
   browser (localStorage, next to the tracker). Re-running marks leads not
   seen last time as "New since <date>". Key "seen" on a stable lead key
   (normalized name + ZIP5), **not** `Entity.id`, which depends on which
