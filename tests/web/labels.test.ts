@@ -148,27 +148,31 @@ describe("call tracker", () => {
 });
 
 describe("summary sentence and About this search", () => {
-  const sheet = { total: 405, coded: 46, nameOnly: 359, individuals: 11, withinRadius: 28, radiusMi: 25, confirmed: 18, withPhone: 0 };
+  const sheet = { total: 405, coded: 46, businesses: 35, listed: 35, nameOnly: 359, individuals: 11, withinRadius: 20, radiusMi: 25, confirmed: 17, withPhone: 0 };
   const base = { sheet, regionName: "Colorado", origin: { label: "Denver, CO" }, contactLookups: null };
   const text = (parts: [string, boolean][]) => parts.map(p => p[0]).join("");
 
   it("reads as one plain paragraph built from the counts", async () => {
     const { summaryParts } = await import("../../apps/web/public/labels.js");
     expect(text(summaryParts(base))).toBe(
-      "46 businesses are coded for this work in Colorado, 28 within 25 miles of Denver, CO. 11 of them are individuals' records, listed at the end. 18 are confirmed on the state registry. None publish a phone number in these records, so the sheet gives addresses and named agents.");
+      "35 businesses are coded for this work in Colorado, 20 within 25 miles of Denver, CO. 17 are confirmed on the state registry. None publish a phone number in these records, so the sheet gives addresses and named agents. 11 individuals' records are listed separately.");
     const bold = summaryParts(base).filter(p => p[1]).map(p => p[0]);
-    expect(bold).toEqual(["46 businesses", "28 within 25 miles", "18"]);
+    expect(bold).toEqual(["35 businesses", "20 within 25 miles", "17"]);
   });
 
   it("adapts: no origin, a chosen radius, a contact lookup, zeros, singulars", async () => {
     const { summaryParts } = await import("../../apps/web/public/labels.js");
     expect(text(summaryParts({ ...base, origin: null, sheet: { ...sheet, withinRadius: null, individuals: 0 } })))
-      .toBe("46 businesses are coded for this work in Colorado. 18 are confirmed on the state registry. None publish a phone number in these records, so the sheet gives addresses and named agents.");
-    expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 1, individuals: 0, confirmed: 0, withPhone: 1, radiusMi: 10 } }, { radiusSet: true })))
+      .toBe("35 businesses are coded for this work in Colorado. 17 are confirmed on the state registry. None publish a phone number in these records, so the sheet gives addresses and named agents.");
+    expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 1, businesses: 1, listed: 1, individuals: 0, confirmed: 0, withPhone: 1, radiusMi: 10 } }, { radiusSet: true })))
       .toBe("1 business within 10 miles of Denver, CO is coded for this work. None are confirmed on the state registry yet. 1 publishes a phone number.");
     expect(text(summaryParts({ ...base, contactLookups: { provider: "exa", looked: 12, found: 4, costDollars: 0.1 }, sheet: { ...sheet, individuals: 0, withPhone: 4 } })))
       .toContain("4 have a phone number, from the records or the web lookup of the top 12.");
-    expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 0 } }))).toBe("No businesses are coded for this work in Colorado.");
+    expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 0, businesses: 0, listed: 0, individuals: 0 } }))).toBe("No businesses are coded for this work in Colorado.");
+    expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 1, businesses: 0, listed: 0, individuals: 1 } })))
+      .toBe("No businesses are coded for this work in Colorado. 1 individual's record is listed separately.");
+    expect(text(summaryParts({ ...base, sheet: { ...sheet, individuals: 0, listed: 30 } })))
+      .toContain("The sheet lists the top 30; the CSV has all of them.");
   });
 
   it("About rows carry capped notation, names checked, AI usage and contact lookup status", async () => {

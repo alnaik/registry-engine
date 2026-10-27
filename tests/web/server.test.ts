@@ -240,7 +240,7 @@ describe("web app server", () => {
         { id: "ppp", name: "PPP loans", plane: "category", count: 7, capped: false, error: false },
       ]);
       expect(result["registryLookup"]).toEqual({ status: "ran", namesChecked: 0, nameCap: 80, candidates: 0 });
-      expect(result["sheet"]).toEqual({ total: 3, coded: 3, nameOnly: 0, individuals: 0, withinRadius: 3, radiusMi: 25, confirmed: 3, withPhone: 3 });
+      expect(result["sheet"]).toEqual({ total: 3, coded: 3, businesses: 3, listed: 3, nameOnly: 0, individuals: 0, withinRadius: 3, radiusMi: 25, confirmed: 3, withPhone: 3 });
       expect(result["regionName"]).toBe("Colorado");
       expect(top[0]).toMatchObject({
         rank: 1, registryCheck: "matched", registeredElsewhere: false, found: null, employees: 10,

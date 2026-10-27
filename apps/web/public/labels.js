@@ -186,7 +186,9 @@ export function reachSummary(lead) {
 // ---- the summary sentence ---------------------------------------------------------
 
 // Plain-language summary of a result, as [text, strong?] parts so the page can
-// bold the numbers without building HTML. Counts are over coded leads only.
+// bold the numbers without building HTML. Counts are over the sheet's rows
+// (coded businesses, sheet.businesses), the same rows the filter chips count;
+// individuals' records get their own closing sentence.
 // opts: { radiusSet: the user chose a radius (results are already cut to it) }
 export function summaryParts(result, opts = {}) {
   const s = result.sheet;
@@ -197,18 +199,23 @@ export function summaryParts(result, opts = {}) {
   const origin = result.origin ? result.origin.label : "";
   const are = v => (v === 1 ? "is" : "are");
   const biz = v => `${n(v)} ${v === 1 ? "business" : "businesses"}`;
+  const count = s.businesses;
+  const individuals = () => {
+    if (s.individuals > 0) add(` ${n(s.individuals)} ${s.individuals === 1 ? "individual's record is" : "individuals' records are"} listed separately.`);
+  };
 
-  if (s.coded === 0) {
+  if (count === 0) {
     add(`No businesses are coded for this work in ${place}`);
     add(origin && opts.radiusSet ? ` within ${s.radiusMi} miles of ${origin}.` : ".");
+    individuals();
     return parts;
   }
   if (origin && opts.radiusSet) {
-    add(biz(s.coded), true);
-    add(` within ${s.radiusMi} miles of ${origin} ${are(s.coded)} coded for this work.`);
+    add(biz(count), true);
+    add(` within ${s.radiusMi} miles of ${origin} ${are(count)} coded for this work.`);
   } else {
-    add(biz(s.coded), true);
-    add(` ${are(s.coded)} coded for this work in ${place}`);
+    add(biz(count), true);
+    add(` ${are(count)} coded for this work in ${place}`);
     if (origin && s.withinRadius !== null) {
       add(", ");
       add(s.withinRadius === 0 ? `none within ${s.radiusMi} miles` : `${n(s.withinRadius)} within ${s.radiusMi} miles`, true);
@@ -217,7 +224,6 @@ export function summaryParts(result, opts = {}) {
       add(".");
     }
   }
-  if (s.individuals > 0) add(` ${n(s.individuals)} of them ${s.individuals === 1 ? "is an individual's record" : "are individuals' records"}, listed at the end.`);
 
   if (s.confirmed === 0) add(" None are confirmed on the state registry yet.");
   else { add(" "); add(n(s.confirmed), true); add(` ${are(s.confirmed)} confirmed on the state registry.`); }
@@ -231,6 +237,8 @@ export function summaryParts(result, opts = {}) {
     add(c ? ` ${s.withPhone === 1 ? "has" : "have"} a phone number, from the records or the web lookup of the top ${n(c.looked)}.`
       : ` ${s.withPhone === 1 ? "publishes" : "publish"} a phone number.`);
   }
+  if (typeof s.listed === "number" && s.listed < count) add(` The sheet lists the top ${n(s.listed)}; the CSV has all of them.`);
+  individuals();
   return parts;
 }
 
