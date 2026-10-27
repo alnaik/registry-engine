@@ -9,10 +9,17 @@ export const TIER_MODELS: Record<Tier, string> = {
   best: "claude-sonnet-5",
 };
 
+export interface LlmUsage {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number | null;
+}
+
 export interface RawCompleteOptions {
   model: string;
   maxTokens: number;
   system?: string | undefined;
+  onUsage?: ((u: LlmUsage) => void) | undefined;
 }
 
 // The one thing a backend must do. With an API key the tier picks the
@@ -31,6 +38,12 @@ export interface LlmCallOptions {
   tier: Tier;
   maxTokens?: number | undefined;
   system?: string | undefined;
+  label?: string | undefined;   // what the call is for: "map", "brief"
+}
+
+export interface LlmUsageEntry extends LlmUsage {
+  label: string;
+  model: string;
 }
 
 export class LlmCallBudgetError extends Error {
@@ -42,6 +55,7 @@ export class LlmCallBudgetError extends Error {
 
 export class Llm {
   private used = 0;
+  private log: LlmUsageEntry[] = [];
 
   constructor(
     private readonly raw: RawLlm,
@@ -52,8 +66,26 @@ export class Llm {
     return this.used;
   }
 
+  get usageLog(): ReadonlyArray<LlmUsageEntry> {
+    return this.log;
+  }
+
+  get usage(): (LlmUsage & { calls: number }) | null {
+    if (this.log.length === 0) return null;
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let costUsd: number | null = 0;
+    for (const e of this.log) {
+      inputTokens += e.inputTokens;
+      outputTokens += e.outputTokens;
+      costUsd = costUsd === null || e.costUsd === null ? null : costUsd + e.costUsd;
+    }
+    return { inputTokens, outputTokens, costUsd, calls: this.log.length };
+  }
+
   reset(): void {
     this.used = 0;
+    this.log = [];
   }
 
   async call(prompt: string, opts: LlmCallOptions): Promise<string> {
@@ -61,10 +93,14 @@ export class Llm {
       throw new LlmCallBudgetError(this.maxCalls);
     }
     this.used++;
+    const model = TIER_MODELS[opts.tier];
     return this.raw.complete(prompt, {
-      model: TIER_MODELS[opts.tier],
+      model,
       maxTokens: opts.maxTokens ?? 1000,
       system: opts.system,
+      onUsage: u => {
+        this.log.push({ label: opts.label ?? opts.tier, model, ...u });
+      },
     });
   }
 }
@@ -104,7 +140,23 @@ function anthropicApiBackend(apiKey: string): RawLlm {
       if (!resp.ok) {
         throw new Error(`Anthropic API error ${resp.status}: ${await resp.text()}`);
       }
-      const data = (await resp.json()) as { content: Array<{ type: string; text?: string }> };
+      const data = (await resp.json()) as {
+        content: Array<{ type: string; text?: string }>;
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+          cache_creation_input_tokens?: number;
+          cache_read_input_tokens?: number;
+        };
+      };
+      if (data.usage !== undefined && data.usage !== null && typeof data.usage === "object") {
+        const u = data.usage;
+        opts.onUsage?.({
+          inputTokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
+          outputTokens: u.output_tokens ?? 0,
+          costUsd: null,
+        });
+      }
       return data.content.filter(b => b.type === "text").map(b => b.text ?? "").join("");
     },
   };

@@ -175,6 +175,23 @@ Not fixed (recorded):
 - When the first card doesn't fit, print page 1 leaves a gap
   (`break-inside: avoid` on cards).
 
+### Phase 9 — README rewrite + token usage per search ✅
+- README rewritten down to the essentials:
+  - run instructions;
+  - how a search works, illustrated with captures of the real app (an APNG of
+    a live search, stills, and the app's own distance-map SVG);
+  - every source, with links;
+  - measured token usage.
+- Media is regenerated with `scripts/docs/capture.mjs` + `scripts/docs/apng.py`.
+  Individuals' records and agent names are kept out of the captures.
+- `claude -p` now runs with `--tools ""`, `--strict-mcp-config` and
+  `--no-session-persistence`. Measured on a one-word prompt, input dropped
+  from about 15.7k tokens to 478, because the CLI no longer sends its tool
+  definitions. Real searches now use about 13k tokens, roughly $0.06 at API
+  prices.
+- Token usage per search is reported: `SearchOutcome.llmUsage`, the web
+  summary stat (hover for the per-call split), and a CLI line.
+
 ## Known gaps (from live runs, 2026-10-22)
 - Most coded leads have no phone/email: PPP, ECHO and SoS publish none. The
   call sheet gives the address, agent/principals and a search link. With

@@ -364,6 +364,7 @@ function buildResult(outcome: SearchOutcome, existenceIds: string[], topN: numbe
     summary: summaryCounts(outcome.ranked, outcome.map.intent.naics),
     contactLookups: outcome.contactLookups,
     llmCalls: outcome.llmCalls,
+    llmUsage: outcome.llmUsage,
     leads: outcome.ranked.slice(0, topN).map((l, i) => view(l, i, true)),
     more: outcome.ranked.slice(topN, topN + MORE_LEADS).map((l, i) => view(l, topN + i, false)),
     recent: outcome.recent.map((l, i) => view(l, i, false)),
