@@ -95,6 +95,38 @@ paths reject malformed regions. Validation numbers are in ADR 0015.
 - Not fixed: none of the confirmed findings was deferred. The security review
   found no gaps beyond L1.
 
+### Phase 7 — small features (user-approved 2026-10-26)
+Build in this order, one spec each. Keep each one small, and drop it if
+it turns into infrastructure.
+- **7a Supplier/buyer switch.** A two-way toggle in the web app ("Find
+  suppliers" / "Find buyers") and `--direction=buy|sell` in the CLI.
+  `SearchConfig.direction` overrides the map's guess; the map LLM prompt
+  receives it as fixed, and the static path uses it in place of
+  `SELL_PATTERN`. Default: auto (today's behavior), showing what was guessed.
+- **7b Saved searches.** Save query + near + codes + direction in the
+  browser (localStorage, next to the tracker). Re-running marks leads not
+  seen last time as "New since <date>". Key "seen" on a stable lead key
+  (normalized name + ZIP5), **not** `Entity.id`, which depends on which
+  source merged first. PPP is a fixed snapshot, so new matches come only
+  from live sources (SoS, ECHO, farm products); the UI must say so.
+- **7c New-business watch.** A "Recently registered near you" section:
+  state-registry entities formed in the last 90 days (CO `entityformdate`,
+  CT `date_registration`, NY `initial_dos_filing_date`), within the radius,
+  whose name matches the map's keywords. CO and NY filings carry no industry
+  code, so these are name matches and must be labeled that way. CT's
+  registry has a `naics_code` field holding a title as text, which may allow
+  coded matching there. Most useful for buyer searches (a new restaurant
+  needs suppliers). Manifest-driven: a `formedDate` field-map key.
+- **7d Distance view.** An SVG plot (no map tiles, no new CSP origins, no
+  library) with rings at 10/25/50/100 mi around the center and one dot per
+  lead at its ZIP centroid; clicking a dot scrolls to its card. Hidden when
+  there's no center.
+
+### Phase 8 — web app test pass
+Exercise the real web app in a browser at 1280 px and 390 px after Phase 7,
+following the checklist in `docs/handoffs/v5-handoff.md`. Fix what's
+confirmed, and record the rest here.
+
 ## Known gaps (from live runs, 2026-10-22)
 - Most coded leads have no phone/email: PPP, ECHO and SoS publish none. The
   call sheet gives the address, agent/principals and a search link. With
