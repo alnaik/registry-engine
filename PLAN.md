@@ -8,71 +8,19 @@ round), one commit per phase, each after `npm test` + `npm run typecheck`.
 
 ## Phases
 
-### Phase C — summary, About this search, print, captures ✅
-- **Summary sentence** (`summaryParts` in `labels.js`, pinned in
-  `tests/web/labels.test.ts`): "<coded> businesses are coded for this work
-  in <state>, <n> within <radius, or 25> miles of <origin>. <k> of them are
-  individuals' records, listed at the end. <confirmed> are confirmed on the
-  state registry. <phones> publish a phone number." Each clause drops out
-  when it has nothing to say (no origin, no individuals); "None publish a
-  phone number in these records, so the sheet gives addresses and named
-  agents" when phones = 0.
-- **About this search** (`aboutRows`): a collapsed table at the bottom, one
-  row per source (count, "500+ (capped)", error), names checked against the
-  registry ("46 of the top 46 … at most 80 per search", or why not),
-  name-only matches, recent filings, web contact lookup status, AI calls /
-  tokens / API-price cost, elapsed time.
-- **Print**: ruled rows with a dotted blank "Notes" line per lead; tabs, ask
-  bar, steps, tools, groups, About and the footer are hidden; band headings
-  stay with their first row (`break-after: avoid`); a print head carries the
-  query and summary. Type scales to 8–14 pt. Measured: 30 rows print on 4
-  pages (about 8 per page), so 12 leads fit on two. The Phase 8 "gap on
-  page 1" is gone in practice: a row is now about an inch tall, so
-  `break-inside: avoid` can leave at most one row of white space.
-- **Captures** regenerated with `scripts/docs/capture.mjs` (selectors for
-  the new DOM; `SKIP_AI=1` dry run): `docs/media/search.png` (APNG, 33
-  frames), `search-form.png`, `progress.png`, `summary.png`,
-  `lead-card.png`, `recently-registered.png`. The individuals' group is
-  removed and agent/principal names are replaced with "(name withheld in
-  this screenshot)" before any capture. README "How a search works"
-  rewritten around them.
-- `/design` synced with the app DOM (`step-detail`, `h2.band-head` with
-  `aria-labelledby`); `design.js` suffixes ARIA id references in the dark
-  clone.
-- Live AI runs: 1 (the README capture: 2 calls, 12.9k tokens, about $0.05).
-- Observed, not changed: some sole proprietors filed under a plain personal
-  name with a business entity type (e.g. "FIRST LAST") aren't caught by
-  `isLikelyIndividual`, so they stay in the main list. Detection is out of
-  scope for a UI phase.
-
-### Phase B — three surfaces on one page ✅
-- `index.html`, `app.js` and `app.css` rewritten to the field sheet: masthead
-  with Find / My calls tabs (ARIA tabs, arrow keys), ask bar (request +
-  Near + primary button + "More options"), reading line with "(guessed) ·
-  find buyers instead", ruled bands with eyebrow headings and "N more in
-  this band · Show them", dense rows that expand inline (one open at a
-  time, Escape closes), segmented filters All / Confirmed / Not yet called /
-  No web presence with counts.
-- Direction: auto is implicit; the explicit override lives in More options.
-  The code finder shows itself inline when Skip AI + Buyers, or when the
-  map found no codes (`updateCodeBox`).
-- My calls: a table over every tracker entry (business, from search,
-  outcome, note, updated), CSV export kept. Outcomes are Not called /
-  Reached / No answer / Not a fit; old entries migrate on read
-  (`migrateTracker`: called→Reached, interested→Reached + "Interested. ",
-  notfit→Not a fit, new→Not called). New entries store `search: {query,
-  near}`; migrated ones show "an earlier search".
-- Distance map removed: code, CSS, `docs/media/distance-map.svg`, the README
-  reference.
-- Legacy token aliases and the old card CSS are gone.
-- Deviations:
-  - Call outcomes in My calls are plain bold text, not trust-colored pills
-    as in the mockup: the design rule reserves color for trust state, and an
-    outcome is not a trust state.
-  - The row's call status ("Reached 10/24") is ink, not teal: teal is for
-    actions and links only.
-  - Rows render all coded leads (top N + up to 300 more) and collapse the
-    rest of each band; a band with none of the top N previews its first 5.
+### Phase 0 — tokens and component sheet ✅
+- `app.css` `:root` rewritten: paper/ink, teal for actions and links only,
+  three trust tokens (ok / unk / no), type scale 13/15/17/22/30 at 450/650,
+  4px spacing scale, dark mode via `prefers-color-scheme`, plus
+  `[data-theme]` re-scoping so one page can show both themes. Legacy token
+  names were aliased so the old search page kept working until Phase B.
+- `GET /design` (`design.html` + `design.js`): every component with
+  fictional data; `design.js` clones the light column into a dark one
+  (DOM cloning, no HTML strings). Same Host check and CSP as `/` (the CSP
+  now goes on every HTML entry of the whitelist).
+- New `tests/web/public-assets.test.ts`: no `innerHTML`-style sinks in any
+  shipped script; HTML pages load same-origin scripts only, with no inline
+  script or style.
 
 ### Phase A — honest labels ✅
 - **Tri-state standing.** `Lead.registryCheck` = `matched` |
@@ -114,19 +62,168 @@ round), one commit per phase, each after `npm test` + `npm run typecheck`.
     by `registryCheck`; the distance map goes in Phase B). The server test
     for map points was replaced by one for the three-way split.
 
-### Phase 0 — tokens and component sheet ✅
-- `app.css` `:root` rewritten: paper/ink, teal for actions and links only,
-  three trust tokens (ok / unk / no), type scale 13/15/17/22/30 at 450/650,
-  4px spacing scale, dark mode via `prefers-color-scheme`, plus
-  `[data-theme]` re-scoping so one page can show both themes. Legacy token
-  names were aliased so the old search page kept working until Phase B.
-- `GET /design` (`design.html` + `design.js`): every component with
-  fictional data; `design.js` clones the light column into a dark one
-  (DOM cloning, no HTML strings). Same Host check and CSP as `/` (the CSP
-  now goes on every HTML entry of the whitelist).
-- New `tests/web/public-assets.test.ts`: no `innerHTML`-style sinks in any
-  shipped script; HTML pages load same-origin scripts only, with no inline
-  script or style.
+### Phase B — three surfaces on one page ✅
+- `index.html`, `app.js` and `app.css` rewritten to the field sheet: masthead
+  with Find / My calls tabs (ARIA tabs, arrow keys), ask bar (request +
+  Near + primary button + "More options"), reading line with "(guessed) ·
+  find buyers instead", ruled bands with eyebrow headings and "N more in
+  this band · Show them", dense rows that expand inline (one open at a
+  time, Escape closes), segmented filters All / Confirmed / Not yet called /
+  No web presence with counts.
+- Direction: auto is implicit; the explicit override lives in More options.
+  The code finder shows itself inline when Skip AI + Buyers, or when the
+  map found no codes (`updateCodeBox`).
+- My calls: a table over every tracker entry (business, from search,
+  outcome, note, updated), CSV export kept. Outcomes are Not called /
+  Reached / No answer / Not a fit; old entries migrate on read
+  (`migrateTracker`: called→Reached, interested→Reached + "Interested. ",
+  notfit→Not a fit, new→Not called). New entries store `search: {query,
+  near}`; migrated ones show "an earlier search".
+- Distance map removed: code, CSS, `docs/media/distance-map.svg`, the README
+  reference.
+- Legacy token aliases and the old card CSS are gone.
+- Deviations:
+  - Call outcomes in My calls are plain bold text, not trust-colored pills
+    as in the mockup: the design rule reserves color for trust state, and an
+    outcome is not a trust state.
+  - The row's call status ("Reached 10/24") is ink, not teal: teal is for
+    actions and links only.
+  - Rows render all coded leads (top N + up to 300 more) and collapse the
+    rest of each band; a band with none of the top N previews its first 5.
+
+### Phase C — summary, About this search, print, captures ✅
+- **Summary sentence** (`summaryParts` in `labels.js`, pinned in
+  `tests/web/labels.test.ts`): "<coded> businesses are coded for this work
+  in <state>, <n> within <radius, or 25> miles of <origin>. <k> of them are
+  individuals' records, listed at the end. <confirmed> are confirmed on the
+  state registry. <phones> publish a phone number." Each clause drops out
+  when it has nothing to say (no origin, no individuals); "None publish a
+  phone number in these records, so the sheet gives addresses and named
+  agents" when phones = 0.
+- **About this search** (`aboutRows`): a collapsed table at the bottom, one
+  row per source (count, "500+ (capped)", error), names checked against the
+  registry ("46 of the top 46 … at most 80 per search", or why not),
+  name-only matches, recent filings, web contact lookup status, AI calls /
+  tokens / API-price cost, elapsed time.
+- **Print**: ruled rows with a dotted blank "Notes" line per lead; tabs, ask
+  bar, steps, tools, groups, About and the footer are hidden; band headings
+  stay with their first row (`break-after: avoid`); a print head carries the
+  query and summary. Type scales to 8–14 pt. Measured: 30 rows print on 4
+  pages (about 8 per page), so 12 leads fit on two. The Phase 8 "gap on
+  page 1" is gone in practice: a row is now about an inch tall, so
+  `break-inside: avoid` can leave at most one row of white space.
+- **Captures** regenerated with `scripts/docs/capture.mjs` (selectors for
+  the new DOM; `SKIP_AI=1` dry run): `docs/media/search.png` (APNG, 33
+  frames), `search-form.png`, `progress.png`, `summary.png`,
+  `lead-card.png`, `recently-registered.png`. The individuals' group is
+  removed and agent/principal names are replaced with "(name withheld in
+  this screenshot)" before any capture. README "How a search works"
+  rewritten around them.
+- `/design` synced with the app DOM (`step-detail`, `h2.band-head` with
+  `aria-labelledby`); `design.js` suffixes ARIA id references in the dark
+  clone.
+- Live AI runs: 1 (the README capture: 2 calls, 12.9k tokens, about $0.05).
+- Observed, not changed: some sole proprietors filed under a plain personal
+  name with a business entity type (e.g. "FIRST LAST") aren't caught by
+  `isLikelyIndividual`, so they stay in the main list. Detection is out of
+  scope for a UI phase.
+
+### Phase D — accessibility, Phase 8 rerun, validation scaffold ✅
+- **axe-core** (devDependency) via `npm run a11y` (`scripts/a11y/axe.ts`):
+  the real server and pages with a fictional fixture search
+  (`tests/web/fixtures/sheet-outcome.ts`, kept honest by
+  `tests/web/sheet-fixture.test.ts`), so no network and no AI. It checks
+  `/design`, `/` after a Skip AI search (row open, groups and About open)
+  and My calls with one logged call, at 390 and 1280 px, light and dark.
+  First run: 4 serious (`scrollable-region-focusable` on the calls table)
+  plus 12 moderate. Fixed: the calls table wrapper is a focusable, labelled
+  region. On `/design`: `h4` to `h3` in the expanded row, one `main`, and
+  `aria-label`/ARIA id references suffixed in the dark clone. Final: **0
+  serious/critical**, 4 moderate (`landmark-unique` on `/design` only: the
+  dark column repeats the light column's band heading by design).
+- **Keyboard pass** (scripted over CDP against the fixture app, 1280 px):
+  - Tab order from load: Find tab, request, Near, Find businesses, More
+    options, the three examples. Every stop shows the teal focus ring.
+  - Tabs: Left/Right switch Find and My calls, moving focus and selection.
+  - More options: Enter toggles (`aria-expanded`), then direction segments,
+    radius, call-notes count and state are reachable.
+  - Enter in the request submits. Focus stays in the request; a new
+    polite status region announces "Search done. <summary>" (added in this
+    phase; before, nothing announced the results).
+  - After results: filters, Print sheet, CSV, Save search, then row heads.
+    Enter or Space toggles a row (`aria-expanded`). Inside it: Copy, phone,
+    Map, Search the web, the four outcome buttons, the note, Where this
+    comes from.
+  - Escape from the note or an outcome button closes the row and returns
+    focus to its head.
+  - Group and About summaries open with Enter or Space. In My calls:
+    Download CSV, then the table region.
+- **Call-outcome validation scaffold**: tracker entries store `trust:
+  {pill, tone}` as shown when the outcome was set (`trustAtCall`, pinned in
+  `tests/web/labels.test.ts`). The My calls CSV adds `trust_at_call` and
+  `trust_tone_at_call`. ADR 0017 "Validation (pending)" describes the
+  20-lead reached-rate-by-label log. No outcomes recorded.
+- **Phase 8 checklist rerun** (2026-10-27, live app on :4318, headless
+  Chromium):
+  - PASS empty state at 1280 and 390, light and dark: scrollWidth equals
+    the viewport.
+  - PASS supplier search with AI (tote bags, Denver), from the README
+    capture run: codes 314910 and 315210; canvas shops top the "within 10
+    miles" band.
+  - FAIL (recorded) buyer search with AI (hot sauce, 80302): the map call
+    returned an answer the parser rejected ("the AI answer couldn't be
+    used"). The UI handled it honestly: a notes line, the buyer caveat, the
+    "finding buyers needs the AI step" empty state, and the code finder
+    opened. A single diagnostic map call with the same prompt then parsed
+    fine (445299, 722511, 445110, 424490, 722410; 722512 was dropped as not
+    a 2017 code). So this looks transient (the bad output wasn't captured).
+    The Phase 8 run of the same search passed. Not changed.
+  - PASS Skip AI supplier ("produce supplier", Denver): static-table codes
+    (fruit/vegetable wholesalers, farms, markets).
+  - PASS Skip AI buyer: empty state plus the code finder with "Finding
+    buyers without the AI step needs industry codes." With 311421 and
+    445110 entered, 462 coded businesses came back.
+  - PASS codes helper: "metal fabrication" returns 332312; "canvas bag"
+    returns 314910.
+  - PASS location three ways: ZIP 80302 and Boulder give distance bands;
+    no location gives one "Coded for this work" band and the reading line
+    says "whole state, no distance". "Atlantis" gives "couldn't find
+    "Atlantis" in CO, so results aren't sorted by distance".
+  - PASS bands in order (10 / 25 / 50 / 100 / 100+). Individuals' records,
+    name matches and recent filings are separate groups after the bands.
+    An individual's row has no map or search link.
+  - PASS tracker: No answer plus a note survives a reload and a re-run; My
+    calls lists it; the trust label at call is stored.
+  - PASS CSV: all-results has `registry_check`; My calls exports
+    `'=SUM(1)…` escaped, with the trust columns.
+  - PASS print: 30 rows on 4 letter pages, so 12 leads fit on two; band
+    headings kept; the Phase 8 page-1 gap no longer shows.
+  - PASS errors: concurrent search gives 200 / 429 "a search is already
+    running".
+  - PASS guards (curl): foreign Host 403, POST without JSON 415, HEAD /
+    200.
+  - NOT RUN: contacts (no Exa or Parallel key, as before); network off
+    during ECHO (covered by the fixture's `source_error` and the existing
+    engine test); `claude` logged out (unchanged since Phase 8 F7).
+  - PASS 390 dark results: no horizontal scroll; the expanded row stacks
+    into one column.
+- Live AI runs for all of v6: 3 of 3. (1) README capture, tote bags near
+  Denver: 2 calls, 12.9k tokens. (2) The Phase 8 buyer search: the map
+  call was unusable, so the brief was skipped. (3) One diagnostic map call
+  for (2): 5.2k tokens.
+
+### Left out, and why
+- Live web contact lookup (Exa / Parallel): there's still no key; untested
+  live, as in v5.
+- Better individual detection (personal names filed with a business entity
+  type): an engine change, not a UI one; recorded in ADR 0017.
+- The transient unusable map answer: it couldn't be reproduced within the
+  live-run budget. The fallback UI is honest, and the next step is logging
+  the raw map answer when parsing fails (no code yet).
+- Saved searches still re-run with the form's current AI and radius
+  options (Phase 8 note, unchanged).
+- Moderate axe finding on `/design` (`landmark-unique`, a side effect of
+  the cloned dark column): design sheet only.
 
 ---
 

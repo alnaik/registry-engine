@@ -12,6 +12,7 @@ for (const attr of ["aria-labelledby", "aria-controls", "aria-describedby"]) {
     el.setAttribute(attr, el.getAttribute(attr).split(/\s+/).map(id => `${id}-dark`).join(" "));
   }
 }
+for (const el of dark.querySelectorAll("[aria-label]")) el.setAttribute("aria-label", `${el.getAttribute("aria-label")} (dark)`);
 const label = dark.querySelector(".design-label");
 if (label) label.textContent = "Dark";
 light.after(dark);

@@ -108,6 +108,17 @@ export function migrateTracker(raw) {
   return { entry, changed };
 }
 
+// The trust label as it read when the call outcome was set, for the
+// reached-rate-by-label log (ADR 0017, Validation). A note edit keeps the
+// recorded label; a new outcome re-records it; "Not called" records none.
+// Entries saved before this existed have no label, and none is invented.
+export function trustAtCall(prior, status, current) {
+  if (status === "notcalled") return null;
+  if (prior && prior.status === status && prior.trust) return prior.trust;
+  if (prior && prior.status === status && !prior.trust && prior.updatedAt) return null;
+  return current ? { pill: current.pill, tone: current.tone } : null;
+}
+
 // An entry worth keeping: a call outcome or a note.
 export function isTracked(entry) {
   return Boolean(entry) && ((entry.status && entry.status !== "notcalled") || Boolean(entry.note));

@@ -2,17 +2,22 @@
   "name": "registry-engine",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "start": "npm run --workspace apps/web start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "a11y": "vite-node scripts/a11y/axe.ts"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
+    "axe-core": "^4.14.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.1.0",
     "vite-node": "^2.1.0",
-    "@types/node": "^20.0.0"
+    "vitest": "^2.1.0"
   }
 }
