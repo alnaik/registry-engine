@@ -2,18 +2,23 @@ import { naicsRelated } from "@registry-engine/registry-core";
 import type { Lead } from "./verbs/brief.js";
 import { isLikelyIndividual } from "./verbs/contacts.js";
 
-// The honest headline for a search: how many leads rest on an industry code
-// versus a name match alone, and how many have no website in the records.
-export function summaryCounts(ranked: Lead[], mapCodes: string[]): { total: number; coded: number; nameOnly: number; noWebsite: number } {
-  const coded = ranked.filter(l => l.entity.naics.some(e => mapCodes.some(q => naicsRelated(e, q)))).length;
+// The honest headline for a search: how many coded businesses, how many
+// coded individuals' records (listed apart), how many leads rest on a name
+// match alone, and how many have no website in the records.
+export function summaryCounts(ranked: Lead[], mapCodes: string[]): { total: number; coded: number; businesses: number; individuals: number; nameOnly: number; noWebsite: number } {
+  const { businesses, individuals, nameOnly } = partitionLeads(ranked, mapCodes);
   const noWebsite = ranked.filter(l => l.web === "none").length;
-  return { total: ranked.length, coded, nameOnly: ranked.length - coded, noWebsite };
+  return { total: ranked.length, coded: businesses.length + individuals.length, businesses: businesses.length, individuals: individuals.length, nameOnly: nameOnly.length, noWebsite };
 }
 
 export function summaryLines(ranked: Lead[], mapCodes: string[]): string[] {
-  const { total, coded, nameOnly, noWebsite } = summaryCounts(ranked, mapCodes);
+  const { total, businesses, individuals, nameOnly, noWebsite } = summaryCounts(ranked, mapCodes);
+  const extra = [
+    individuals > 0 ? `+${individuals} individuals' records, listed separately` : "",
+    nameOnly > 0 ? `+${nameOnly} name matches, lower confidence` : "",
+  ].filter(Boolean);
   const lines = [
-    `Found ${coded} businesses with an industry code for this request${nameOnly > 0 ? ` (+${nameOnly} name matches, lower confidence)` : ""}`,
+    `Found ${businesses} businesses with an industry code for this request${extra.length > 0 ? ` (${extra.join("; ")})` : ""}`,
   ];
   // Says nothing when it is true of every lead.
   if (noWebsite < total) lines.push(`${noWebsite} have no website listed in the records searched — business records get a search link.`);
