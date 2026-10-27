@@ -309,6 +309,7 @@ main > * + * { margin-top: 24px; }
 .interp { display: grid; gap: 12px; scroll-margin-top: 16px; }
 .interp-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; font-size: 1.0625rem; }
 .interp-line .sep { color: var(--muted); }
+.warn-text { color: var(--warn-ink); }
 .interp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .link-button {
   min-height: 40px;
@@ -542,7 +543,7 @@ details.evidence summary { cursor: pointer; min-height: 32px; color: var(--accen
   body { font-size: 11pt; }
   .site-header .tagline, .search-card, .how, .progress, #error-box, .filters, .more-wrap, .site-footer, .toast,
   .summary-actions, .opener-row button, .interp .link-button, .segmented, .tracker-note, .saved-at,
-  .copy-button, #filter-empty, .saved, .distmap { display: none !important; }
+  .copy-button, #filter-empty, .saved, .distmap, .summary .link-button { display: none !important; }
   .card, .summary { box-shadow: none; border: 1px solid #999; }
   .card { break-inside: avoid; page-break-inside: avoid; }
   .band-heading { position: static; break-after: avoid; }

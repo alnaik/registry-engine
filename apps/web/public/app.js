@@ -474,7 +474,12 @@ function handleEvent(event) {
   switch (event.type) {
     case "map": {
       app.map = event;
-      setStep("map", "done", VIA_TEXT[event.via] || "");
+      if (event.llmError) {
+        setStep("map", "done", `AI step failed, so we used: ${VIA_TEXT[event.via]}`);
+        addWarning(`The AI step failed (${event.llmError}). If Claude Code is logged out, run claude in a terminal and log in, then search again. Call notes below are templates.`);
+      } else {
+        setStep("map", "done", VIA_TEXT[event.via] || "");
+      }
       const codes = event.naics.map(n => `${n.code} ${n.title}`.trim());
       setStep("industries", event.naics.length > 0 ? "done" : "error",
         codes.length > 0 ? codes.join(" · ") : "None found. Try different words or add industry codes under More options.");
@@ -570,7 +575,14 @@ function renderInterp() {
   }
   if (app.origin !== undefined) {
     line.append(h("span", { class: "sep", "aria-hidden": "true", text: "·" }));
-    if (app.origin === null) line.append("anywhere in the state");
+    if (app.origin === null) {
+      if (app.lastParams && app.lastParams.near) {
+        const region = String((app.lastParams.region || (app.status && app.status.defaultRegion) || "this state")).replace(/^US-/, "");
+        line.append(h("span", { class: "warn-text", text: `couldn't find “${app.lastParams.near}” in ${region}, so results aren't sorted by distance` }));
+      } else {
+        line.append("anywhere in the state");
+      }
+    }
     else line.append("near ", h("strong", { text: app.origin.label }));
   }
   if (map.naics.length > 0) {

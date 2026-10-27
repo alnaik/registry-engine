@@ -160,6 +160,24 @@ describe("web app server", () => {
   });
 
   describe("POST /api/search streaming", () => {
+    it("forwards llmError on the map event", async () => {
+      const deps: AppDeps = {
+        search: (async (_q: string, cfg: SearchConfig = {}) => {
+          const o = makeOutcome();
+          cfg.onEvent?.({ type: "map", map: { ...o.map, llmError: "not logged in" } });
+          return o;
+        }) as unknown as AppDeps["search"],
+        llmAvailable: async () => true,
+        contactsProvider: () => null,
+        port,
+        publicDir,
+      };
+      server.removeAllListeners("request");
+      server.on("request", createApp(deps));
+      const r = await post({ query: "metal fabrication" });
+      expect(lines(r)[0]).toMatchObject({ type: "map", llmError: "not logged in" });
+    });
+
     it("streams translated events and ends with a result line of LeadViews", async () => {
       const r = await post({ query: "metal fabrication", near: "Denver", leads: 2 });
       expect(r.status).toBe(200);

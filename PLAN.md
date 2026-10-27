@@ -122,10 +122,58 @@ it turns into infrastructure.
   lead at its ZIP centroid; clicking a dot scrolls to its card. Hidden when
   there's no center.
 
-### Phase 8 — web app test pass
+### Phase 8 — web app test pass ✅
 Exercise the real web app in a browser at 1280 px and 390 px after Phase 7,
 following the checklist in `docs/handoffs/v5-handoff.md`. Fix what's
 confirmed, and record the rest here.
+
+Run 2026-10-27 in headless Chromium over CDP, at 1280 and 390 px, light and
+dark. Three live AI searches were run.
+
+Passed:
+- Empty state with no horizontal scroll.
+- AI supplier search (tote bags, Denver): canvas shops on top. The map
+  returned only 314910 that run.
+- AI buyer search (hot sauce, 80302): specialty food, grocers and
+  restaurants, with the buyer caveat.
+- Skip AI produce search: static-table codes.
+- Skip AI buyer search: the "needs the AI step" empty state; the 7a toggle
+  fixes it.
+- Codes helper: 332312 and 314910.
+- Location as ZIP, as a town, and with none.
+- Bands, and the individual's-record note.
+- Tracker note survives a reload and a re-run. It is keyed on the stable
+  lead key, and old entries migrate.
+- CSV exports: my-list escapes a leading `=`.
+- Print to PDF.
+- 429 on a concurrent search.
+- ECHO down: a warning, and results still return.
+- curl guards: 403, 415, and `HEAD` 200.
+- 7a–7d at both widths and in dark mode.
+- Map dots follow the filters, and clicking a dot scrolls to its card.
+
+Fixed:
+- **F1:** recent filings matched mid-word ("BagelBytes" for `bag`,
+  "Deliveries" for `deli`). They now need a whole word (`nameHasWord`).
+- **F2:** map caveats showed CLI syntax in the web app.
+- **F3:** an unknown location ("Atlantis") silently searched the whole state.
+  The web app and CLI now say so.
+- **F4:** Socrata keyword queries returned a different capped subset on each
+  run (verified live: 2,191 matches, two different 1,000-row samples). That
+  made "New since" flag noise. `$order=:id` makes results reproducible and
+  offset paging defined.
+- **F6:** the summary's link button printed.
+- **F7:** a logged-out `claude` failed silently. A warning now names the
+  error, and the brief call is skipped.
+
+Not fixed (recorded):
+- Recent filings still list "Sewer & Drain" for `sew`, because the word is
+  ambiguous. They are labeled as name matches.
+- A saved search re-runs with the form's current options (AI on/off,
+  radius); only query, location, codes and direction are saved.
+- Contacts (Exa/Parallel) are still untested live: no key was available.
+- When the first card doesn't fit, print page 1 leaves a gap
+  (`break-inside: avoid` on cards).
 
 ## Known gaps (from live runs, 2026-10-22)
 - Most coded leads have no phone/email: PPP, ECHO and SoS publish none. The

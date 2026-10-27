@@ -4,6 +4,14 @@ Repo: `/Users/fcolty/dev/projects/registry-engine` · branch `v5-activity-coded`
 (HEAD includes phases 1–6 plus the Phase 7/8 plan; **not pushed**) · remote
 `git@github.com:alnaik/registry-engine.git`.
 
+> **Update 2026-10-27:** Phases 7 (7a–7d) and 8 are done and committed.
+> PLAN.md has the results, the fixes (F1–F7), and what's still open. The
+> user asked for the branch to be pushed, and it has been pushed to
+> `origin/v5-activity-coded`. That was a one-time instruction; the rule
+> below about pushing still applies by default. Tests: 27 files, 298 tests,
+> green; typecheck clean. The sections below are the original plan for
+> phases 7–8, kept for reference.
+
 ## Paste this into the new chat
 
 > Read `docs/handoffs/v5-handoff.md`, then `PLAN.md`. Build Phase 7 (7a → 7d)

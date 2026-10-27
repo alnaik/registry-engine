@@ -73,6 +73,8 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   }
   const fetchedCounts: string[] = [];
 
+  const nearFlag = flags["near"] !== undefined && flags["near"] !== "true" ? flags["near"] : undefined;
+  let mapRegion = "";
   const out = await search(query, {
     // omitting llm entirely puts the engine on its zero-token path
     ...(flags["no-llm"] === "true" ? {} : { llm: { backend: new ClaudeCodeBackend(flags["model"]) } }),
@@ -83,7 +85,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     naics,
     direction: direction === "buy" || direction === "sell" ? direction : undefined,
     hiddenOnly: flags["hidden"] === "true",
-    near: flags["near"] !== undefined && flags["near"] !== "true" ? flags["near"] : undefined,
+    near: nearFlag,
     radiusMi,
     ...(flags["no-contacts"] === "true" ? { contacts: null } : {}),
     onEvent: event => {
@@ -93,10 +95,14 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
           console.log(`        via=${event.map.via}${event.map.directionFixed ? " (direction fixed by --direction)" : ""}`);
           console.log(`        lead codes: ${event.map.intent.naics.map(c => `${c} ${naicsLabel(c) ?? ""}`.trim()).join("; ") || "none"}`);
           for (const c of event.map.caveats) console.log(`        ⚠ ${c}`);
+          if (event.map.llmError !== undefined) console.log(`        ⚠ AI step failed: ${event.map.llmError} — results use the static table/codes and template briefs`);
+          mapRegion = event.map.intent.geo.region;
           break;
         case "origin":
           console.log(event.origin === null
-            ? "origin  none — results not grouped by distance"
+            ? (nearFlag !== undefined
+              ? `origin  couldn't find "${nearFlag}" in ${flags["region"] ?? mapRegion} — results not grouped by distance`
+              : "origin  none — results not grouped by distance")
             : `origin  ${event.origin.label}`);
           break;
         case "routed":
