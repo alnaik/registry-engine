@@ -6,7 +6,8 @@
 //   python3 -I scripts/docs/apng.py docs/media/search.png <framesDir>/frames.json
 //
 // One real search runs (2 AI calls). Individuals' records (sole proprietors
-// in PPP) are hidden before any capture, so no person's name lands in docs.
+// in PPP) are hidden before any capture, and agent/principal names are
+// withheld, so no person's name lands in docs.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 
@@ -45,9 +46,12 @@ async function frame(ms) {
   writeFileSync(file, Buffer.from(r.result.data, "base64"));
   frames.push({ file, ms });
 }
-async function element(selector, file, pad = 12) {
+async function element(selector, file, pad = 12, until = null) {
   const rect = await js(`(() => { const e = document.querySelector(${JSON.stringify(selector)}); if (!e) return null;
-    const r = e.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height }; })()`);
+    const r = e.getBoundingClientRect(); const box = { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height };
+    const u = ${JSON.stringify(until)} && document.querySelector(${JSON.stringify(until)});
+    if (u) { const b = u.getBoundingClientRect(); box.h = b.bottom + scrollY - box.y; }
+    return box; })()`);
   if (rect === null) throw new Error(`not found: ${selector}`);
   const r = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true,
     clip: { x: rect.x - pad, y: rect.y - pad, width: rect.w + 2 * pad, height: rect.h + 2 * pad, scale: 1 } });
@@ -73,7 +77,9 @@ for (let i = 1; i <= NEAR.length; i++) {
   await frame(90);
 }
 await frame(700);
-await element(".search-card", "search-form.png");
+await element(".ask", "search-form.png");
+// SKIP_AI=1 dry-runs the script without spending AI calls (static codes).
+if (process.env.SKIP_AI === "1") await js(`document.getElementById("no-llm").checked = true; document.getElementById("naics").value = "314910, 315210"; true`);
 
 // Run it. A frame is kept only when the visible progress text changes, so
 // the animation skips the waiting.
@@ -82,41 +88,42 @@ let progressShot = false;
 let lastText = "";
 for (let t = 0; t < 800; t++) {
   await sleep(400);
-  const s = await js(`({ done: !document.getElementById("go").disabled, ranking: document.getElementById("steps").innerText.includes("businesses to rank"),
-    text: document.getElementById("interp").innerText + document.getElementById("progress").innerText })`);
+  const s = await js(`({ done: !document.getElementById("go").disabled,
+    records: /Searching public records/.test(document.getElementById("steps").innerText) && /: \\d/.test(document.getElementById("steps").innerText),
+    text: document.getElementById("reading").innerText })`);
   if (s.done) break;
   if (s.text !== lastText) {
     lastText = s.text;
     await frame(900);
   }
-  if (s.ranking && !progressShot) {
-    await element("#progress", "progress.png");
+  if (s.records && !progressShot) {
+    await element("#reading", "progress.png");
     progressShot = true;
   }
 }
 await sleep(800);
 
-// Privacy: hide individuals' records and their map dots before capturing results.
-const hiddenCount = await js(`(() => {
-  const names = [];
-  for (const el of document.querySelectorAll("article.lead, .row")) {
-    if (!el.innerText.includes("Individual's record")) continue;
-    el.hidden = true;
-    const n = el.querySelector("h3, .row-name");
-    if (n) names.push(n.innerText);
+// Privacy: drop the individuals' records group, and withhold agent/principal
+// names (registered agents and principals are often people).
+const hidden = await js(`(() => {
+  let n = 0;
+  for (const g of document.querySelectorAll("#groups details.group")) {
+    if (g.querySelector("summary").innerText.startsWith("INDIVIDUALS") || g.querySelector("summary").innerText.startsWith("Individuals")) { g.remove(); n++; }
   }
-  // Registered agents and principals are often people: keep their names out of the docs.
-  for (const o of document.querySelectorAll(".officers")) o.textContent = "Agent/principals: (name withheld in this screenshot)";
-  for (const d of document.querySelectorAll("#distmap-plot .lead-dot")) {
-    const t = d.querySelector("title");
-    if (t && names.some(n => t.textContent.startsWith(n + " · "))) d.remove();
-  }
-  return names.length; })()`);
-console.log(`hid ${hiddenCount} individual record(s)`);
+  for (const b of document.querySelectorAll(".lr-reach b")) if (/agent.principal/.test(b.parentElement.textContent)) b.textContent = "(name withheld in this screenshot)";
+  return n; })()`);
+console.log(`removed ${hidden} individuals' group(s)`);
+const withhold = `for (const dt of document.querySelectorAll(".reach-dl dt")) if (dt.textContent === "Agent/principals") dt.nextElementSibling.textContent = "(name withheld in this screenshot)"; true`;
 
 await js("window.scrollTo(0, 0)");
+await element("#results-area", "summary.png", 12, "#bands .band .lead-row:nth-of-type(4)");
+
+// Open the first row, as a person would.
+await js(`document.querySelector("#bands .lr-head").click(), true`);
+await js(withhold);
+await js("window.scrollTo(0, 0)");
 await frame(600);
-const stops = await js(`["#interp", "#summary", "#distmap", "article.lead"].map(s => { const e = document.querySelector(s); return e ? Math.max(0, e.getBoundingClientRect().top + scrollY - 16) : null; }).filter(v => v !== null)`);
+const stops = await js(`["#reading", "#sum", ".lead-row.open"].map(s => { const e = document.querySelector(s); return e ? Math.max(0, e.getBoundingClientRect().top + scrollY - 16) : null; }).filter(v => v !== null)`);
 let y = 0;
 for (const target of stops) {
   while (y < target) {
@@ -131,35 +138,11 @@ console.log(`${frames.length} frames in ${FRAMES}`);
 
 // Static shots of the results.
 await js("window.scrollTo(0, 0)");
-await element("#summary", "summary.png");
-console.log("AI usage:", await js(`[...document.querySelectorAll("#summary [title]")].map(e => e.innerText.replace(/\\s+/g, " ") + " | " + e.title).join("; ")`));
-await element("article.lead:not([hidden])", "lead-card.png");
-await js(`[...document.querySelectorAll("#recent-rows .row")].slice(6).forEach(r => { r.hidden = true; }), true`);
-await element("#recent", "recently-registered.png");
-
-// The distance map, exported as a standalone SVG that follows the reader's theme.
-const colors = async () => js(`(() => {
-  const css = (sel, ...props) => { const e = document.querySelector(sel); const s = getComputedStyle(e); return Object.fromEntries(props.map(p => [p, s.getPropertyValue(p)])); };
-  return { ring: css("#distmap-plot .ring", "stroke"), label: css("#distmap-plot .ring-label", "fill"), origin: css("#distmap-plot .origin-dot", "fill"),
-           coded: css("#distmap-plot .lead-dot.coded", "fill", "stroke"),
-           nameOnly: document.querySelector("#distmap-plot .lead-dot.name-only") ? css("#distmap-plot .lead-dot.name-only", "fill", "stroke") : null }; })()`);
-const light = await colors();
-await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
-const dark = await colors();
-await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
-const svg = await js(`(() => {
-  const clone = document.querySelector("#distmap-plot svg").cloneNode(true);
-  for (const t of clone.querySelectorAll("title")) t.remove();     // no business or person names in the file
-  clone.removeAttribute("width");
-  const n = clone.querySelectorAll(".lead-dot").length;
-  clone.setAttribute("aria-label", clone.getAttribute("aria-label").replace(/^Map of \\d+ businesses/, "Map of " + n + " businesses").replace(/ The list below has the same results\\.$/, ""));
-  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  return { markup: clone.outerHTML, dots: clone.querySelectorAll(".lead-dot").length };
-})()`);
-const rules = c => `.ring{fill:none;stroke:${c.ring.stroke};stroke-width:.6}.ring-label{fill:${c.label.fill};font:6px system-ui,-apple-system,sans-serif;text-anchor:middle}.origin-dot{fill:${c.origin.fill}}.lead-dot{stroke-width:.6}.lead-dot.coded{fill:${c.coded.fill};stroke:${c.coded.stroke}}${c.nameOnly ? `.lead-dot.name-only{fill:${c.nameOnly.fill};stroke:${c.nameOnly.stroke}}` : ""}`;
-const style = `<style>${rules(light)}@media (prefers-color-scheme: dark){${rules(dark)}}</style>`;
-writeFileSync(`${OUT}/distance-map.svg`, svg.markup.replace(/^<svg([^>]*)>/, `<svg$1 width="420" height="420">${style}`) + "\n");
-console.log(`${OUT}/distance-map.svg (${svg.dots} dots)`);
+console.log("About:", await js(`[...document.querySelectorAll("#about-rows tr")].map(r => [...r.children].map(c => c.textContent).join(": ")).join(" | ")`));
+await element(".lead-row.open", "lead-card.png");
+const recent = await js(`(() => { const g = [...document.querySelectorAll("#groups details.group")].find(d => /registered in the last/i.test(d.querySelector("summary").innerText));
+  if (!g) return false; g.open = true; g.id = "recent-group"; [...g.querySelectorAll(".lead-row")].slice(6).forEach(r => r.remove()); return true; })()`);
+if (recent) await element("#recent-group", "recently-registered.png");
 
 ws.close();
 chrome.kill();

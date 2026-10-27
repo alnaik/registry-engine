@@ -8,6 +8,43 @@ round), one commit per phase, each after `npm test` + `npm run typecheck`.
 
 ## Phases
 
+### Phase C — summary, About this search, print, captures ✅
+- **Summary sentence** (`summaryParts` in `labels.js`, pinned in
+  `tests/web/labels.test.ts`): "<coded> businesses are coded for this work
+  in <state>, <n> within <radius, or 25> miles of <origin>. <k> of them are
+  individuals' records, listed at the end. <confirmed> are confirmed on the
+  state registry. <phones> publish a phone number." Each clause drops out
+  when it has nothing to say (no origin, no individuals); "None publish a
+  phone number in these records, so the sheet gives addresses and named
+  agents" when phones = 0.
+- **About this search** (`aboutRows`): a collapsed table at the bottom, one
+  row per source (count, "500+ (capped)", error), names checked against the
+  registry ("46 of the top 46 … at most 80 per search", or why not),
+  name-only matches, recent filings, web contact lookup status, AI calls /
+  tokens / API-price cost, elapsed time.
+- **Print**: ruled rows with a dotted blank "Notes" line per lead; tabs, ask
+  bar, steps, tools, groups, About and the footer are hidden; band headings
+  stay with their first row (`break-after: avoid`); a print head carries the
+  query and summary. Type scales to 8–14 pt. Measured: 30 rows print on 4
+  pages (about 8 per page), so 12 leads fit on two. The Phase 8 "gap on
+  page 1" is gone in practice: a row is now about an inch tall, so
+  `break-inside: avoid` can leave at most one row of white space.
+- **Captures** regenerated with `scripts/docs/capture.mjs` (selectors for
+  the new DOM; `SKIP_AI=1` dry run): `docs/media/search.png` (APNG, 33
+  frames), `search-form.png`, `progress.png`, `summary.png`,
+  `lead-card.png`, `recently-registered.png`. The individuals' group is
+  removed and agent/principal names are replaced with "(name withheld in
+  this screenshot)" before any capture. README "How a search works"
+  rewritten around them.
+- `/design` synced with the app DOM (`step-detail`, `h2.band-head` with
+  `aria-labelledby`); `design.js` suffixes ARIA id references in the dark
+  clone.
+- Live AI runs: 1 (the README capture: 2 calls, 12.9k tokens, about $0.05).
+- Observed, not changed: some sole proprietors filed under a plain personal
+  name with a business entity type (e.g. "FIRST LAST") aren't caught by
+  `isLikelyIndividual`, so they stay in the main list. Detection is out of
+  scope for a UI phase.
+
 ### Phase B — three surfaces on one page ✅
 - `index.html`, `app.js` and `app.css` rewritten to the field sheet: masthead
   with Find / My calls tabs (ARIA tabs, arrow keys), ask bar (request +

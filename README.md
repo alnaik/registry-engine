@@ -23,33 +23,51 @@ Tested on Node 24.
 
 ## How a search works
 
-**1. Say what you need, or what you sell.** One AI call turns the request into
-the industry codes (NAICS) of the businesses to contact: makers and
-suppliers if you need something, likely buyers if you sell something. Pick
-the direction yourself, or let it guess.
+**1. Say what you need, or what you sell,** and where you are. One AI call
+turns the request into the industry codes (NAICS) of the businesses to
+contact: makers and suppliers if you need something, likely buyers if you
+sell something. It guesses the direction and says so; one click flips it.
 
-<img src="docs/media/search-form.png" alt="The search form with a request, the supplier/buyer switch and a location" width="640">
+<img src="docs/media/search-form.png" alt="The ask bar: what you need or sell, near, Find businesses, More options" width="640">
 
-**2. Public records are searched by industry code, not by name.** Most
-of these businesses don't advertise and have no website. Each record is
-confirmed against the state business registry.
+**2. Public records are searched by industry code, not by name.** Most of
+these businesses don't advertise and have no website. The strongest
+candidates' names are checked against the state business registry.
 
-<img src="docs/media/progress.png" alt="Progress: industries chosen, sources searched with counts, state registry matches" width="640">
+<img src="docs/media/progress.png" alt="The reading line: looking for suppliers (guessed), find buyers instead, sorted from Denver, and the sources being searched" width="640">
 
-**3. You get a call sheet,** grouped by distance from you. Each card says what
-the business does and which record says so, how to reach it, a short note
-on why it fits, and an opener to copy. A second AI call writes the notes and
-openers for the top 12.
+**3. You get a field sheet.** One sentence says how many businesses are coded
+for the work, how many are near you, how many the state registry confirms
+and how many publish a phone. Below it, one ruled row per business, grouped
+by distance: what it does in plain words, a trust line, and how to reach it.
 
-<img src="docs/media/lead-card.png" alt="A lead card: industry, source, registry status, address, call notes, opener and outreach tracker" width="640">
+<img src="docs/media/summary.png" alt="The summary sentence, the filters, and the first rows of the sheet" width="640">
 
-<img src="docs/media/recently-registered.png" alt="Recently registered near you: new state filings whose names match" width="480">
+The trust line says only what was checked:
 
-**Recently registered near you** lists state filings from the last 90 days
-whose names match your request.
+- **On state registry** (green): the business joined a registry record.
+- **Not on state registry** (amber): its name was looked up and nothing
+  matched. Confirm it still operates.
+- **Not checked against registry** (grey): it ranked beyond the names
+  checked this search.
 
-Also in the app: an outreach tracker and saved searches (both stored in your
-browser), CSV export, and a printable call sheet.
+**4. Open a row** for why it fits, what to say (one copyable sentence in your
+own words), every way to reach it, and a place to record the call. A second
+AI call writes the notes for the top 12. Your calls collect on the **My
+calls** tab across searches.
+
+<img src="docs/media/lead-card.png" alt="An open row: why it fits, what to say, reach, your call" width="640">
+
+<img src="docs/media/recently-registered.png" alt="Registered in the last 90 days: new state filings whose names match" width="480">
+
+**Registered in the last 90 days** lists state filings near you whose names
+match your request. Individuals' records and name-only matches sit in their
+own collapsed groups and never count toward the headline. **About this
+search** at the bottom lists every source with its count, how many names
+were checked, and the AI tokens used.
+
+Also in the app: saved searches (stored in your browser), CSV export, and a
+printable call sheet with a notes line under each business.
 
 ## Sources
 
@@ -77,17 +95,18 @@ record lists.
 
 Every search makes at most 2 AI calls, never one per business. Both go
 through `claude -p` with no tools loaded, so the prompt is only the request
-and the record facts. The app's summary shows the tokens each search used
-(hover for the per-call split), and the CLI prints them after the results.
+and the record facts. **About this search** at the bottom of the results
+shows the tokens each search used, and the CLI prints them after the results.
 
 Measured on 2026-10-27:
 
 | Search | Map call (Claude Haiku 4.5) | Notes call (Claude Sonnet 5) | Total | API-price equivalent |
 |---|---|---|---|---|
-| Tote bags near Denver (web app, above) | 3,446 in / 1,643 out | 6,064 in / 2,321 out | 13,474 | $0.059 |
+| Tote bags near Denver (web app) | 3,446 in / 1,643 out | 6,064 in / 2,321 out | 13,474 | $0.059 |
 | Tote bags near Denver (CLI) | 4,726 | 8,482 | 13,208 | $0.059 |
 | Who would buy my hot sauce, 80302 (CLI) | 4,776 | 8,216 | 12,992 | $0.055 |
 
+The run that produced the screenshots above used 12.9k tokens (about $0.05).
 About 13k tokens per search. The notes call costs more because it reads the
 facts of the top 12 businesses.
 
@@ -108,7 +127,7 @@ npm run --workspace apps/cli start -- help                       # all flags
 
 - An industry code says what a business **is**, not whether it can take your job.
 - Buyer leads fit by industry. No public record shows what a business buys.
-- PPP is a 2020–21 snapshot. Cards show which leads the state registry still lists as active.
+- PPP is a 2020–21 snapshot. The trust line shows which leads the state registry still lists, and which weren't checked.
 - Public records only. Contacts found on the web are labeled "verify", with
   sources. Individuals' records never get a web lookup.
 
