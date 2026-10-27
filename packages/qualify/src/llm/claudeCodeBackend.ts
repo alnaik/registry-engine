@@ -15,16 +15,39 @@ export class ClaudeCodeBackend implements RawLlm {
       "-p",
       "--output-format", "json",
       "--model", this.modelOverride ?? opts.model,
+      // No tools (they cost ~15k input tokens per call and our calls never use
+      // them), no MCP servers, no session files in the user's history.
+      "--tools", "",
+      "--strict-mcp-config",
+      "--no-session-persistence",
       ...(opts.system !== undefined ? ["--system-prompt", opts.system] : []),
     ];
 
     const stdout = await run("claude", args, prompt);
 
-    let result: { result?: string };
+    let result: {
+      result?: string;
+      total_cost_usd?: unknown;
+      usage?: {
+        input_tokens?: number;
+        cache_creation_input_tokens?: number;
+        cache_read_input_tokens?: number;
+        output_tokens?: number;
+      };
+    };
     try {
       result = JSON.parse(stdout) as typeof result;
     } catch {
       throw new Error(`claude CLI returned unparseable output: ${stdout.slice(0, 200)}`);
+    }
+    const u = result.usage;
+    if (u !== undefined && u !== null && typeof u === "object") {
+      const cost = result.total_cost_usd;
+      opts.onUsage?.({
+        inputTokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
+        outputTokens: u.output_tokens ?? 0,
+        costUsd: typeof cost === "number" && Number.isFinite(cost) ? cost : null,
+      });
     }
     return result.result ?? "";
   }

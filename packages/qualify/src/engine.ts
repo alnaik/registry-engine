@@ -52,6 +52,12 @@ export interface SearchOutcome {
   leads: Lead[];     // the top-N briefed slice of `ranked`
   ranked: Lead[];    // every ranked lead (template briefs beyond the top N)
   llmCalls: number;
+  llmUsage: {
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number | null;
+    calls: { label: string; model: string; inputTokens: number; outputTokens: number; costUsd: number | null }[];
+  } | null;   // null when no call reported usage (Skip AI, or a backend without usage)
   origin: Origin | null;   // where distances are measured from, if anywhere
   contactLookups: { provider: string; looked: number; found: number; costDollars: number } | null;
   recent: Lead[];    // state-registry entities formed in the last RECENT_DAYS near the origin, name matches only
@@ -242,7 +248,15 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   const leads = ranked.slice(0, maxLeads);
   emit({ type: "done", leads });
 
-  return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0, origin, contactLookups,
+  const u = llm?.usage ?? null;
+  const llmUsage = u === null || llm === null ? null : {
+    inputTokens: u.inputTokens,
+    outputTokens: u.outputTokens,
+    costUsd: u.costUsd,
+    calls: llm.usageLog.map(e => ({ ...e })),
+  };
+
+  return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0, llmUsage, origin, contactLookups,
     recent, recentWindow: recentRuns ? { days: RECENT_DAYS, radiusMi: radius } : null };
 }
 

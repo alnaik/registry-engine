@@ -43,6 +43,7 @@ function makeOutcome(n = 3): SearchOutcome {
     leads: ranked.slice(0, 2),
     ranked,
     llmCalls: 0,
+    llmUsage: null,
     origin: { label: "Denver, CO", lat: 39.7, lon: -104.9 },
     contactLookups: null,
     recent: [],
@@ -178,6 +179,21 @@ describe("web app server", () => {
       expect(lines(r)[0]).toMatchObject({ type: "map", llmError: "not logged in" });
     });
 
+    it("passes llmUsage through to the result line", async () => {
+      const usage = {
+        inputTokens: 900, outputTokens: 100, costUsd: 0.002,
+        calls: [
+          { label: "map", model: "m1", inputTokens: 400, outputTokens: 40, costUsd: 0.001 },
+          { label: "brief", model: "m2", inputTokens: 500, outputTokens: 60, costUsd: 0.001 },
+        ],
+      };
+      behavior = async () => ({ ...makeOutcome(), llmCalls: 2, llmUsage: usage });
+      const r = await post({ query: "metal fabrication", near: "Denver", leads: 2 });
+      const result = lines(r).pop() as Record<string, unknown>;
+      expect(result["type"]).toBe("result");
+      expect(result["llmUsage"]).toEqual(usage);
+    });
+
     it("streams translated events and ends with a result line of LeadViews", async () => {
       const r = await post({ query: "metal fabrication", near: "Denver", leads: 2 });
       expect(r.status).toBe(200);
@@ -191,6 +207,7 @@ describe("web app server", () => {
       expect(result["type"]).toBe("result");
       expect(result["summary"]).toEqual({ total: 3, coded: 3, nameOnly: 0, noWebsite: 3 });
       expect(result["llmCalls"]).toBe(0);
+      expect(result["llmUsage"]).toBeNull();
       const top = result["leads"] as Record<string, unknown>[];
       const more = result["more"] as Record<string, unknown>[];
       expect(top).toHaveLength(2);

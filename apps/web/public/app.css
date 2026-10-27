@@ -284,7 +284,7 @@ main > * + * { margin-top: 24px; }
 
 .sources { margin-top: 6px; display: grid; gap: 4px; }
 .sources li { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9375rem; max-width: 30em; }
-.sources .count { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 600; }
+.sources .count { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 600; white-space: nowrap; }
 
 .warnings { display: grid; gap: 8px; }
 .warnings li {
