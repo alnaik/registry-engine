@@ -3,7 +3,7 @@ import { SOURCES, defaultDrivers, route, mergeEntities, defaultRegion, regionCit
 import { createLlm, type Llm, type LlmConfig } from "./llm/adapter.js";
 import { mapQuery, type MapResult } from "./verbs/map.js";
 import { probeEntities, type ProbeResult } from "./verbs/probe.js";
-import { briefLeads, rankEntities, naicsFieldMap, type Lead, type RankContext } from "./verbs/brief.js";
+import { briefLeads, rankEntities, naicsFieldMap, type Lead, type RankContext, type RegistryCheck } from "./verbs/brief.js";
 import { findContacts, fileContactCache, providerFromEnv, type ContactCache, type WebSearchProvider } from "./verbs/contacts.js";
 
 // The whole product: map -> route -> fetch -> probe -> brief.
@@ -16,7 +16,7 @@ export type EngineEvent =
   | { type: "map"; map: MapResult }
   | { type: "origin"; origin: Origin | null }
   | { type: "routed"; sources: SourceSpec[] }
-  | { type: "fetched"; sourceId: string; count: number }
+  | { type: "fetched"; sourceId: string; count: number; capped: boolean }
   | { type: "source_error"; sourceId: string; message: string }
   | { type: "merged"; count: number }
   | { type: "backfilled"; sourceId: string; count: number }
@@ -62,6 +62,16 @@ export interface SearchOutcome {
   contactLookups: { provider: string; looked: number; found: number; costDollars: number } | null;
   recent: Lead[];    // state-registry entities formed in the last RECENT_DAYS near the origin, name matches only
   recentWindow: { days: number; radiusMi: number } | null;   // null = the recent-filings query did not run
+  registryLookup: RegistryLookup;
+}
+
+// What the existence-registry backfill actually did this search. Leads carry
+// the per-lead result as Lead.registryCheck.
+export interface RegistryLookup {
+  status: "ran" | "failed" | "none";   // none = no existence registry with a name lookup for this search
+  namesChecked: number;                // distinct names sent (after the driver's dedupe key)
+  nameCap: number | null;              // the driver's per-search cap on names, if any
+  candidates: number;                  // leads considered (top BACKFILL_ENTITIES not already matched)
 }
 
 export const MAX_LLM_CALLS_PER_SEARCH = 2;
@@ -148,7 +158,9 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
         naics: map.intent.naics,
         limit: cfg.limit,
       }, cfg.fetchOpts);
-      emit({ type: "fetched", sourceId: spec.id, count: entities.length });
+      const cap = cfg.limit ?? driver.defaultLimit;
+      const capped = cap !== undefined && Number.isFinite(cap) && entities.length >= cap;
+      emit({ type: "fetched", sourceId: spec.id, count: entities.length, capped });
       // Stable insert by plane rank regardless of completion order.
       fetched.push(...entities.map(e => Object.assign(e, { __rank: planeRank(spec) })));
     } catch (err) {
@@ -169,15 +181,21 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // keyword were never fetched from the existence registry, so the merge had
   // nothing to join. Look the strongest candidates' names up directly and
   // re-merge.
+  // checkedKeys: normalized names that were really sent; elsewhereKeys: names
+  // the registry has, but only at an incompatible locality (not joined).
+  const checkedKeys = new Set<string>();
+  const elsewhereKeys = new Set<string>();
+  let registryLookup: RegistryLookup = { status: "none", namesChecked: 0, nameCap: null, candidates: 0 };
   if (existenceSpec !== undefined && existenceDriver?.fetchByNames !== undefined) {
     const unmatched = preliminary.filter(e => !e.source_ids.includes(existenceSpec.id));
-    if (unmatched.length > 0) {
+    const plan = planBackfill(unmatched.slice(0, BACKFILL_ENTITIES), existenceDriver);
+    registryLookup = { status: "ran", namesChecked: plan.keyCount, nameCap: existenceDriver.maxBackfillNames ?? null, candidates: Math.min(unmatched.length, BACKFILL_ENTITIES) };
+    if (plan.names.length > 0) {
       try {
-        const found = await existenceDriver.fetchByNames(
-          existenceSpec,
-          unmatched.slice(0, BACKFILL_ENTITIES).flatMap(e => [e.name, ...e.names]),
-          cfg.fetchOpts
-        );
+        const found = await existenceDriver.fetchByNames(existenceSpec, plan.names, cfg.fetchOpts);
+        for (const e of plan.checked) {
+          for (const k of [e.name, ...e.names].map(normalizeName)) if (k.length > 0) checkedKeys.add(k);
+        }
         // Keep only rows that actually join an unmatched entity — same
         // normalized name AND a compatible locality. A LIKE pattern can
         // overmatch, and a non-joining row would surface as a phantom lead
@@ -191,6 +209,11 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
         const joined = found.filter(row =>
           [row.name, ...row.names].map(normalizeName).some(k =>
             (byKey.get(k) ?? []).some(u => localityCompatible(row, u))));
+        for (const row of found) {
+          for (const k of [row.name, ...row.names].map(normalizeName)) {
+            if ((byKey.get(k) ?? []).some(u => !localityCompatible(row, u))) elsewhereKeys.add(k);
+          }
+        }
         emit({ type: "backfilled", sourceId: existenceSpec.id, count: joined.length });
         if (joined.length > 0) {
           // Backfilled rows are existence-plane: merge them first so the
@@ -198,10 +221,23 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
           entities = mergeEntities([...joined, ...fetched]);
         }
       } catch (err) {
+        checkedKeys.clear();
+        elsewhereKeys.clear();
+        registryLookup = { ...registryLookup, status: "failed", namesChecked: 0 };
         emit({ type: "source_error", sourceId: existenceSpec.id, message: err instanceof Error ? err.message : String(err) });
       }
     }
   }
+  const keysOf = (e: Entity): string[] => [e.name, ...e.names].map(normalizeName).filter(k => k.length > 0);
+  const registryCheck = (e: Entity): RegistryCheck => {
+    if (e.source_ids.some(id => existenceIds.includes(id))) return "matched";
+    return keysOf(e).some(k => checkedKeys.has(k)) ? "checked_not_found" : "not_checked";
+  };
+  const annotate = (lead: Lead): Lead => {
+    lead.registryCheck = registryCheck(lead.entity);
+    if (lead.registryCheck === "checked_not_found" && keysOf(lead.entity).some(k => elsewhereKeys.has(k))) lead.registeredElsewhere = true;
+    return lead;
+  };
   // Name-only noise: an existence-registry record with no related industry
   // code whose only keyword hits fall inside a word ("BAGELS" for "bag").
   entities = entities.filter(e => !isInsideWordNoise(e, map.intent.naics, existenceIds));
@@ -217,16 +253,18 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
     .filter(l => l.distanceMi !== null && l.distanceMi <= radius)
     .sort((a, b) => (b.entity.formedDate ?? "").localeCompare(a.entity.formedDate ?? "")
       || (a.distanceMi ?? Infinity) - (b.distanceMi ?? Infinity))
-    .slice(0, RECENT_MAX);
+    .slice(0, RECENT_MAX)
+    .map(annotate);
   if (recentRuns) emit({ type: "recent", count: recent.length });
   const toProbe = rankEntities(entities, new Map(), ctx).map(l => l.entity);
   const probes: Map<string, ProbeResult> = await probeEntities(toProbe, {
     limit: cfg.probeLimit ?? Math.max(25, maxLeads),
     existenceSourceId: existenceSpec?.id,
+    wasChecked: e => registryCheck(e) !== "not_checked",
   });
   emit({ type: "probed", count: probes.size });
 
-  let ranked = rankEntities(entities, probes, ctx);
+  let ranked = rankEntities(entities, probes, ctx).map(annotate);
   if (cfg.hiddenOnly === true) ranked = ranked.filter(l => l.web === "none");
   if (cfg.radiusMi !== undefined && origin !== null) {
     const radius = cfg.radiusMi;
@@ -257,7 +295,32 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   };
 
   return { map, routed, entities, leads, ranked, llmCalls: llm?.calls ?? 0, llmUsage, origin, contactLookups,
-    recent, recentWindow: recentRuns ? { days: RECENT_DAYS, radiusMi: radius } : null };
+    recent, recentWindow: recentRuns ? { days: RECENT_DAYS, radiusMi: radius } : null, registryLookup };
+}
+
+// Which names go to the registry's name lookup, replicating the driver's own
+// dedupe-and-cap so the engine knows exactly who was checked. Walks the
+// candidates best-first; an entity counts as checked when its legal name's
+// key was sent. Names with no usable key (too short) can't be looked up.
+export function planBackfill(candidates: Entity[], driver: { maxBackfillNames?: number | undefined; backfillKey?(name: string): string | null }): { names: string[]; checked: Entity[]; keyCount: number } {
+  const cap = driver.maxBackfillNames ?? Infinity;
+  const keyOf = (n: string): string | null => (driver.backfillKey !== undefined ? driver.backfillKey(n) : (normalizeName(n) || null));
+  const keys = new Set<string>();
+  const names: string[] = [];
+  const checked: Entity[] = [];
+  const take = (n: string): boolean => {
+    const k = keyOf(n);
+    if (k === null || (!keys.has(k) && keys.size >= cap)) return false;
+    keys.add(k);
+    names.push(n);
+    return true;
+  };
+  for (const e of candidates) {
+    if (!take(e.name)) continue;
+    checked.push(e);
+    for (const n of e.names) take(n);
+  }
+  return { names, checked, keyCount: keys.size };
 }
 
 function isInsideWordNoise(e: Entity, codes: string[], existenceIds: string[]): boolean {

@@ -124,18 +124,26 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 Every limitation below is surfaced in the output, not hidden:
 1. **Industry code ≠ capability.** A code says what a business is, not
    whether it can take a given job. The brief prompt requires saying so.
-2. **PPP is a 2020–21 snapshot.** The "alive" line says whether the lead is
-   confirmed by the state registry or a recent dated record, or should be
-   confirmed by phone.
-3. **Buyer leads fit by industry**, never by confirmed demand. A static
+2. **PPP is a 2020–21 snapshot.** Standing is tri-state and never inferred
+   from a missing join alone: "On state registry" (joined a registry
+   record), "Not on state registry" (its name was really sent to the
+   registry lookup and nothing joined), "Not checked against registry"
+   (beyond the names looked up this search, or no lookup ran). The engine
+   replicates the driver's dedupe-and-cap to know who was checked.
+   - `planBackfill` and `registryCheck` in `packages/qualify/src/engine.ts`;
+     labels in `apps/web/public/labels.js`, pinned by `tests/web/labels.test.ts`
+3. **Capped fetches** are flagged (`fetched.capped`) and shown as "500+
+   (capped)", never as a full count.
+4. **Buyer leads fit by industry**, never by confirmed demand. A static
    caveat is attached to every sell-direction search.
-4. **Name matches without a code** are counted separately in the summary
-   and scored below coded matches.
-5. **"No website"** means none is listed in the records searched, not that
+5. **Name matches without a code** never enter the headline count or the
+   main list; the web app shows them in a collapsed "Name matches only"
+   group.
+6. **"No website"** means none is listed in the records searched, not that
    none exists. Each such lead gets a search link.
-6. **Registered agent ≠ contact person.** SoS agent fields are often law
+7. **Registered agent ≠ contact person.** SoS agent fields are often law
    firms or agent services. The CLI labels them "agent/principals".
-7. **Name merges** require compatible locality (same zip or city), so
+8. **Name merges** require compatible locality (same zip or city), so
    same-named businesses in different towns stay separate.
 
 ---
@@ -214,3 +222,7 @@ credits is a target for other websites open in the same browser.
   withheld from the LLM brief.
 - v3.3 (2026-10-27, Phase 7c): recent-filings query (fetchRecent); date literal validated.
 - v3.4 (2026-10-27): claude -p runs with no tools and no MCP servers; per-search token usage reported.
+- v3.5 (2026-10-27, v6 Phase A / ADR 0017): tri-state registry standing, capped-fetch
+  flag, name-only matches out of the headline. Individuals' records get `mapsUrl: null`
+  and `searchUrl: null` from the server (`leadView` in `apps/web/src/server.ts`), and
+  the web app lists them in a collapsed group. Openers no longer quote NAICS titles.

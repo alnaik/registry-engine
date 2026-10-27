@@ -37,12 +37,12 @@ describe("leadsToCsv", () => {
   it("writes the header and one fully-quoted row per lead, multi-values joined with '; '", () => {
     const [header, row] = leadsToCsv([lead], ["co_sos"]).trimEnd().split("\n");
     expect(header).toBe(CSV_HEADER.map(h => `"${h}"`).join(","));
-    expect(header).toBe('"rank","score","name","other_names","street","city","state","zip","naics","naics_titles","employees","last_seen","sources","on_state_registry","contacts","web","search_url","officers","brief","opener","distance_mi","band","found_status","found_phone","found_email","found_website","found_sources"');
+    expect(header).toBe('"rank","score","name","other_names","street","city","state","zip","naics","naics_titles","employees","last_seen","sources","on_state_registry","registry_check","contacts","web","search_url","officers","brief","opener","distance_mi","band","found_status","found_phone","found_email","found_website","found_sources"');
     expect(row).toContain(`"'=HYPERLINK(""http://evil"")"`);
     expect(row).toContain('"ACME; ACME INC"');
     expect(row).toContain('"332312; 999999"');
     expect(row).toContain('"Fabricated Structural Metal Manufacturing; "');
-    expect(row).toContain('"co_sos; ppp","yes"');
+    expect(row).toContain('"co_sos; ppp","yes",""');
     expect(row).toContain('"info@x.com; (303) 555-0100"');
     expect(row).toContain('"JANE DOE; JOHN ROE"');
     expect(row).toContain('"Brief, with ""quotes"""');

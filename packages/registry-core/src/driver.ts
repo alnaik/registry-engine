@@ -50,6 +50,16 @@ export interface RecentRequest {
 // and CT/WA/NY later, differing only by SourceSpec.
 export interface Driver {
   readonly kind: DriverKind;
+  // Row cap fetch() applies when FetchRequest.limit is absent (Infinity = no
+  // cap). A fetch returning this many rows was cut short: the UI says "N+
+  // (capped)", never "N found".
+  readonly defaultLimit?: number | undefined;
+  // fetchByNames dedupes names by this key and looks up at most
+  // maxBackfillNames distinct keys per call. The engine uses both to know
+  // exactly which names were checked against the registry (tri-state
+  // standing: matched / checked, not found / not checked).
+  readonly maxBackfillNames?: number | undefined;
+  backfillKey?(name: string): string | null;
   fetch(source: SourceSpec, req: FetchRequest, opts?: FetchRetryOptions): Promise<Entity[]>;
   // Targeted existence lookup: fetch records whose name matches one of the
   // given business names. Used to backfill the existence join for entities

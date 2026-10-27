@@ -10,8 +10,8 @@ import type { AppDeps } from "../../apps/web/src/server.js";
 import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
-  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "point", "band", "naics", "employees", "lastSeen", "formedDate",
-  "sources", "codeSources", "onStateRegistry", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
+  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "what", "coded", "individual", "employees", "lastSeen", "formedDate",
+  "sources", "codeSources", "registryCheck", "registeredElsewhere", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
 function makeLead(i: number): Lead {
@@ -27,7 +27,7 @@ function makeLead(i: number): Lead {
       employees: 10, lastSeen: "2024-05-01",
     },
     score: 90 - i, probe: undefined, web: "none", brief: "Brief", opener: "Hello", searchUrl: "https://duckduckgo.com/?q=x",
-    distanceMi: 3.2, band: "within 10 mi",
+    distanceMi: 3.2, band: "within 10 mi", registryCheck: "matched",
   };
 }
 
@@ -48,6 +48,7 @@ function makeOutcome(n = 3): SearchOutcome {
     contactLookups: null,
     recent: [],
     recentWindow: null,
+    registryLookup: { status: "ran", namesChecked: 0, nameCap: 80, candidates: 0 },
   };
 }
 
@@ -101,7 +102,8 @@ describe("web app server", () => {
       search: (async (query: string, cfg: SearchConfig = {}) => {
         calls.push({ query, cfg });
         cfg.onEvent?.({ type: "map", map: makeOutcome().map });
-        cfg.onEvent?.({ type: "fetched", sourceId: "ppp", count: 7 });
+        cfg.onEvent?.({ type: "fetched", sourceId: "ppp", count: 7, capped: false });
+        cfg.onEvent?.({ type: "fetched", sourceId: "co_sos", count: 500, capped: true });
         return behavior(query, cfg);
       }) as unknown as AppDeps["search"],
       llmAvailable: async () => true,
@@ -214,7 +216,8 @@ describe("web app server", () => {
       const out = lines(r);
       expect(out[0]).toMatchObject({ type: "map", direction: "buy", via: "table", directionFixed: false, caveats: ["c1"] });
       expect(out[0]?.["naics"]).toEqual([{ code: "332312", title: "Fabricated Structural Metal Manufacturing" }]);
-      expect(out[1]).toEqual({ type: "fetched", sourceId: "ppp", count: 7 });
+      expect(out[1]).toEqual({ type: "fetched", sourceId: "ppp", count: 7, capped: false });
+      expect(out[2]).toEqual({ type: "fetched", sourceId: "co_sos", count: 500, capped: true });
 
       const result = out[out.length - 1] as Record<string, unknown>;
       expect(result["type"]).toBe("result");
@@ -229,9 +232,17 @@ describe("web app server", () => {
         expect(Object.keys(lead).filter(k => k !== "evidence").sort()).toEqual([...LEAD_VIEW_KEYS].sort());
         expect(lead["evidence"]).toBeDefined();
       }
-      expect(more[0]?.["evidence"]).toBeUndefined();
+      expect(more[0]?.["evidence"]).toBeDefined();
+      expect(result["sources"]).toEqual([
+        { id: "co_sos", name: "Colorado SoS", plane: "existence", count: 500, capped: true, error: false },
+        { id: "ppp", name: "PPP loans", plane: "category", count: 7, capped: false, error: false },
+      ]);
+      expect(result["registryLookup"]).toEqual({ status: "ran", namesChecked: 0, nameCap: 80, candidates: 0 });
+      expect(result["sheet"]).toEqual({ total: 3, coded: 3, nameOnly: 0, individuals: 0, withinRadius: 3, radiusMi: 25, confirmed: 3, withPhone: 3 });
+      expect(result["regionName"]).toBe("Colorado");
       expect(top[0]).toMatchObject({
-        rank: 1, onStateRegistry: true, found: null, employees: 10,
+        rank: 1, registryCheck: "matched", registeredElsewhere: false, found: null, employees: 10,
+        what: "Makes fabricated structural metal", coded: true, individual: false,
         sources: [{ id: "co_sos", name: "Colorado SoS" }, { id: "ppp", name: "PPP loans" }],
         codeSources: [{ id: "ppp", name: "PPP loans" }],
       });
@@ -273,21 +284,28 @@ describe("web app server", () => {
       expect(top.map(l => l["key"])).toEqual(["ACME TENT AND CANVAS|80203", "ACME TENT AND CANVAS|80203"]);
     });
 
-    it("gives each lead a map point from its ZIP or city, or null when neither is known", async () => {
+    it("splits coded businesses, individuals' records and name-only matches; individuals get no map or search link", async () => {
       const a = makeLead(0);
-      const b = makeLead(1);
-      b.entity = { ...b.entity, address: { street: "", city: "Nowhereville", state: "CO", zip: "" } };
-      const outcome = makeOutcome(2);
-      outcome.ranked = [a, b];
-      outcome.entities = [a.entity, b.entity];
-      outcome.leads = [a, b];
+      const person = makeLead(1);
+      person.entity = { ...person.entity, id: "ppp:p", name: "DOE, JANE", evidence: [...person.entity.evidence, { source: "ppp", field: "business_type", value: "Sole Proprietorship" }] };
+      const loose = makeLead(2);
+      loose.entity = { ...loose.entity, id: "co_sos:n", name: "METAL MOOSE LLC", naics: [] };
+      loose.registryCheck = "not_checked";
+      const outcome = makeOutcome(3);
+      outcome.ranked = [a, person, loose];
+      outcome.entities = outcome.ranked.map(l => l.entity);
       behavior = async () => outcome;
-      const r = await post({ query: "tents", leads: 2 });
-      const result = lines(r).pop() as Record<string, unknown>;
-      const top = result["leads"] as { point: { lat: number; lon: number } | null }[];
-      expect(top[0]?.point?.lat).toBeCloseTo(39.75, 1);
-      expect(top[0]?.point?.lon).toBeCloseTo(-104.99, 1);
-      expect(top[1]?.point).toBeNull();
+      const result = lines(await post({ query: "metal", leads: 5 })).pop() as Record<string, unknown>;
+      const ids = (k: string) => (result[k] as { id: string }[]).map(l => l.id);
+      expect(ids("leads")).toEqual(["ppp:0"]);
+      expect(ids("more")).toEqual([]);
+      expect(ids("individuals")).toEqual(["ppp:p"]);
+      expect(ids("nameOnly")).toEqual(["co_sos:n"]);
+      const p = (result["individuals"] as Record<string, unknown>[])[0]!;
+      expect(p).toMatchObject({ name: "DOE, JANE", individual: true, mapsUrl: null, searchUrl: null });
+      const n = (result["nameOnly"] as Record<string, unknown>[])[0]!;
+      expect(n).toMatchObject({ coded: false, what: "", registryCheck: "not_checked" });
+      expect(result["sheet"]).toMatchObject({ coded: 2, nameOnly: 1, individuals: 1 });
     });
 
     it("passes options through: noLlm drops the backend, findContacts:false turns contacts off", async () => {

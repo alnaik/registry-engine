@@ -109,8 +109,8 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
           console.log(`route   ${event.sources.map(s => `${s.id}(${s.plane})`).join(" + ") || "no sources for this category∩geo"}`);
           break;
         case "fetched":
-          fetchedCounts.push(`${event.sourceId} ${event.count}`);
-          console.log(`fetch   ${event.sourceId}: ${event.count} records`);
+          fetchedCounts.push(`${event.sourceId} ${event.count}${event.capped ? "+ (capped)" : ""}`);
+          console.log(`fetch   ${event.sourceId}: ${event.capped ? `${event.count}+ records (capped)` : `${event.count} records`}`);
           break;
         case "source_error":
           console.error(`fetch   ${event.sourceId} ERROR: ${event.message}`);
@@ -138,6 +138,8 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
 
   const existenceIds = out.routed.filter(r => r.plane === "existence").map(r => r.id);
   const naicsFields = naicsFieldMap(out.routed);
+  const lookup = out.registryLookup;
+  const checkedNames = lookup.status === "ran" ? lookup.namesChecked : 0;
   console.log(`\n${"═".repeat(64)}`);
   for (const line of summaryLines(out.ranked, out.map.intent.naics)) console.log(line);
   if (out.contactLookups !== null) {
@@ -159,7 +161,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
       band = lead.band;
       console.log(`── ${band} ──\n`);
     }
-    printLead(lead, i + 1, existenceIds, naicsFields, flags["verbose"] === "true");
+    printLead(lead, i + 1, existenceIds, naicsFields, flags["verbose"] === "true", checkedNames);
   });
 
   if (out.recent.length > 0 && out.recentWindow !== null) {
@@ -178,7 +180,19 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   }
 }
 
-function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields: Record<string, string>, verbose: boolean): void {
+// Same tri-state wording as the web app's trust pills.
+function aliveText(lead: Lead, existenceIds: string[], checkedNames: number): string {
+  const e = lead.entity;
+  if (existenceIds.length === 0) return "";
+  const check = lead.registryCheck ?? (e.source_ids.some(id => existenceIds.includes(id)) ? "matched" : "not_checked");
+  if (check === "matched") return `on state registry · ${e.status !== "" ? e.status : "listed"} ✓`;
+  if (check === "checked_not_found") {
+    return lead.registeredElsewhere === true ? "not on state registry at this address (a same-named record is elsewhere)" : "not on state registry";
+  }
+  return checkedNames > 0 ? `not checked against registry (beyond the ${checkedNames} names checked this search)` : "not checked against registry";
+}
+
+function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields: Record<string, string>, verbose: boolean, checkedNames: number): void {
   const e = lead.entity;
   const place = [e.address.city, e.address.zip].filter(v => v !== undefined && v !== "").join(" ");
   const head = [place, e.employees !== undefined ? `${e.employees} ${e.employees === 1 ? "job" : "jobs"}` : ""].filter(Boolean).join(" · ");
@@ -191,7 +205,7 @@ function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields
     : `name match only · ${e.source_ids.join(" + ")}`}`);
 
   const alive = [
-    existenceIds.length === 0 ? "" : e.source_ids.some(id => existenceIds.includes(id)) ? "on state registry ✓" : "not matched on state registry",
+    aliveText(lead, existenceIds, checkedNames),
     e.lastSeen !== undefined ? `last record ${e.lastSeen}` : "no dated record",
   ].filter(Boolean).join(" · ");
   console.log(`      alive  ${alive}`);
