@@ -12,7 +12,7 @@ Rules for the coder: implement each item exactly; `npm test` and
 `npm run typecheck` must pass; no refactors beyond the item; DEVIATION
 REQUEST when the spec and the code disagree.
 
-## Phase F — audit fixes (one commit per item, in this order)
+## Phase F — audit fixes ✅ (2026-10-27; committed in three groups by file overlap: F1/F2/F4, F3/F5, F6/F8, then F7/F10 with Phase G)
 
 ### F1. Email host is not a website (audit H2)
 `packages/qualify/src/verbs/probe.ts`, `publishedDomain`: return a host only
@@ -150,7 +150,7 @@ still hidden on every result, but the per-source counts moved into "About
 this search", which was the audit's own alternative fix). Confirmed by the
 reviewer on 5ea00b7.
 
-## Phase G — search history (owner request, 2026-10-27)
+## Phase G — search history ✅ (2026-10-27; live check: one search wrote a 125 KB json + 52 KB csv under a 0700 dir; list, open, csv-by-id and bad-id 400 all verified against the running server)
 
 Problem: a finished sheet lives only in the server's memory. A reload, the
 next search, or restarting `npm start` loses it, and re-running costs 5–12 s
@@ -231,8 +231,10 @@ a11y` must stay clean.
 ### Left out, and why
 - Abort on tab close (see F2).
 - Env-selected API backend (M6b): declined.
-- Vitest 5 / Vite 6 (audit L5): its own commit after Phase G, by the
-  orchestrator, re-running `npm test`, `npm start`, and the loopback check.
+- Vitest 5 / Vite 8 / vite-node 6 (audit L5): done as its own commit after
+  Phase G. Vitest 5 treats Vite as a peer, and vite-node 6 needs Vite 8, so
+  `vite` is now an explicit devDependency; `@types/node` moved to 22.
+  `npm audit` is clean; tests, typecheck, CLI, loopback bind and a11y re-run.
 - A delete button for recent searches: pruning at 20 is enough until it
   isn't.
 
