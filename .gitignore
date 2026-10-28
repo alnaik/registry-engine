@@ -6,3 +6,6 @@ dist/
 dist/
 .DS_Store
 !apps/web/public/labels.d.ts
+
+# runtime logs (npm start > server.log)
+*.log
