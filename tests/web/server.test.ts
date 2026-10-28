@@ -48,7 +48,7 @@ function makeOutcome(n = 3): SearchOutcome {
     contactLookups: null,
     recent: [],
     recentWindow: null,
-    registryLookup: { status: "ran", namesChecked: 0, nameCap: 80, candidates: 0 },
+    registryLookup: { status: "ran", namesChecked: 0, nameCap: 80, candidates: 0, totalNames: 0 },
     mapRawAnswer: null,
   };
 }
@@ -250,7 +250,7 @@ describe("web app server", () => {
 
       const result = out[out.length - 1] as Record<string, unknown>;
       expect(result["type"]).toBe("result");
-      expect(result["summary"]).toEqual({ total: 3, coded: 3, businesses: 3, individuals: 0, nameOnly: 0, noWebsite: 3 });
+      expect(result["summary"]).toEqual({ total: 3, coded: 3, businesses: 3, individuals: 0, nameOnly: 0 });
       expect(result["llmCalls"]).toBe(0);
       expect(result["llmUsage"]).toBeNull();
       const top = result["leads"] as Record<string, unknown>[];
@@ -266,7 +266,7 @@ describe("web app server", () => {
         { id: "co_sos", name: "Colorado SoS", plane: "existence", count: 500, capped: true, error: false },
         { id: "ppp", name: "PPP loans", plane: "category", count: 7, capped: false, error: false },
       ]);
-      expect(result["registryLookup"]).toEqual({ status: "ran", namesChecked: 0, nameCap: 80, candidates: 0 });
+      expect(result["registryLookup"]).toEqual({ status: "ran", namesChecked: 0, nameCap: 80, candidates: 0, totalNames: 0 });
       expect(result["sheet"]).toEqual({ total: 3, coded: 3, businesses: 3, listed: 3, nameOnly: 0, individuals: 0, withinRadius: 3, radiusMi: 25, confirmed: 3, withPhone: 3 });
       expect(result["regionName"]).toBe("Colorado");
       expect(top[0]).toMatchObject({
@@ -338,17 +338,23 @@ describe("web app server", () => {
     });
 
     it("passes options through: noLlm drops the backend, findContacts:false turns contacts off", async () => {
-      await post({ query: "metal fabrication", noLlm: true, findContacts: false, hiddenOnly: true, radiusMi: 25, naics: "332, 3323", leads: 5, region: "US-CO", near: "80202" });
+      await post({ query: "metal fabrication", noLlm: true, findContacts: false, radiusMi: 25, naics: "332, 3323", leads: 5, region: "US-CO", near: "80202" });
       const cfg = calls[0]!.cfg;
       expect(cfg.llm).toBeUndefined();
       expect(cfg.contacts).toBeNull();
-      expect(cfg).toMatchObject({ hiddenOnly: true, radiusMi: 25, naics: ["332", "3323"], maxLeads: 5, region: "US-CO", near: "80202" });
+      expect(cfg).toMatchObject({ radiusMi: 25, naics: ["332", "3323"], maxLeads: 5, region: "US-CO", near: "80202" });
 
       await post({ query: "metal fabrication" });
       const dflt = calls[1]!.cfg;
       expect(dflt.llm).toBeDefined();
       expect(dflt.contacts).toBeUndefined();
       expect(dflt.maxLeads).toBe(12);
+      expect(dflt.backfillAll).toBe(false);
+    });
+
+    it("checkAll: true reaches search() as backfillAll: true", async () => {
+      await post({ query: "metal fabrication", checkAll: true });
+      expect(calls[0]!.cfg.backfillAll).toBe(true);
     });
 
     it("passes a fixed direction through; auto and absent mean undefined; anything else is a 400", async () => {

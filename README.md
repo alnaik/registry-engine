@@ -133,6 +133,11 @@ npm run --workspace apps/cli start -- help                       # all flags
 - PPP is a 2020–21 snapshot. The trust line shows which leads the state registry still lists, and which weren't checked.
 - Public records only. Contacts found on the web are labeled "verify", with
   sources. Individuals' records never get a web lookup.
+- Without an Exa or Parallel key the sheet says nothing about websites; every
+  business lead keeps its search link.
+- Each search checks up to 80 names against the state registry. When there
+  are more, the sheet says "Checked 80 of N names" and a **Check all N names**
+  button re-runs the search with every name checked (about 0.25 s per name).
 
 ## Development
 

@@ -49,7 +49,7 @@ interface SearchParams {
   near: string | undefined;
   radiusMi: number | undefined;
   naics: string[] | undefined;
-  hiddenOnly: boolean;
+  checkAll: boolean;   // check every coded lead's name against the registry (the "Check all" button)
   findContacts: boolean;
   noLlm: boolean;
   leads: number;
@@ -260,7 +260,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         near: params.near,
         radiusMi: params.radiusMi,
         naics: params.naics,
-        hiddenOnly: params.hiddenOnly,
+        backfillAll: params.checkAll,
         maxLeads: params.leads,
         region: params.region,
         direction: params.direction,
@@ -306,7 +306,8 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
 // ---- search history: <id>.json + <id>.csv per search, newest 20 kept ----------------
 
 // Server-only key: the same request (region, words, place, codes, direction)
-// overwrites its earlier run.
+// overwrites its earlier run. checkAll is left out on purpose: the fuller
+// "check all" run overwrites the stored copy of the same search.
 export function historyId(params: Pick<SearchParams, "region" | "query" | "near" | "naics" | "direction">): string {
   const key = JSON.stringify([
     params.region ?? "",
@@ -481,7 +482,7 @@ function parseSearchParams(body: unknown): SearchParams {
 
   return {
     query, near, radiusMi, naics, region, leads, direction,
-    hiddenOnly: flag("hiddenOnly", false),
+    checkAll: flag("checkAll", false),
     findContacts: flag("findContacts", true),
     noLlm: flag("noLlm", false),
   };
@@ -514,6 +515,8 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
     case "backfilled":
     case "probed":
       return { type: event.type, count: event.count };
+    case "backfill_progress":
+      return { type: "backfill_progress", checked: event.checked, total: event.total };
     case "recent":
       return { type: "recent", count: event.count };
     case "contacts":

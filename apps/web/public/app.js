@@ -9,6 +9,7 @@ import {
   trustLabel, trustAtCall, webTag, fetchedText, whatLine,
   OUTCOMES, OUTCOME_LABEL, migrateTracker, isTracked, shortDate, callStatusText,
   FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost, summaryParts, aboutRows,
+  registryLine, registryProgressText,
 } from "/labels.js";
 
 const $ = id => document.getElementById(id);
@@ -397,7 +398,6 @@ function readParams() {
   if (radius) params.radiusMi = Number(radius);
   const naics = $("naics").value.trim();
   if (naics) params.naics = naics;
-  params.hiddenOnly = $("hidden-only").checked;
   params.findContacts = $("find-contacts").checked && !$("find-contacts").disabled;
   params.noLlm = $("no-llm").checked;
   params.leads = Number($("leads").value);
@@ -576,6 +576,10 @@ function handleEvent(event) {
       addNote(`${s ? s.name : event.sourceId} didn't respond, so its results are missing. ${String(event.message).slice(0, 160)}`);
       break;
     }
+    case "backfill_progress":
+      setStep("records", "done");
+      setStep("confirm", "active", registryProgressText(event.checked, event.total));
+      break;
     case "backfilled":
       setStep("records", "done");
       setStep("confirm", "active", `${event.count} matched`);
@@ -622,7 +626,9 @@ function renderReading() {
       onclick: () => {
         setDirection(other);
         if (app.running || !app.lastParams) return;
+        // A direction switch is a new search: it never inherits "check all".
         const next = { ...app.lastParams, direction: other };
+        delete next.checkAll;
         if (sellNeedsCodes(next)) {
           blockForCodes();
           return;
@@ -829,7 +835,6 @@ function renderEmpty() {
     }));
   }
   if (p.radiusMi) tips.append(h("li", { text: "Remove the distance limit, or choose a larger radius under More options." }));
-  if (p.hiddenOnly) tips.append(h("li", { text: "Untick \"Only businesses with no website on record\"." }));
   tips.append(h("li", { text: "Try different words. Describe the kind of business, like \"metal fabrication shop\"." }));
   tips.append(h("li", { text: "Add industry codes. The code finder under More options looks them up." }));
   $("empty").hidden = false;
@@ -865,9 +870,13 @@ function renderTools(stored) {
   } else {
     ns.hidden = true;
   }
+  renderRegistryLine();
   const seg = $("filters");
   clear(seg);
+  // "No web presence" means something only when a web lookup ran this search.
+  const lookupRan = Boolean(app.result && app.result.contactLookups);
   for (const [id, label] of FILTERS) {
+    if (id === "noweb" && !lookupRan) continue;
     seg.append(h("button", {
       type: "button",
       "data-filter": id,
@@ -878,6 +887,36 @@ function renderTools(stored) {
       },
     }, label, h("span", { class: "n", text: "0" })));
   }
+}
+
+// "Checked 80 of 384 names against the state registry." plus the button that
+// re-runs the search with every name checked. A stored result shows its own line.
+function renderRegistryLine() {
+  const box = $("registry-line");
+  clear(box);
+  const line = registryLine(app.result ? app.result.registryLookup : null);
+  if (!line) {
+    box.hidden = true;
+    return;
+  }
+  box.append(line.text);
+  if (line.button) {
+    box.append(" ", h("button", {
+      type: "button",
+      class: "btn sm",
+      text: line.button,
+      onclick: () => {
+        if (app.running || !app.lastParams) return;
+        const next = { ...app.lastParams, checkAll: true };
+        if (sellNeedsCodes(next)) {
+          blockForCodes();
+          return;
+        }
+        runSearch(next);
+      },
+    }));
+  }
+  box.hidden = false;
 }
 
 function saveCurrentSearch() {
@@ -1166,9 +1205,10 @@ function distanceCell(lead) {
 function trustLine(lead, tracker, opts) {
   const t = trustLabel(lead, app.result ? app.result.registryLookup : null);
   const call = callStatusText(tracker);
+  const tag = opts.registered ? null : t.tag || (lead.individual ? null : webTag(lead));
   return h("span", { class: "lr-trust" },
     h("span", { class: `pill ${t.tone}`, text: t.pill }),
-    opts.registered ? null : h("span", { class: "trust-tag", text: t.tag || (lead.individual ? null : webTag(lead)) }),
+    tag ? h("span", { class: "trust-tag", text: tag }) : null,
     call ? h("span", { class: "lr-call", text: call }) : null,
     app.newKeys.has(lead.key) ? h("span", { class: "lr-new", text: `New since ${shortDate(app.newSince)}` }) : null);
 }
@@ -1306,7 +1346,7 @@ function reachList(lead) {
     row("Web", h("span", { class: "quiet", text: "Individual's record: no web search offered" }));
   } else {
     if (f && f.status === "directory" && f.listings.length > 0) row("Web", `Listed on ${f.listings.map(prettyHost).join(", ")}`);
-    else if (f && f.status === "not-found") row("Web", h("span", { class: "quiet", text: "A web search found nothing: likely no web presence" }));
+    else if (f && f.status === "not-found" && !f.reason) row("Web", h("span", { class: "quiet", text: "A web search found nothing: likely no web presence" }));
     else if (lead.web === "verified") row("Web", "Website on record responds");
     const link = lead.searchUrl ? extLink("Search the web for this business", lead.searchUrl) : null;
     if (link) row(f || lead.web === "verified" ? "Search" : "Web", link);

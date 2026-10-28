@@ -3,26 +3,27 @@ import type { Lead } from "./verbs/brief.js";
 import { isLikelyIndividual } from "./verbs/contacts.js";
 
 // The honest headline for a search: how many coded businesses, how many
-// coded individuals' records (listed apart), how many leads rest on a name
-// match alone, and how many have no website in the records.
-export function summaryCounts(ranked: Lead[], mapCodes: string[]): { total: number; coded: number; businesses: number; individuals: number; nameOnly: number; noWebsite: number } {
+// coded individuals' records (listed apart), and how many leads rest on a
+// name match alone.
+export function summaryCounts(ranked: Lead[], mapCodes: string[]): { total: number; coded: number; businesses: number; individuals: number; nameOnly: number } {
   const { businesses, individuals, nameOnly } = partitionLeads(ranked, mapCodes);
-  const noWebsite = ranked.filter(l => l.web === "none").length;
-  return { total: ranked.length, coded: businesses.length + individuals.length, businesses: businesses.length, individuals: individuals.length, nameOnly: nameOnly.length, noWebsite };
+  return { total: ranked.length, coded: businesses.length + individuals.length, businesses: businesses.length, individuals: individuals.length, nameOnly: nameOnly.length };
 }
 
+// Registry name lookup cost, measured 2026-10-27 on CO SoS: ~0.25 s per name
+// pattern whatever the chunk size. The web page keeps an equal copy in
+// apps/web/public/labels.js (a test pins the two together).
+export const SECONDS_PER_NAME = 0.25;
+
 export function summaryLines(ranked: Lead[], mapCodes: string[]): string[] {
-  const { total, businesses, individuals, nameOnly, noWebsite } = summaryCounts(ranked, mapCodes);
+  const { businesses, individuals, nameOnly } = summaryCounts(ranked, mapCodes);
   const extra = [
     individuals > 0 ? `+${individuals} ${individuals === 1 ? "individual's record" : "individuals' records"}, listed separately` : "",
     nameOnly > 0 ? `+${nameOnly} name matches, lower confidence` : "",
   ].filter(Boolean);
-  const lines = [
+  return [
     `Found ${businesses} ${businesses === 1 ? "business" : "businesses"} with an industry code for this request${extra.length > 0 ? ` (${extra.join("; ")})` : ""}`,
   ];
-  // Says nothing when it is true of every lead.
-  if (noWebsite < total) lines.push(`${noWebsite} ${noWebsite === 1 ? "has" : "have"} no website listed in the records searched — business records get a search link.`);
-  return lines;
 }
 
 const PHONE_LIKE = /^\+?[\d\s().-]{7,}(?:\s*(?:x|ext\.?)\s*\d+)?$/i;
