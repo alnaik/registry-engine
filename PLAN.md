@@ -23,7 +23,7 @@ Same protocol as v7: independent read-only review of this spec against the
 code (Opus 5.5 high), then the coder (Opus 5.5 medium) implements only the
 agreed items, one commit per batch by the orchestrator.
 
-## Phase H1 — web presence only from a lookup
+## Phase H1 — web presence only from a lookup ✅ (2026-10-27)
 
 Where `lead.web` ("verified" | "unresolved" | "none") comes from: the DNS
 probe of a *filed* website (v7 F1). `lead.found` comes from the web lookup
@@ -71,7 +71,7 @@ probe of a *filed* website (v7 F1). `lead.found` comes from the web lookup
   you call": one sentence: without an Exa/Parallel key the sheet says
   nothing about websites; every business lead keeps its search link.
 
-## Phase H2 — "Check all N names" against the registry
+## Phase H2 — "Check all N names" against the registry ✅ (2026-10-27; live: produce near Denver, capped 80 of 752 names in 19 s; --check-all 752 names, 223 matched, 101 s)
 
 - `packages/registry-core/src/driver.ts`: `Driver.fetchByNames(source,
   names, opts?, extra?)` gains an optional fourth argument
