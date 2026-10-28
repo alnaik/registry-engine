@@ -52,9 +52,11 @@ function stem(word: string): string {
 export function lookupCodes(words: string[], max = 15): { code: string; title: string; description: string }[] {
   const stems = [...new Set(words.map(stem).filter(w => w.length > 0))];
   if (stems.length === 0) return [];
+  // A stem counts only at a word start; the right side stays open (stems are prefixes).
+  const patterns = stems.map(s => ({ s, re: new RegExp("(^|[^a-z0-9])" + s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }));
   const matched = (text: string): string[] => {
     const t = text.toLowerCase();
-    return stems.filter(s => t.includes(s));
+    return patterns.filter(p => p.re.test(t)).map(p => p.s);
   };
 
   const best = new Map<string, { description: string; hits: string[] }>();
