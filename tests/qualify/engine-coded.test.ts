@@ -210,18 +210,6 @@ describe("engine — activity-coded discovery", () => {
     expect(out.ranked.find(l => l.entity.name.includes("GREEN"))!.brief).toContain("On the state business registry.");
   });
 
-  it("hiddenOnly keeps only leads with no website on any public record", async () => {
-    stubDns();
-    const out = await search("metal fabrication in denver", {
-      sources: SOURCES, drivers: stubDrivers([]), region: "US-CO", llm: { backend: stubLlm().backend }, hiddenOnly: true,
-    });
-    expect(out.ranked.length).toBeGreaterThan(0);
-    expect(out.ranked.every(l => l.web === "none")).toBe(true);
-    expect(out.ranked.some(l => l.entity.name.includes("VISSER"))).toBe(false);
-    expect(out.ranked.some(l => l.entity.name === "HEGGEM LUNDQUIST")).toBe(true);
-    expect(out.leads.every(l => l.web === "none")).toBe(true);
-  });
-
   it("naics override skips the map call; without an LLM briefs are templates (0 calls)", async () => {
     stubDns();
     const seen: FetchRequest[] = [];

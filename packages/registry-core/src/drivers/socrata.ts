@@ -1,4 +1,4 @@
-import type { Driver, SourceSpec, FetchRequest, RecentRequest } from "../driver.js";
+import type { Driver, SourceSpec, FetchRequest, RecentRequest, FetchByNamesExtra } from "../driver.js";
 import type { Entity } from "../entity.js";
 import { ORG_SUFFIXES } from "../entity.js";
 import { buildSoqlUrl, fetchWithRetry, Limiter, type FetchRetryOptions } from "../util/http.js";
@@ -171,14 +171,16 @@ export class SocrataDriver implements Driver {
   // Targeted existence lookup: given business names discovered on another
   // plane, fetch existence-registry rows whose name matches — no keywords,
   // no city filter, just a normalized-name LIKE join back to the caller.
-  async fetchByNames(source: SourceSpec, names: string[], opts: FetchRetryOptions = {}): Promise<Entity[]> {
+  // extra.maxNames overrides MAX_BACKFILL_NAMES (Infinity = no cap);
+  // extra.onProgress(checked, total) fires as each chunk's queries settle.
+  async fetchByNames(source: SourceSpec, names: string[], opts: FetchRetryOptions = {}, extra: FetchByNamesExtra = {}): Promise<Entity[]> {
     const quirks = readQuirks(source);
     const patterns: string[] = [];
     for (const name of names) {
       const pattern = namePattern(name);
       if (pattern !== null && !patterns.includes(pattern)) patterns.push(pattern);
     }
-    const capped = patterns.slice(0, MAX_BACKFILL_NAMES);
+    const capped = patterns.slice(0, extra.maxNames ?? MAX_BACKFILL_NAMES);
     if (capped.length === 0) return [];
 
     const f = source.fields;
@@ -192,12 +194,24 @@ export class SocrataDriver implements Driver {
     // per-chunk row cap; active rows come first in the result.
     const inactiveWhere = quirks.backfillInactive === true && statusWhere.length > 0
       ? [`${f["status"]!}<>'${quirks.statusValue!}'`] : null;
-    const queries = chunks(capped, NAME_CHUNK).flatMap(chunk => [
-      [...statusWhere, likeClause(f["name"]!, chunk)].join(" AND "),
-      ...(inactiveWhere === null ? [] : [[...inactiveWhere, likeClause(f["name"]!, chunk)].join(" AND ")]),
-    ]);
-    const chunkResults = await Promise.all(queries.map(where =>
-      this.pages(source, quirks.datasetId, where, BACKFILL_PAGE_LIMIT, limiter, opts)));
+    // Every chunk's queries go through the shared limiter at once; a chunk
+    // counts toward progress when all its queries settle (chunks settle out
+    // of order, so the count is a running sum).
+    const total = capped.length;
+    let checked = 0;
+    const chunkResults = await Promise.all(chunks(capped, NAME_CHUNK).map(chunk => {
+      const queries = [
+        [...statusWhere, likeClause(f["name"]!, chunk)].join(" AND "),
+        ...(inactiveWhere === null ? [] : [[...inactiveWhere, likeClause(f["name"]!, chunk)].join(" AND ")]),
+      ];
+      return Promise.all(queries.map(where =>
+        this.pages(source, quirks.datasetId, where, BACKFILL_PAGE_LIMIT, limiter, opts)))
+        .then(rows => {
+          checked += chunk.length;
+          extra.onProgress?.(checked, total);
+          return rows.flat();
+        });
+    }));
 
     const idField = f["id"]!;
     const byId = new Map<string, Record<string, unknown>>();

@@ -48,6 +48,11 @@ export interface RecentRequest {
 
 // A driver is generic over sources: the same socrata driver serves CO today
 // and CT/WA/NY later, differing only by SourceSpec.
+export interface FetchByNamesExtra {
+  maxNames?: number | undefined;
+  onProgress?: ((checked: number, total: number) => void) | undefined;
+}
+
 export interface Driver {
   readonly kind: DriverKind;
   // Row cap fetch() applies when FetchRequest.limit is absent (Infinity = no
@@ -64,7 +69,9 @@ export interface Driver {
   // Targeted existence lookup: fetch records whose name matches one of the
   // given business names. Used to backfill the existence join for entities
   // discovered on other planes. Optional — drivers without it are skipped.
-  fetchByNames?(source: SourceSpec, names: string[], opts?: FetchRetryOptions): Promise<Entity[]>;
+  // extra.maxNames overrides maxBackfillNames (Infinity = no cap);
+  // extra.onProgress is called as name patterns are covered (checked so far, total).
+  fetchByNames?(source: SourceSpec, names: string[], opts?: FetchRetryOptions, extra?: FetchByNamesExtra): Promise<Entity[]>;
   // Entities formed on or after `since` (YYYY-MM-DD) whose name matches a
   // keyword, newest first. Optional — needs a formedDate field in the manifest.
   fetchRecent?(source: SourceSpec, req: RecentRequest, opts?: FetchRetryOptions): Promise<Entity[]>;

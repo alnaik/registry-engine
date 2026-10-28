@@ -160,3 +160,15 @@ often as "ok", the amber tone overstates risk and should soften.
   and says when the list is capped ("The sheet lists the top N; the CSV has
   all of them"). `tests/web/sheet-fixture.test.ts` pins the agreement.
 
+
+## Amendment (2026-10-27, v7b)
+
+- **The web tag is shown only when something was checked.** "No website on
+  record" was on nearly every lead and read as "no web presence", but it
+  only meant the filing has no website field (true of almost every PPP, SOS
+  and EPA record). `webTag` now returns nothing unless a filed website was
+  probed ("Website responds", "Listed website didn't respond") or the web
+  lookup ran and did not fail ("Found online, verify", "Listed on …",
+  "No web presence found"). The "No web presence" filter counts only leads
+  the lookup searched, and the page shows it only when a lookup ran. The
+  `--hidden` filter is removed.

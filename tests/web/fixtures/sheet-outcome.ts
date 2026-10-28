@@ -100,7 +100,7 @@ export function sheetOutcome(): SearchOutcome {
     contactLookups: null,
     recent: [lead(RECENT, 0)],
     recentWindow: { days: 90, radiusMi: 25 },
-    registryLookup: { status: "ran", namesChecked: 6, nameCap: 80, candidates: 6 },
+    registryLookup: { status: "ran", namesChecked: 6, nameCap: 80, candidates: 6, totalNames: 6 },
     mapRawAnswer: null,
   };
 }

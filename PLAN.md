@@ -1,3 +1,212 @@
+# v7b — web label only from a lookup; check every name against the registry
+
+Working branch: `v7b-web-label-check-all` (off `main` after PR #10). Owner
+decisions 2026-10-27, after seeing the merged sheet live:
+
+1. "No website on record" is on nearly every lead and reads as "no web
+   presence". It only means the government filing has no website field,
+   which is true of almost every PPP, SOS and EPA record. Decision: the
+   page says nothing about web presence unless a real web lookup ran (Exa
+   or Parallel key). Filters that depend on a record-only web fact go away.
+2. Only 80 names per search are checked against the state registry
+   (`MAX_BACKFILL_NAMES` in the Socrata driver, `BACKFILL_ENTITIES` 150 in
+   the engine). Measured 2026-10-27 against CO SoS, produce near Denver
+   (709 coded leads): capped 22 s / 33 registry matches; uncapped 180 s /
+   223 matches. Cost is per name pattern (~0.25 s each) whatever the chunk
+   size: 50 per query took 209 s, 100 per query hit the 20 s request
+   deadline. Tote bags (46 coded) is fully checked either way, 31 s.
+   Decision: fast by default, plus a "Check all N names" action that re-runs
+   the search with no cap, shows progress, and replaces the sheet and its
+   stored copy. CLI gets `--check-all`. `NAME_CHUNK` stays 25.
+
+Same protocol as v7: independent read-only review of this spec against the
+code (Opus 5.5 high), then the coder (Opus 5.5 medium) implements only the
+agreed items, one commit per batch by the orchestrator.
+
+## Phase H1 — web presence only from a lookup ✅ (2026-10-27)
+
+Where `lead.web` ("verified" | "unresolved" | "none") comes from: the DNS
+probe of a *filed* website (v7 F1). `lead.found` comes from the web lookup
+(contacts verb), only for the top N leads and only with a provider key.
+
+- `apps/web/public/labels.js`
+  - `webTag(lead)`: returns `null` when nothing was actually checked: no
+    `found` and `web === "none"`. Keep "Website responds" (a filed website
+    that resolves is real), "Listed website didn't respond", and the three
+    `found` labels. Delete the "No website on record" literal; the
+    every-literal-pinned test in `tests/web/labels.test.ts` must still pass
+    with that pin removed.
+  - `FILTERS` "noweb" (`No web presence`): predicate becomes
+    `lead.found !== null && !hasSite(lead)` (a lead nobody looked up is not
+    "no web presence"). The page shows this filter button only when
+    `result.contactLookups` is non-null (a lookup ran this search); the
+    coder finds where `renderTools` builds the segment and skips it
+    otherwise. `/design` (`design.js`) drops its "No website on record"
+    sample and shows the `found` ones.
+- `apps/web/public/app.js`: `trustLine` already tolerates a null tag (F10);
+  make sure an empty `trust-tag` span is not rendered when `webTag` is
+  null. The detail rows (`row("Web", …)`, `row("Search", …)`) stay.
+- **Remove `hiddenOnly` / `--hidden`** everywhere: it filtered on
+  `web === "none"`, a record-only fact that can't be made correct (the
+  lookup never covers every lead). `packages/qualify/src/engine.ts`
+  (`SearchConfig.hiddenOnly`, the filter at ~line 320), `apps/cli/src/index.ts`
+  (flag + help line), `apps/web/src/server.ts` (`SearchParams.hiddenOnly`,
+  `parseSearchParams`, the `search()` call), `apps/web/public/index.html`
+  (`#hidden-only` checkbox) and `app.js` (`readParams`, the `renderEmpty`
+  tip), `tests/web/server.test.ts:341` (drop the field), any engine test
+  using it, README and CLAUDE.md lines that mention `--hidden`
+  (CLAUDE.md "Ranking" paragraph: "`--hidden` filters on it" → delete that
+  clause; the "Contacts and web presence add nothing" rule stays).
+- `packages/qualify/src/summary.ts`: drop the "N have no website listed in
+  the records searched" line and the `noWebsite` count (record-only).
+  Update `tests/qualify/summary.test.ts`.
+- `apps/cli/src/index.ts` web line: `domain ✓ <host>` (verified),
+  `published domain did not resolve → <search url>` (unresolved),
+  "Individual's record — no web search offered", else just
+  `search → <url>` with no claim about websites. If `lead.found` exists,
+  print `found  <status> <website or listings>` on its own line (check what
+  the CLI prints for `found` today and keep it if it already does).
+- `docs/decisions/0017-*.md` (field-sheet labels): one amendment: the web
+  tag is shown only when something was checked. `README.md` "Know before
+  you call": one sentence: without an Exa/Parallel key the sheet says
+  nothing about websites; every business lead keeps its search link.
+
+## Phase H2 — "Check all N names" against the registry ✅ (2026-10-27; live: produce near Denver, capped 80 of 752 names in 19 s; --check-all 752 names, 223 matched, 101 s)
+
+- `packages/registry-core/src/driver.ts`: `Driver.fetchByNames(source,
+  names, opts?, extra?)` gains an optional fourth argument
+  `{ maxNames?: number; onProgress?: (checked: number, total: number) => void }`.
+  `packages/registry-core/src/drivers/socrata.ts`: `maxNames` overrides
+  `MAX_BACKFILL_NAMES` (`Infinity` = no cap); `onProgress` is called after
+  each chunk's queries settle with the number of name patterns covered so
+  far and the total. Chunks still run through the existing `Limiter`
+  (concurrency 4); the coder replaces the single `Promise.all` with a
+  per-chunk loop that keeps the limiter's parallelism (e.g. map chunks to
+  promises and attach the progress call to each). `NAME_CHUNK` stays 25.
+- `packages/qualify/src/engine.ts`: `SearchConfig.backfillAll?: boolean`.
+  When true: no `BACKFILL_ENTITIES` slice, `maxNames: Infinity`, and a new
+  event `{ type: "backfill_progress"; sourceId; checked; total }` from
+  `onProgress`. `RegistryLookup` gains `all: boolean` and `candidates`
+  becomes the full unmatched count (not `min(unmatched, 150)`), so the page
+  can say "80 of 384"; `nameCap` is `null` when `all`.
+  Test (`tests/qualify/engine-backfill.test.ts`): a stub driver records
+  the `extra` argument; default run gets `maxNames` undefined and ≤150
+  names; `backfillAll` gets every name, `maxNames: Infinity`, and the
+  progress events arrive in order with the right total.
+- `apps/web/src/server.ts`: `SearchParams.checkAll` (boolean, default
+  false) → `backfillAll`. `translateEvent` maps `backfill_progress` to the
+  step line the page already shows for the registry step, text "Checked
+  200 of 384 names against the state registry". `historyId` ignores
+  `checkAll` on purpose: the fuller run overwrites the stored copy.
+  Test: `checkAll: true` reaches `search()` as `backfillAll: true`.
+- `apps/web/public/app.js` + `labels.js`:
+  - A line under the summary sentence (next to `#new-since`), from
+    `result.registryLookup`: when `status === "ran"` and `!all` and
+    `namesChecked < candidates`: "Checked 80 of 384 names against the state
+    registry." plus a button **Check all 384 names** with the estimate in
+    the label: `about N min` from `Math.ceil(candidates * 0.25 / 60)`, or
+    "under a minute" when `candidates * 0.25 < 60`. Click →
+    `runSearch({ ...app.lastParams, checkAll: true })` via the same guard
+    path the direction link uses (F7). When `all`: "Checked all 384 names
+    against the state registry." and no button. `aboutRows` registry row:
+    "80 of 384 not already matched (at most 80 per search unless you check
+    all)" / "all 384".
+  - `readParams` never sets `checkAll`; only that button does. A stored
+    search opened from Recent shows the line from its stored result.
+  - Pin the two sentence forms in `tests/web/labels.test.ts` if they live
+    in `labels.js` (put them there).
+- `apps/cli/src/index.ts`: `--check-all` → `backfillAll: true`; the summary
+  prints "Checked 80 of 384 names against the state registry (--check-all
+  checks every name, about N min)" or "Checked all 384 names". Progress
+  events print as `backfill co_sos: 200/384 names` lines (verbose or not,
+  coder's call: match how `fetched` lines print).
+- Docs: ADR 0013 amendment (the cap, the measured cost, the check-all
+  action); README CLI flags (`--check-all`) and the web line; SECURITY.md
+  Threat 4: "check all" sends `ceil(names/25) × 2` registry requests at
+  concurrency 4 under the same deadlines; changelog v3.9. CLAUDE.md CLI
+  flags list: add `--check-all`, drop `--hidden`.
+
+## Amendments after the independent review (2026-10-27) — these win over the bullets above
+
+H1
+- `webTag` simply ends with `return null` (covers `found.status === "skipped"`).
+  `apps/web/public/labels.d.ts:20` → `string | null`.
+- A **failed** lookup is not "no web presence": `contacts.ts:331-334` stores a
+  failure as `status: "not-found"` with `reason`. `webTag` returns null when
+  `f.reason` is set; the noweb predicate is
+  `Boolean(lead.found) && !lead.found.reason && !hasSite(lead)`; app.js:1309
+  ("likely no web presence") gets the same exclusion. Pin the failed case.
+- `trustLine` (app.js:1171): compute the tag first; render no `trust-tag` span
+  when it is null (today an empty span is rendered for individuals).
+- The "No website on record" sample is in `design.html:89` (not design.js):
+  replace with a `found` sample; keep the noweb filter button at :73. Add a
+  sample of the H2 registry line + button to design.html.
+- `hiddenOnly` removal also touches: `tests/web/server.test.ts:345`
+  (`toMatchObject`), `tests/qualify/engine-coded.test.ts:213-223` (delete
+  the test), `brief.ts:16-17` comment, ADR 0015:50 (one-line "removed in
+  v7b"), SECURITY.md integrity item 6 (:158) → "Without a web lookup the
+  sheet makes no website claim; every business lead keeps a search link."
+  README has no `--hidden` mention.
+- `noWebsite` removal also breaks `tests/web/server.test.ts:253` and
+  `tests/qualify/summary.test.ts:20, 32-41`; update them.
+- CLI: `found` is already printed (`foundLine`, index.ts:273); keep it. Only
+  the last branch at :271 becomes `search → <url>`.
+- `brief.ts:248`: omit the `web` field from the brief prompt when it is
+  `"none"` (the model must not be told "no website"); update
+  `brief.test.ts:175`.
+
+H2
+- **The engine caps too.** `planBackfill(candidates, driver, cap =
+  driver.maxBackfillNames ?? Infinity)` gets a third argument; under
+  `backfillAll` pass `Infinity`. Never spread the driver object (it drops the
+  prototype method `backfillKey`). The driver's own `MAX_BACKFILL_NAMES`
+  stays as the default and is overridden only by `maxNames`.
+- **Units.** Drop `all` and leave `candidates` alone. Add
+  `RegistryLookup.totalNames = planBackfill(unmatched, driver, Infinity).keyCount`
+  (pure, no requests). The page/CLI show the button iff
+  `namesChecked < totalNames`; "Checked all N names" when equal; the
+  estimate uses `totalNames`. `nameCap` is null under `backfillAll`. A
+  stored result without `totalNames` shows no line.
+  Breaks and updates: `engine-registry-check.test.ts:83`,
+  `server.test.ts:51, :269`, `tests/web/fixtures/sheet-outcome.ts:103`,
+  `labels.test.ts:188/195`.
+- Under `backfillAll`, the candidates are the unmatched entities whose codes
+  relate to the map's codes (`naicsRelated`), i.e. the ones the sheet lists;
+  when the map has no codes, all unmatched. `totalNames` is computed over
+  the same set.
+- Progress: emit `backfill_progress` on every run, not only under
+  `backfillAll` (removes a branch; a default run has ≤4 chunks). In
+  socrata.ts, map each chunk to `Promise.all([active, inactive?]).then(...)`
+  with a running sum (chunks settle out of order); a chunk counts when both
+  its queries settle; `total` is the deduped, capped pattern count. The
+  server sends counts `{ type: "backfill_progress", checked, total }` and
+  labels.js composes the text, like every other step. The page updates the
+  existing "confirm" step (app.js:503) in place: `setStep("confirm",
+  "active", "200 of 384 names")`.
+- Server: `checkAll` must be read explicitly in `parseSearchParams`
+  (unknown keys are ignored): `flag("checkAll", false)`.
+- Page: static `<p id="registry-line" class="fine quiet" hidden>` after
+  `#new-since` (index.html:148), filled in `renderTools`; add it to the
+  print-hide list in app.css (~275). The direction link builds its params
+  **without** `checkAll`; Retry keeps it.
+- Estimate: one named constant `SECONDS_PER_NAME = 0.25` in labels.js with
+  a comment (measured 2026-10-27 on CO SoS); the CLI keeps a copy exported
+  from qualify's `summary.ts`, and labels.test.ts asserts the two are equal.
+- SECURITY Threat 4 wording: "check all" sends `ceil(names/25)` requests
+  (×2 with `backfillInactive`), plus pagination past 200 rows per chunk, at
+  concurrency 4 under the 20 s deadline.
+- Docs: README has no CLI flags list; only the web sentence goes there.
+  Note in ADR 0013: check-all is a full re-run, so the AI map call may
+  pick slightly different codes; accepted.
+
+### Not changed
+- The cap itself (80 names / 150 candidates) stays the default. Raising it
+  was measured and rejected: cost is linear in names.
+- No background continuation: "check all" is a second full search the user
+  asks for, through the existing single-search lock and the stream.
+
+---
+
 # v7 — audit fixes + search history
 
 Working branch: `v7-audit-fixes` (off `main`). Input: `registry-engine-audit.md`

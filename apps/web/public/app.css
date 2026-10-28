@@ -272,7 +272,7 @@ details.about > summary { min-height: 44px; display: flex; align-items: center; 
   body { font-size: 10pt; line-height: 1.3; }
   .lr-head > .lr-trust { margin-top: 1pt; }
   .sheet { max-width: none; padding: 0; }
-  .tabs, .ask, .how-box, .reading .steps-list, #error-box, .tools, #new-since, #filter-empty, #groups, .about, .foot,
+  .tabs, .ask, .how-box, .reading .steps-list, #error-box, .tools, #new-since, #registry-line, #filter-empty, #groups, .about, .foot,
   .sheet-toast, .band-more, .detail, #panel-calls { display: none !important; }
   .mast { padding-top: 0; }
   .print-only { display: block; }
