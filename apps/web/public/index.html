@@ -97,7 +97,7 @@
             </div>
             <div class="code-row">
               <label for="code-q" class="visually-hidden">Find industry codes by words</label>
-              <input id="code-q" class="ask-input" type="text" maxlength="100" autocomplete="off" placeholder="Find codes by words: metal fabrication">
+              <input id="code-q" class="ask-input" type="text" maxlength="100" autocomplete="off" aria-describedby="code-why" placeholder="Find codes by words: metal fabrication">
               <button type="button" id="code-search" class="btn">Find codes</button>
             </div>
             <p id="code-status" class="fine quiet" aria-live="polite"></p>
@@ -107,6 +107,11 @@
           <div id="saved" class="saved-box" hidden>
             <h2 class="eyebrow">Saved searches</h2>
             <ul id="saved-list" class="saved-list"></ul>
+          </div>
+
+          <div id="recent" class="saved-box" hidden>
+            <h2 class="eyebrow">Recent searches</h2>
+            <ul id="recent-list" class="saved-list"></ul>
           </div>
         </form>
 
