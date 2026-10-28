@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
 import { execFile, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { search, providerFromEnv } from "@registry-engine/qualify";
 import { createApp } from "./server.js";
 
@@ -23,6 +25,8 @@ const app = createApp({
   contactsProvider: () => providerFromEnv()?.name ?? null,
   port,
   publicDir,
+  // Finished searches, next to the contacts cache.
+  historyDir: join(homedir(), ".cache", "registry-engine", "searches"),
 });
 
 const server = createServer(app);

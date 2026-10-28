@@ -68,6 +68,9 @@ were checked, and the AI tokens used.
 
 Also in the app: saved searches (stored in your browser), CSV export, and a
 printable call sheet with a notes line under each business.
+Recent searches: the server keeps your 20 newest finished searches in
+`~/.cache/registry-engine/searches`, so you can reopen a sheet and its CSV
+without running it again.
 
 ## Sources
 

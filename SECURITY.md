@@ -207,6 +207,13 @@ credits is a target for other websites open in the same browser.
    `mailto:` values are sanitized.
 5. Static files come from an exact whitelist, so no path is built from the
    URL.
+6. **Search history.** Each finished search is kept as `<id>.json` and
+   `<id>.csv` under the user's home (`~/.cache/registry-engine/searches`,
+   created with mode 0o700), the newest 20 only. The files contain whatever
+   the sheet showed, including individuals' records as filed. The id is a
+   server-computed SHA-1; `/api/history/:id` and `/api/csv?id=` accept only
+   `/^[a-f0-9]{40}$/` (400 otherwise), and no path is built from any other
+   input. Opening a stored search is a pure read; there is no delete endpoint.
 - `apps/web/src/server.ts`, `apps/web/public/app.js`
 
 ---
@@ -251,4 +258,5 @@ credits is a target for other websites open in the same browser.
   manifest's `statusValue` (Threat 6, item 2). CSV adds `individual_record`.
 - v3.8 (2026-10-27, v7 Phase F audit fixes): each request attempt has a 20 s deadline
   (DNS probe 5 s) and Retry-After is capped at 30 s (Threat 4). Threat 1 wording: map
-  sends the request as text capped at 300; brief sends it JSON-stringified.
+  sends the request as text capped at 300; brief sends it JSON-stringified. The web app
+  keeps the 20 newest searches on disk, mode 0o700, ids validated (Threat 8, item 6).

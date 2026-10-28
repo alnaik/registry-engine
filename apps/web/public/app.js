@@ -363,6 +363,31 @@ function updateCodeBox() {
   $("code-box").hidden = !(why !== "" || !$("options").hidden || $("naics").value.trim() !== "");
 }
 
+// Skip AI + finding buyers + no codes: the search is known to come back empty.
+function sellNeedsCodes(params) {
+  return Boolean(params.noLlm && params.direction === "sell" && !params.naics);
+}
+
+// Instead of running that search, point at the code finder. Results on screen stay.
+function blockForCodes() {
+  updateCodeBox();
+  scrollTo($("code-box"));
+  $("code-q").focus();
+}
+
+// Puts a stored search's params back into the form.
+function fillForm(params) {
+  $("query").value = params.query || "";
+  $("near").value = params.near || "";
+  $("naics").value = Array.isArray(params.naics) ? params.naics.join(", ") : params.naics || "";
+  setDirection(params.direction || "auto");
+  $("radius").value = params.radiusMi ? String(params.radiusMi) : "";
+  // The server may have forced Skip AI on; never undo that.
+  if (!$("no-llm").disabled) $("no-llm").checked = params.noLlm === true;
+  if (!$("region-field").hidden && params.region) $("region").value = params.region;
+  updateCodeBox();
+}
+
 function readParams() {
   const query = $("query").value.trim();
   const params = { query };
@@ -399,6 +424,10 @@ function setupForm() {
       return;
     }
     showQueryError("");
+    if (sellNeedsCodes(params)) {
+      blockForCodes();
+      return;
+    }
     savePref("near", params.near || "");
     runSearch(params);
   });
@@ -592,7 +621,13 @@ function renderReading() {
       class: "linkish",
       onclick: () => {
         setDirection(other);
-        if (!app.running && app.lastParams) runSearch({ ...app.lastParams, direction: other });
+        if (app.running || !app.lastParams) return;
+        const next = { ...app.lastParams, direction: other };
+        if (sellNeedsCodes(next)) {
+          blockForCodes();
+          return;
+        }
+        runSearch(next);
       },
     }, other === "sell" ? "find buyers instead" : "find suppliers instead"));
   }
@@ -655,6 +690,7 @@ function resetForRun(params) {
   $("error-box").hidden = true;
   $("empty").hidden = true;
   $("results-area").hidden = true;
+  $("csv").href = "/api/csv";
   for (const id of ["reading-lines", "notes", "bands", "groups", "filters", "about-rows"]) clear($(id));
   $("reading").hidden = false;
   buildSteps();
@@ -709,6 +745,7 @@ async function runSearch(params) {
         finished = true;
         $("steps").hidden = true;
         showResult(event);
+        loadRecent();
       } else if (event.type === "error") {
         finished = true;
         showError(String(event.message || "The search failed."));
@@ -747,7 +784,9 @@ function mainLeads(result) {
   return [...result.leads, ...result.more];
 }
 
-function showResult(result) {
+// opts.stored: the ISO date of a sheet opened from Recent searches (not a run).
+function showResult(result, opts = {}) {
+  const stored = opts.stored || null;
   app.result = result;
   if (result.origin !== undefined) app.origin = result.origin;
   renderReading();
@@ -758,7 +797,7 @@ function showResult(result) {
   if (any === 0) return;
 
   const keys = main.map(l => l.key);
-  const saved = findSaved(app.lastParams);
+  const saved = stored ? null : findSaved(app.lastParams);
   if (saved) {
     const prior = new Set(Array.isArray(saved.seen) ? saved.seen : []);
     app.newKeys = new Set(keys.filter(k => !prior.has(k)));
@@ -769,11 +808,11 @@ function showResult(result) {
   }
 
   $("results-area").hidden = false;
-  renderSummary(result);
-  renderTools();
+  renderSummary(result, stored);
+  renderTools(stored);
   renderBands(result);
   renderGroups(result);
-  renderAbout(result);
+  renderAbout(result, stored);
   applyFilter();
 }
 
@@ -782,8 +821,12 @@ function renderEmpty() {
   const tips = $("empty-tips");
   clear(tips);
   const p = app.lastParams || {};
-  if (p.noLlm && app.map && app.map.direction === "sell") {
-    tips.append(h("li", { text: "Finding buyers needs the AI step (it decides which industries use your product). Turn off \"Skip AI\", or add industry codes with the code finder above." }));
+  if (p.noLlm && app.map && app.map.direction === "sell" && !p.naics) {
+    tips.append(h("li", {
+      text: app.status && app.status.llm === false
+        ? "Finding buyers needs industry codes when the AI step is off. Look them up with the code finder above."
+        : "Finding buyers needs the AI step (it decides which industries use your product). Turn off \"Skip AI\", or add industry codes with the code finder above.",
+    }));
   }
   if (p.radiusMi) tips.append(h("li", { text: "Remove the distance limit, or choose a larger radius under More options." }));
   if (p.hiddenOnly) tips.append(h("li", { text: "Untick \"Only businesses with no website on record\"." }));
@@ -794,7 +837,7 @@ function renderEmpty() {
 }
 
 // One plain sentence instead of stat tiles.
-function renderSummary(result) {
+function renderSummary(result, stored) {
   const box = $("sum");
   clear(box);
   const parts = summaryParts(result, { radiusSet: Boolean(app.lastParams && app.lastParams.radiusMi) });
@@ -802,15 +845,18 @@ function renderSummary(result) {
   // Screen readers: the results arrive without a page change, so say so.
   $("announce").textContent = `Search done. ${box.textContent}`;
   const p = app.lastParams || {};
-  $("print-head").textContent = `Call sheet · ${p.query || ""}${app.origin ? ` · from ${app.origin.label}` : ""} · ${new Date().toLocaleDateString()}`;
+  $("print-head").textContent = `Call sheet · ${p.query || ""}${app.origin ? ` · from ${app.origin.label}` : ""} · ${stored ? fmtDate(stored) : new Date().toLocaleDateString()}`;
 }
 
-function renderTools() {
+function renderTools(stored) {
   const already = findSaved(app.lastParams) !== null;
   $("save").textContent = already ? "Saved" : "Save search";
   $("save").disabled = already;
   const ns = $("new-since");
-  if (app.newSince !== null) {
+  if (stored) {
+    ns.textContent = `Results from ${fmtDate(stored)}. Run again to refresh.`;
+    ns.hidden = false;
+  } else if (app.newSince !== null) {
     const n = app.newKeys.size;
     const date = fmtDate(app.newSince);
     const tail = "New businesses can only come from live records (state registry, EPA, farm products); the PPP loan data is a fixed 2020–21 snapshot.";
@@ -884,7 +930,12 @@ function renderSaved() {
             $("naics").value = entry.naics || "";
             setDirection(entry.direction || "auto");
             showQueryError("");
-            if (!app.running) runSearch(readParams());
+            const params = readParams();
+            if (sellNeedsCodes(params)) {
+              blockForCodes();
+              return;
+            }
+            if (!app.running) runSearch(params);
           },
         }),
         h("button", {
@@ -896,6 +947,86 @@ function renderSaved() {
           },
         }))));
   }
+}
+
+// ---- recent searches (kept on disk by the server) --------------------------------------------
+
+async function loadRecent() {
+  let list;
+  try {
+    const resp = await fetch("/api/history");
+    if (!resp.ok) throw new Error(String(resp.status));
+    list = await resp.json();
+  } catch {
+    toast("Couldn't load recent searches.");
+    return;
+  }
+  const ul = $("recent-list");
+  clear(ul);
+  const entries = Array.isArray(list) ? list.filter(e => e && typeof e.id === "string" && typeof e.query === "string") : [];
+  $("recent").hidden = entries.length === 0;
+  for (const entry of entries) {
+    const n = typeof entry.businesses === "number" ? entry.businesses : null;
+    const info = [
+      entry.near ? `near ${entry.near}` : "",
+      Array.isArray(entry.naics) && entry.naics.length > 0 ? `codes ${entry.naics.join(", ")}` : "",
+      entry.direction === "buy" ? "suppliers" : entry.direction === "sell" ? "buyers" : "",
+      fmtDate(entry.ranAt) ? `ran ${fmtDate(entry.ranAt)}` : "",
+      n === null ? "" : `${n.toLocaleString()} ${n === 1 ? "business" : "businesses"}`,
+    ].filter(Boolean);
+    ul.append(h("li", { class: "saved-item" },
+      h("div", { class: "saved-info" }, h("strong", { text: entry.query }), info.map(t => h("span", { class: "fine quiet", text: t }))),
+      h("div", { class: "saved-buttons" },
+        h("button", {
+          type: "button", class: "btn sm", text: "Open", "aria-label": `Open recent search: ${entry.query}`,
+          onclick: () => openRecent(entry.id),
+        }),
+        h("button", {
+          type: "button", class: "btn sm", text: "Run again", "aria-label": `Run again: ${entry.query} (recent search)`,
+          onclick: () => runRecentAgain(entry.id),
+        }))));
+  }
+}
+
+async function fetchRecent(id) {
+  try {
+    const resp = await fetch(`/api/history/${encodeURIComponent(id)}`);
+    if (resp.status === 404) {
+      toast("That search is no longer stored.");
+      return null;
+    }
+    if (!resp.ok) {
+      toast("Couldn't open that search.");
+      return null;
+    }
+    return await resp.json();
+  } catch {
+    toast("Couldn't reach the Registry Engine server. Is it still running? Start it again with npm start.");
+    return null;
+  }
+}
+
+// Opening is not a run: no search, no AI calls, no saved-search update.
+async function openRecent(id) {
+  if (app.running) return;
+  const stored = await fetchRecent(id);
+  if (!stored || app.running) return;
+  fillForm(stored.params || {});
+  app.lastParams = readParams();
+  resetForRun(app.lastParams);
+  $("steps").hidden = true;
+  app.map = stored.map || null;
+  $("csv").href = `/api/csv?id=${encodeURIComponent(id)}`;
+  showResult(stored.result, { stored: stored.ranAt });
+}
+
+// Run again goes through the submit path, so its checks apply.
+async function runRecentAgain(id) {
+  if (app.running) return;
+  const stored = await fetchRecent(id);
+  if (!stored || app.running) return;
+  fillForm(stored.params || {});
+  $("search-form").requestSubmit();
 }
 
 // ---- filters ----------------------------------------------------------------------------------
@@ -1012,10 +1143,11 @@ function renderGroups(result) {
 
 // ---- about this search ----------------------------------------------------------------------------
 
-function renderAbout(result) {
+function renderAbout(result, stored) {
   const rows = $("about-rows");
   clear(rows);
-  const seconds = Math.max(1, Math.round((Date.now() - app.startedAt) / 1000));
+  // An opened sheet has no run time.
+  const seconds = stored ? null : Math.max(1, Math.round((Date.now() - app.startedAt) / 1000));
   for (const [k, v] of aboutRows(result, app.status || {}, seconds)) {
     rows.append(h("tr", null, h("th", { scope: "row", text: k }), h("td", { text: v })));
   }
@@ -1036,7 +1168,7 @@ function trustLine(lead, tracker, opts) {
   const call = callStatusText(tracker);
   return h("span", { class: "lr-trust" },
     h("span", { class: `pill ${t.tone}`, text: t.pill }),
-    opts.registered ? null : h("span", { class: "trust-tag", text: t.tag || webTag(lead) }),
+    opts.registered ? null : h("span", { class: "trust-tag", text: t.tag || (lead.individual ? null : webTag(lead)) }),
     call ? h("span", { class: "lr-call", text: call }) : null,
     app.newKeys.has(lead.key) ? h("span", { class: "lr-new", text: `New since ${shortDate(app.newSince)}` }) : null);
 }
@@ -1333,6 +1465,7 @@ function downloadCalls() {
 setupTabs();
 setupForm();
 renderSaved();
+loadRecent();
 updateCallsCount();
 $("near").value = loadPref("near");
 loadStatus();
