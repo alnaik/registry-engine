@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { probeEntities, publishedDomain } from "../../packages/qualify/src/verbs/probe.js";
+import { webPresence } from "../../packages/qualify/src/verbs/brief.js";
 import type { Entity } from "../../packages/registry-core/src/entity.js";
 
 function entity(overrides: Partial<Entity>): Entity {
@@ -25,8 +26,8 @@ function dohFetch(live: Record<string, string[]>) {
 }
 
 describe("publishedDomain", () => {
-  it("prefers a published email domain and ignores freemail", () => {
-    expect(publishedDomain(entity({ contacts: ["bob@gmail.com", "sales@acmegems.com"] }))).toBe("acmegems.com");
+  it("never takes a domain from an email address", () => {
+    expect(publishedDomain(entity({ contacts: ["bob@gmail.com", "sales@acmegems.com"] }))).toBeNull();
   });
 
   it("extracts website hosts", () => {
@@ -35,6 +36,16 @@ describe("publishedDomain", () => {
 
   it("returns null with no usable contact", () => {
     expect(publishedDomain(entity({ contacts: ["(303) 555-0100"] }))).toBeNull();
+  });
+
+  it("does not take a dotted phone number as a host", () => {
+    expect(publishedDomain(entity({ contacts: ["303.555.0100"] }))).toBeNull();
+  });
+
+  it("an email-only entity has no published domain and no web presence", () => {
+    const e = entity({ contacts: ["ldiess@mccarronlaw.com"] });
+    expect(publishedDomain(e)).toBeNull();
+    expect(webPresence(e, undefined)).toBe("none");
   });
 });
 
@@ -62,7 +73,7 @@ describe("probeEntities", () => {
   });
 
   it("verifies the published domain instead of guessing and adds no email guess when one is published", async () => {
-    const e = entity({ contacts: ["debbiel@leevers.com"], name: "Leevers Supermarkets Inc" });
+    const e = entity({ contacts: ["debbiel@leevers.com", "https://leevers.com"], name: "Leevers Supermarkets Inc" });
     const results = await probeEntities([e], {
       fetchImpl: dohFetch({ "leevers.com": ["A", "MX"] }),
     });
