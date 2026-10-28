@@ -38,7 +38,6 @@ const PINS: { label: string; kind: "pill" | "tag" | "web"; lead: LabelLead; look
   { label: "Listed in directories", kind: "web", lead: { ...base, found: { status: "directory", listings: [] } } },
   { label: "No web presence found", kind: "web", lead: { ...base, found: { status: "not-found" } } },
   { label: "Listed website didn't respond", kind: "web", lead: { ...base, web: "unresolved" } },
-  { label: "No website on record", kind: "web", lead: { ...base, web: "none" } },
 ];
 
 describe("trust labels follow LeadView predicates", () => {
@@ -73,6 +72,12 @@ describe("trust labels follow LeadView predicates", () => {
     expect(hasSite({ ...base, found: { status: "found", website: "https://x.example" } })).toBe(true);
     expect(hasSite({ ...base, found: { status: "found" } })).toBe(false);
     expect(hasSite({ ...base, web: "unresolved" })).toBe(false);
+  });
+
+  it("no web tag when nothing was checked: no filed website and no lookup, a failed lookup, a skipped one", () => {
+    expect(webTag({ ...base, web: "none", found: null })).toBeNull();
+    expect(webTag({ ...base, web: "none", found: { status: "not-found", reason: "lookup failed: timeout" } })).toBeNull();
+    expect(webTag({ ...base, web: "none", found: { status: "skipped", reason: "individual's record — not searched" } })).toBeNull();
   });
 
   it("capped counts never read as a full count", () => {
@@ -140,7 +145,11 @@ describe("call tracker", () => {
     expect(pred("confirmed")({ registryCheck: "checked_not_found" })).toBe(false);
     expect(pred("notcalled")({}, "notcalled")).toBe(true);
     expect(pred("notcalled")({}, "noanswer")).toBe(false);
-    expect(pred("noweb")({ web: "none", found: null })).toBe(true);
+    // only a lead the web lookup really searched can have "no web presence"
+    expect(pred("noweb")({ web: "none", found: null })).toBe(false);
+    expect(pred("noweb")({ web: "none", found: { status: "not-found" } })).toBe(true);
+    expect(pred("noweb")({ web: "none", found: { status: "not-found", reason: "lookup failed: timeout" } })).toBe(false);
+    expect(pred("noweb")({ web: "verified", found: { status: "not-found" } })).toBe(false);
   });
 
   it("the reach line never shows a principal for an individual's record", async () => {
@@ -185,14 +194,14 @@ describe("summary sentence and About this search", () => {
     const rows = aboutRows({
       ...base,
       sources: [{ name: "Colorado Secretary of State", count: 500, capped: true, error: false }, { name: "EPA ECHO", count: 0, capped: false, error: true }],
-      registryLookup: { status: "ran", namesChecked: 46, nameCap: 80, candidates: 46 },
+      registryLookup: { status: "ran", namesChecked: 46, nameCap: 80, candidates: 46, totalNames: 46 },
       llmUsage: { inputTokens: 9000, outputTokens: 4500, costUsd: 0.059, calls: [{}, {}] },
       llmCalls: 2,
     }, { contactsProvider: null }, 14);
     expect(rows).toEqual([
       ["Colorado Secretary of State", "500+ (capped)"],
       ["EPA ECHO", "didn't respond"],
-      ["Names checked against the state registry", "46 of the top 46 not already matched (at most 80 per search)"],
+      ["Names checked against the state registry", "all 46"],
       ["Name matches only (kept out of the list)", "359"],
       ["AI calls", "2 · 13.5k tokens · about $0.06 at API prices"],
       ["Web contact lookup", "Off (no Exa or Parallel key)"],
@@ -202,6 +211,34 @@ describe("summary sentence and About this search", () => {
     expect(skip).toContainEqual(["AI calls", "None (AI step skipped)"]);
     expect(skip).toContainEqual(["Names checked against the state registry", "The lookup failed this search"]);
     expect(skip).toContainEqual(["Web contact lookup", "Off for this search"]);
+    const capped = aboutRows({ ...base, sources: [], registryLookup: { status: "ran", namesChecked: 80, nameCap: 80, candidates: 150, totalNames: 384 }, llmUsage: null, llmCalls: 0 });
+    expect(capped).toContainEqual(["Names checked against the state registry", "80 of 384 not already matched (at most 80 per search unless you check all)"]);
+  });
+});
+
+describe("registry name check line", () => {
+  it("says how many names were checked and offers to check the rest, with an estimate", async () => {
+    const { registryLine, registryProgressText } = await import("../../apps/web/public/labels.js");
+    expect(registryLine({ status: "ran", namesChecked: 80, nameCap: 80, candidates: 150, totalNames: 384 })).toEqual({
+      text: "Checked 80 of 384 names against the state registry.",
+      button: "Check all 384 names (about 2 min)",
+    });
+    expect(registryLine({ status: "ran", namesChecked: 80, nameCap: 80, candidates: 150, totalNames: 200 })!.button).toBe("Check all 200 names (under a minute)");
+    expect(registryLine({ status: "ran", namesChecked: 384, nameCap: null, candidates: 384, totalNames: 384 })).toEqual({
+      text: "Checked all 384 names against the state registry.",
+      button: null,
+    });
+    // a stored result from before totalNames, a failed or absent lookup: no line
+    expect(registryLine({ status: "ran", namesChecked: 80, nameCap: 80, candidates: 150 })).toBeNull();
+    expect(registryLine({ status: "failed", namesChecked: 0, totalNames: 384 })).toBeNull();
+    expect(registryLine(null)).toBeNull();
+    expect(registryProgressText(200, 384)).toBe("200 of 384 names");
+  });
+
+  it("the page's seconds-per-name estimate equals the CLI's", async () => {
+    const { SECONDS_PER_NAME } = await import("../../apps/web/public/labels.js");
+    const { SECONDS_PER_NAME: cli } = await import("../../packages/qualify/src/summary.js");
+    expect(SECONDS_PER_NAME).toBe(cli);
   });
 });
 

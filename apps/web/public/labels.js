@@ -63,6 +63,9 @@ export function hasSite(lead) {
   return lead.web === "verified" || Boolean(lead.found && lead.found.website);
 }
 
+// null when nothing was actually checked: no filed website and no web lookup
+// (a filing without a website field says nothing about the web). A failed
+// lookup (found.reason set) checked nothing either.
 export function webTag(lead) {
   const f = lead.found;
   if (lead.web === "verified") return "Website responds";
@@ -71,9 +74,9 @@ export function webTag(lead) {
     const names = (f.listings || []).map(prettyHost);
     return names.length > 0 ? `Listed on ${names.join(", ")}` : "Listed in directories";
   }
-  if (f && f.status === "not-found") return "No web presence found";
+  if (f && f.status === "not-found" && !f.reason) return "No web presence found";
   if (lead.web === "unresolved") return "Listed website didn't respond";
-  return "No website on record";
+  return null;
 }
 
 export function prettyHost(host) {
@@ -168,7 +171,9 @@ export const FILTERS = [
   ["all", "All", () => true],
   ["confirmed", "Confirmed", lead => lead.registryCheck === "matched"],
   ["notcalled", "Not yet called", (lead, outcome) => !outcome || outcome === "notcalled"],
-  ["noweb", "No web presence", lead => !hasSite(lead)],
+  // Only a lead the web lookup really searched (not failed, not skipped) can
+  // have "no web presence"; the page shows this filter only when a lookup ran.
+  ["noweb", "No web presence", lead => Boolean(lead.found) && !lead.found.reason && !hasSite(lead)],
 ];
 
 // ---- bands --------------------------------------------------------------------
@@ -267,6 +272,38 @@ export function summaryParts(result, opts = {}) {
   return parts;
 }
 
+// ---- registry name check -----------------------------------------------------------
+
+// Seconds per name pattern sent to the state registry, measured 2026-10-27 on
+// CO SoS (~0.25 s each whatever the chunk size). Equal to SECONDS_PER_NAME in
+// packages/qualify/src/summary.ts (the CLI's copy); a test pins the two.
+export const SECONDS_PER_NAME = 0.25;
+
+// "about 2 min" / "under a minute" for checking `names` names.
+export function checkAllEstimate(names) {
+  const secs = names * SECONDS_PER_NAME;
+  return secs < 60 ? "under a minute" : `about ${Math.ceil(secs / 60)} min`;
+}
+
+// The progress step detail while names are being checked: "200 of 384 names".
+export function registryProgressText(checked, total) {
+  return `${Number(checked).toLocaleString("en-US")} of ${Number(total).toLocaleString("en-US")} names`;
+}
+
+// The line under the summary: how many of the coded leads' names were checked
+// against the registry, and the "Check all" button when some were not.
+// null when no lookup ran or the result predates totalNames.
+export function registryLine(lookup) {
+  const l = lookup || {};
+  if (l.status !== "ran" || typeof l.totalNames !== "number" || l.totalNames === 0) return null;
+  const total = Number(l.totalNames).toLocaleString("en-US");
+  if (l.namesChecked >= l.totalNames) return { text: `Checked all ${total} names against the state registry.`, button: null };
+  return {
+    text: `Checked ${Number(l.namesChecked).toLocaleString("en-US")} of ${total} names against the state registry.`,
+    button: `Check all ${total} names (${checkAllEstimate(l.totalNames)})`,
+  };
+}
+
 // ---- about this search ------------------------------------------------------------
 
 export function tokensText(n) {
@@ -278,8 +315,13 @@ export function aboutRows(result, status = {}, seconds = null) {
   const rows = [];
   for (const s of result.sources || []) rows.push([s.name, s.error ? "didn't respond" : fetchedText(s.count, s.capped)]);
   const l = result.registryLookup || { status: "none" };
+  const num = v => Number(v).toLocaleString("en-US");
+  const ranText = typeof l.totalNames !== "number"
+    ? `${num(l.namesChecked)} of the top ${num(l.candidates)} not already matched${l.nameCap ? ` (at most ${l.nameCap} per search)` : ""}`
+    : l.namesChecked >= l.totalNames ? `all ${num(l.totalNames)}`
+      : `${num(l.namesChecked)} of ${num(l.totalNames)} not already matched${l.nameCap ? ` (at most ${l.nameCap} per search unless you check all)` : ""}`;
   rows.push(["Names checked against the state registry",
-    l.status === "ran" ? `${Number(l.namesChecked).toLocaleString("en-US")} of the top ${Number(l.candidates).toLocaleString("en-US")} not already matched${l.nameCap ? ` (at most ${l.nameCap} per search)` : ""}`
+    l.status === "ran" ? ranText
       : l.status === "failed" ? "The lookup failed this search" : "No registry lookup for this search"]);
   rows.push(["Name matches only (kept out of the list)", Number(result.sheet ? result.sheet.nameOnly : 0).toLocaleString("en-US")]);
   const u = result.llmUsage;

@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
+import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines, partitionLeads, SECONDS_PER_NAME, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { Lead, FoundContact } from "@registry-engine/qualify";
 import { SOURCES, knownRegions, lookupCodes, naicsLabel, isNaicsCode } from "@registry-engine/registry-core";
 import type { Entity } from "@registry-engine/registry-core";
@@ -99,7 +99,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
     maxLeads: leads,
     naics,
     direction: direction === "buy" || direction === "sell" ? direction : undefined,
-    hiddenOnly: flags["hidden"] === "true",
+    backfillAll: flags["check-all"] === "true",
     near: nearFlag,
     radiusMi,
     ...(flags["no-contacts"] === "true" ? { contacts: null } : {}),
@@ -136,6 +136,9 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
         case "backfilled":
           console.log(`backfill ${event.sourceId}: ${event.count} matched by name`);
           break;
+        case "backfill_progress":
+          console.log(`backfill ${event.sourceId}: ${event.checked}/${event.total} names`);
+          break;
         case "probed":
           console.log(`probe   ${event.count} entities checked (DNS A+MX)`);
           break;
@@ -167,6 +170,16 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   const checkedNames = lookup.status === "ran" ? lookup.namesChecked : 0;
   console.log(`\n${"═".repeat(64)}`);
   for (const line of summaryLines(out.ranked, out.map.intent.naics)) console.log(line);
+  if (lookup.status === "ran" && lookup.totalNames > 0) {
+    const total = lookup.totalNames.toLocaleString("en-US");
+    if (lookup.namesChecked < lookup.totalNames) {
+      const secs = lookup.totalNames * SECONDS_PER_NAME;
+      const estimate = secs < 60 ? "under a minute" : `about ${Math.ceil(secs / 60)} min`;
+      console.log(`Checked ${lookup.namesChecked.toLocaleString("en-US")} of ${total} names against the state registry (--check-all checks every name, ${estimate})`);
+    } else {
+      console.log(`Checked all ${total} names against the state registry`);
+    }
+  }
   if (out.contactLookups !== null) {
     const c = out.contactLookups;
     console.log(`Contact lookups: ${c.looked} via ${c.provider}, ${c.found} found, ~$${c.costDollars.toFixed(2)}`);
@@ -268,7 +281,7 @@ function printLead(lead: Lead, rank: number, existenceIds: string[], naicsFields
       ? `published domain did not resolve → ${lead.searchUrl ?? ""}`
       : lead.searchUrl === null && isLikelyIndividual(e)
         ? "Individual's record — no web search offered"
-        : `none listed in these records → ${lead.searchUrl ?? ""}`;
+        : `search → ${lead.searchUrl ?? ""}`;
   console.log(`      web    ${web}`);
   if (lead.found !== undefined) console.log(`      found   ${foundLine(lead.found)}`);
   if (lead.brief !== "") console.log(`      brief  ${lead.brief}`);
@@ -345,7 +358,8 @@ Flags:
   --no-contacts       skip the web contact lookup (otherwise on when EXA_API_KEY or
                       PARALLEL_API_KEY is set; at most one web search per briefed lead)
   --direction=buy|sell  buy = find suppliers, sell = find buyers (default: guessed from the request)
-  --hidden      only leads with no website on any public record
+  --check-all   check every coded lead's name against the state registry (slower;
+                default: at most 80 names per search)
   --csv=<path>  write every ranked lead to a CSV file
   --verbose     print the evidence lines under each lead
 

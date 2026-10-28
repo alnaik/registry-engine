@@ -38,8 +38,8 @@ python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csv
 
 CLI flags: `--near=<ZIP|town>` distance center · `--radius=<mi>` ·
 `--no-contacts` · `--naics=<codes>` override ·
-`--direction=buy|sell` (buy = find suppliers, sell = find buyers; overrides the guess) · `--hidden` only leads with no website
-in any record · `--csv=<path>` all ranked leads · `--leads=<n>` (default 12)
+`--direction=buy|sell` (buy = find suppliers, sell = find buyers; overrides the guess) · `--check-all` check every
+coded lead's name against the state registry · `--csv=<path>` all ranked leads · `--leads=<n>` (default 12)
 · `--verbose` evidence · `--region=<US-XX>` · `--limit=<n>` · `--model=<m>`
 · `--shards=<url>`. The default path makes 2 LLM calls via the Claude Code
 CLI (`claude -p`). `--no-llm` uses a static table for supplier searches;
@@ -84,7 +84,7 @@ counter and by tests. Token usage per search is reported
 best-first order) + keyword match + independent sources + state standing +
 recency. **Contacts and web presence add nothing**. That's deliberate, since
 the target population has no web footprint. Web presence is a label
-(`verified | unresolved | none`), and `--hidden` filters on it. Don't
+(`verified | unresolved | none`). Don't
 reintroduce web/contact points.
 
 Package layout:

@@ -17,7 +17,6 @@ describe("summaryLines", () => {
     const ranked = [lead(["332312"], "none"), lead(["33"], "verified"), lead(["722511"], "none"), lead([], "unresolved")];
     expect(summaryLines(ranked, ["332"])).toEqual([
       "Found 2 businesses with an industry code for this request (+2 name matches, lower confidence)",
-      "2 have no website listed in the records searched — business records get a search link.",
     ]);
   });
 
@@ -29,21 +28,19 @@ describe("summaryLines", () => {
     ]);
   });
 
-  it("uses singular forms for one business, one individual's record and one lead with no website", () => {
+  it("uses singular forms for one business and one individual's record, and says nothing about websites", () => {
     const person = lead(["332312"], "none");
     person.entity = { ...person.entity, name: "SMITH, JOHN A" };
     expect(summaryLines([lead(["332312"], "none"), person, lead(["33"], "verified")], ["332"])).toEqual([
       "Found 2 businesses with an industry code for this request (+1 individual's record, listed separately)",
-      "2 have no website listed in the records searched — business records get a search link.",
     ]);
     expect(summaryLines([lead(["332312"], "none"), lead(["33"], "verified")], ["332"])).toEqual([
       "Found 2 businesses with an industry code for this request",
-      "1 has no website listed in the records searched — business records get a search link.",
     ]);
     expect(summaryLines([lead(["332312"], "verified")], ["332"])[0]).toBe("Found 1 business with an industry code for this request");
   });
 
-  it("omits the name-match clause when there are none, and the no-website line when it is true of all", () => {
+  it("omits the name-match clause when there are none", () => {
     const ranked = [lead(["332312"], "none"), lead(["33"], "none")];
     expect(summaryLines(ranked, ["332"])).toEqual(["Found 2 businesses with an industry code for this request"]);
   });

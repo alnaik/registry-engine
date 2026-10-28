@@ -80,7 +80,7 @@ describe("engine — tri-state registry check", () => {
     expect(by("BRAVO").registeredElsewhere).toBe(true);
     expect(by("CHARLIE").registryCheck).toBe("not_checked");
     expect(by("DELTA").registryCheck).toBe("not_checked");
-    expect(out.registryLookup).toEqual({ status: "ran", namesChecked: 2, nameCap: 2, candidates: 4 });
+    expect(out.registryLookup).toEqual({ status: "ran", namesChecked: 2, nameCap: 2, candidates: 4, totalNames: 4 });
     // the probe's evidence note doesn't claim a not-checked lead was "not found"
     const charlie = by("CHARLIE").entity.evidence.find(ev => ev.field === "existence");
     expect(charlie?.note).toContain("not checked against xx_sos");

@@ -20,6 +20,7 @@ export type EngineEvent =
   | { type: "source_error"; sourceId: string; message: string }
   | { type: "merged"; count: number }
   | { type: "backfilled"; sourceId: string; count: number }
+  | { type: "backfill_progress"; sourceId: string; checked: number; total: number }
   | { type: "probed"; count: number }
   | { type: "recent"; count: number }
   | { type: "contacts"; provider: string; looked: number; found: number; costDollars: number }
@@ -35,7 +36,7 @@ export interface SearchConfig {
   maxLeads?: number | undefined;
   naics?: string[] | undefined;     // user-supplied lead codes; skips the map LLM call
   direction?: "buy" | "sell" | undefined;   // fixed search direction; undefined = guess from the request
-  hiddenOnly?: boolean | undefined; // keep only leads with no website on any public record
+  backfillAll?: boolean | undefined; // check every coded lead's name against the registry (no cap)
   near?: string | undefined;        // ZIP or place name the leads are measured from
   radiusMi?: number | undefined;    // drop leads farther than this from the origin
   contacts?: WebSearchProvider | null | undefined;  // web contact lookup; undefined -> from env keys, null -> off
@@ -75,8 +76,9 @@ export interface SearchOutcome {
 export interface RegistryLookup {
   status: "ran" | "failed" | "none";   // none = no existence registry with a name lookup for this search
   namesChecked: number;                // distinct names sent (after the driver's dedupe key)
-  nameCap: number | null;              // the driver's per-search cap on names, if any
+  nameCap: number | null;              // the driver's per-search cap on names, if any (null under backfillAll)
   candidates: number;                  // leads considered (top BACKFILL_ENTITIES not already matched)
+  totalNames: number;                  // distinct names among the coded unmatched leads, uncapped: what "check all" sends
 }
 
 export const MAX_LLM_CALLS_PER_SEARCH = 2;
@@ -217,14 +219,27 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // (quirks.backfillInactive): not merged, but they give the lead its real
   // standing ("Dissolved Oct 2026") instead of "not found".
   const inactiveRows: { keys: string[]; row: Entity; standing: RegistryStanding }[] = [];
-  let registryLookup: RegistryLookup = { status: "none", namesChecked: 0, nameCap: null, candidates: 0 };
+  let registryLookup: RegistryLookup = { status: "none", namesChecked: 0, nameCap: null, candidates: 0, totalNames: 0 };
   if (existenceSpec !== undefined && existenceDriver?.fetchByNames !== undefined) {
     const unmatched = preliminary.filter(e => !e.source_ids.includes(existenceSpec.id));
-    const plan = planBackfill(unmatched.slice(0, BACKFILL_ENTITIES), existenceDriver);
-    registryLookup = { status: "ran", namesChecked: plan.keyCount, nameCap: existenceDriver.maxBackfillNames ?? null, candidates: Math.min(unmatched.length, BACKFILL_ENTITIES) };
+    // "Check all" covers the leads the sheet lists: unmatched entities whose
+    // codes relate to the map's codes (all unmatched when the map has none).
+    const codes = map.intent.naics;
+    const coded = codes.length === 0 ? unmatched : unmatched.filter(e => e.naics.some(c => codes.some(q => naicsRelated(c, q))));
+    const all = cfg.backfillAll === true;
+    const plan = all ? planBackfill(coded, existenceDriver, Infinity) : planBackfill(unmatched.slice(0, BACKFILL_ENTITIES), existenceDriver);
+    const totalNames = planBackfill(coded, existenceDriver, Infinity).keyCount;
+    registryLookup = {
+      status: "ran", namesChecked: plan.keyCount,
+      nameCap: all ? null : existenceDriver.maxBackfillNames ?? null,
+      candidates: all ? coded.length : Math.min(unmatched.length, BACKFILL_ENTITIES),
+      totalNames,
+    };
     if (plan.names.length > 0) {
       try {
-        const found = await existenceDriver.fetchByNames(existenceSpec, plan.names, cfg.fetchOpts);
+        const onProgress = (checked: number, total: number): void => emit({ type: "backfill_progress", sourceId: existenceSpec.id, checked, total });
+        const found = await existenceDriver.fetchByNames(existenceSpec, plan.names, cfg.fetchOpts,
+          all ? { maxNames: Infinity, onProgress } : { onProgress });
         for (const e of plan.checked) {
           for (const k of [e.name, ...e.names].map(normalizeName)) if (k.length > 0) checkedKeys.add(k);
         }
@@ -317,7 +332,6 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   emit({ type: "probed", count: probes.size });
 
   let ranked = rankEntities(entities, probes, ctx).map(annotate);
-  if (cfg.hiddenOnly === true) ranked = ranked.filter(l => l.web === "none");
   if (cfg.radiusMi !== undefined && origin !== null) {
     const radius = cfg.radiusMi;
     ranked = ranked.filter(l => l.distanceMi !== null && l.distanceMi <= radius);
@@ -354,8 +368,11 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
 // dedupe-and-cap so the engine knows exactly who was checked. Walks the
 // candidates best-first; an entity counts as checked when its legal name's
 // key was sent. Names with no usable key (too short) can't be looked up.
-export function planBackfill(candidates: Entity[], driver: { maxBackfillNames?: number | undefined; backfillKey?(name: string): string | null }): { names: string[]; checked: Entity[]; keyCount: number } {
-  const cap = driver.maxBackfillNames ?? Infinity;
+export function planBackfill(
+  candidates: Entity[],
+  driver: { maxBackfillNames?: number | undefined; backfillKey?(name: string): string | null },
+  cap: number = driver.maxBackfillNames ?? Infinity,
+): { names: string[]; checked: Entity[]; keyCount: number } {
   const keyOf = (n: string): string | null => (driver.backfillKey !== undefined ? driver.backfillKey(n) : (normalizeName(n) || null));
   const keys = new Set<string>();
   const names: string[] = [];
