@@ -25,8 +25,22 @@ describe("summaryLines", () => {
     const person = lead(["332312"], "none");
     person.entity = { ...person.entity, name: "SMITH, JOHN A" };
     expect(summaryLines([lead(["332312"], "none"), person], ["332"])).toEqual([
-      "Found 1 businesses with an industry code for this request (+1 individuals' records, listed separately)",
+      "Found 1 business with an industry code for this request (+1 individual's record, listed separately)",
     ]);
+  });
+
+  it("uses singular forms for one business, one individual's record and one lead with no website", () => {
+    const person = lead(["332312"], "none");
+    person.entity = { ...person.entity, name: "SMITH, JOHN A" };
+    expect(summaryLines([lead(["332312"], "none"), person, lead(["33"], "verified")], ["332"])).toEqual([
+      "Found 2 businesses with an industry code for this request (+1 individual's record, listed separately)",
+      "2 have no website listed in the records searched — business records get a search link.",
+    ]);
+    expect(summaryLines([lead(["332312"], "none"), lead(["33"], "verified")], ["332"])).toEqual([
+      "Found 2 businesses with an industry code for this request",
+      "1 has no website listed in the records searched — business records get a search link.",
+    ]);
+    expect(summaryLines([lead(["332312"], "verified")], ["332"])[0]).toBe("Found 1 business with an industry code for this request");
   });
 
   it("omits the name-match clause when there are none, and the no-website line when it is true of all", () => {
