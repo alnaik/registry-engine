@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
 import { createServer, request } from "node:http";
 import type { Server } from "node:http";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readdirSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
-import { createApp } from "../../apps/web/src/server.js";
+import { createApp, historyId } from "../../apps/web/src/server.js";
 import type { AppDeps } from "../../apps/web/src/server.js";
 import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/src/index.js";
 
@@ -61,6 +61,7 @@ describe("web app server", () => {
   let publicDir = "";
   let calls: { query: string; cfg: SearchConfig }[] = [];
   let behavior: (query: string, cfg: SearchConfig) => Promise<SearchOutcome> = async () => makeOutcome();
+  let historyDir = "";
 
   function send(opts: { method?: string; path: string; headers?: Record<string, string>; body?: string }): Promise<Reply> {
     return new Promise((resolve, reject) => {
@@ -100,7 +101,15 @@ describe("web app server", () => {
   beforeEach(() => {
     calls = [];
     behavior = async () => makeOutcome();
-    const deps: AppDeps = {
+    historyDir = mkdtempSync(join(tmpdir(), "re-history-"));
+    server.removeAllListeners("request");
+    server.on("request", createApp(stubDeps({ historyDir })));
+  });
+
+  afterEach(() => { rmSync(historyDir, { recursive: true, force: true }); });
+
+  function stubDeps(extra: Partial<AppDeps> = {}): AppDeps {
+    return {
       search: (async (query: string, cfg: SearchConfig = {}) => {
         calls.push({ query, cfg });
         cfg.onEvent?.({ type: "map", map: makeOutcome().map });
@@ -112,10 +121,9 @@ describe("web app server", () => {
       contactsProvider: () => null,
       port,
       publicDir,
+      ...extra,
     };
-    server.removeAllListeners("request");
-    server.on("request", createApp(deps));
-  });
+  }
 
   afterAll(() => new Promise<void>(resolve => { server.close(() => resolve()); }));
 
@@ -420,6 +428,91 @@ describe("web app server", () => {
       expect(body.llm).toBe(true);
       expect(body.contactsProvider).toBeNull();
       expect(body.regions).toContain(body.defaultRegion);
+    });
+  });
+  describe("search history", () => {
+    const useApp = (extra: Partial<AppDeps>): void => {
+      server.removeAllListeners("request");
+      server.on("request", createApp(stubDeps(extra)));
+    };
+
+    it("writes the json and csv pair for a search and lists it", async () => {
+      await post({ query: "metal fabrication", near: "Denver", naics: "3323, 332", direction: "buy", region: "US-CO" });
+      const files = readdirSync(historyDir).sort();
+      expect(files).toHaveLength(2);
+      expect(files[0]).toMatch(/^[a-f0-9]{40}\.csv$/);
+      expect(files[1]).toMatch(/^[a-f0-9]{40}\.json$/);
+      const list = JSON.parse((await send({ path: "/api/history" })).text) as Record<string, unknown>[];
+      expect(list).toHaveLength(1);
+      expect(list[0]).toMatchObject({ query: "metal fabrication", near: "Denver", naics: ["3323", "332"], direction: "buy", region: "US-CO", businesses: 3 });
+      expect(String(list[0]?.["id"])).toBe(files[1]!.slice(0, 40));
+      expect(typeof list[0]?.["ranAt"]).toBe("string");
+    });
+
+    it("the same request overwrites its pair", async () => {
+      await post({ query: "metal fabrication", naics: "332, 3323" });
+      await post({ query: "  Metal Fabrication ", naics: "3323,332" });
+      expect(readdirSync(historyDir)).toHaveLength(2);
+    });
+
+    it("/api/history/:id returns the stored result and map without running a search", async () => {
+      const live = lines(await post({ query: "metal fabrication", near: "Denver", leads: 2 }));
+      const [entry] = JSON.parse((await send({ path: "/api/history" })).text) as { id: string }[];
+      const r = await send({ path: `/api/history/${entry!.id}` });
+      expect(r.status).toBe(200);
+      const body = JSON.parse(r.text) as Record<string, unknown>;
+      expect(body["result"]).toEqual(live[live.length - 1]);
+      expect(body["map"]).toEqual(live[0]);
+      expect(body["params"]).toMatchObject({ query: "metal fabrication", near: "Denver", leads: 2 });
+      expect(typeof body["ranAt"]).toBe("string");
+      expect(calls).toHaveLength(1);
+    });
+
+    it("a fresh app with the same dir serves /api/csv?id= from disk", async () => {
+      await post({ query: "metal fabrication", leads: 1 });
+      const [entry] = JSON.parse((await send({ path: "/api/history" })).text) as { id: string }[];
+      useApp({ historyDir });
+      expect((await send({ path: "/api/csv" })).status).toBe(404);
+      const r = await send({ path: `/api/csv?id=${entry!.id}` });
+      expect(r.status).toBe(200);
+      expect(String(r.headers["content-type"])).toContain("text/csv");
+      expect(String(r.headers["content-disposition"])).toContain('filename="leads.csv"');
+      expect(r.text.trimEnd().split("\n")).toHaveLength(4);
+    });
+
+    it("with no history dir, /api/history is [] and nothing is stored", async () => {
+      useApp({});
+      await post({ query: "metal fabrication" });
+      const r = await send({ path: "/api/history" });
+      expect(r.status).toBe(200);
+      expect(JSON.parse(r.text)).toEqual([]);
+      expect(readdirSync(historyDir)).toHaveLength(0);
+    });
+
+    it("400s a bad id and 404s a missing one", async () => {
+      for (const bad of ["abc", "..%2F..%2Fetc%2Fpasswd", "A".repeat(40), `${"a".repeat(40)}.json`]) {
+        expect((await send({ path: `/api/history/${bad}` })).status).toBe(400);
+        expect((await send({ path: `/api/csv?id=${bad}` })).status).toBe(400);
+      }
+      const missing = "0".repeat(40);
+      expect((await send({ path: `/api/history/${missing}` })).status).toBe(404);
+      expect((await send({ path: `/api/csv?id=${missing}` })).status).toBe(404);
+    });
+
+    it("keeps the 20 newest searches and drops the oldest pair", async () => {
+      for (let i = 0; i < 21; i++) {
+        await post({ query: `metal fabrication ${i}` });
+        // Distinct mtimes regardless of filesystem timestamp resolution.
+        const when = new Date(Date.UTC(2026, 0, 1, 0, 0, i));
+        const id = historyId({ query: `metal fabrication ${i}`, near: undefined, naics: undefined, region: undefined, direction: undefined });
+        for (const ext of [".json", ".csv"]) utimesSync(join(historyDir, id + ext), when, when);
+      }
+      const files = readdirSync(historyDir);
+      expect(files).toHaveLength(40);
+      const listed = JSON.parse((await send({ path: "/api/history" })).text) as { query: string }[];
+      expect(listed).toHaveLength(20);
+      expect(listed[0]?.query).toBe("metal fabrication 20");
+      expect(listed.map(e => e.query)).not.toContain("metal fabrication 0");
     });
   });
 });

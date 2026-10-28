@@ -38,7 +38,7 @@ const ECHO_ROWS = [
   ent("epa_echo", "3", "GREEN METAL WORKS", { naics: ["332322"] }),
 ];
 const PPP_ROWS = [
-  ent("ppp", "10", "VISSER PRECISION CAST LLC", { naics: ["332999"], employees: 14, contacts: ["info@visser.example"], lastSeen: "2021-03-01" }),
+  ent("ppp", "10", "VISSER PRECISION CAST LLC", { naics: ["332999"], employees: 14, contacts: ["https://visser.example"], lastSeen: "2021-03-01" }),
   ent("ppp", "11", "ALPHA METAL CO", {
     naics: ["332710"], employees: 3,
     evidence: [{ source: "ppp", field: "name", value: "ALPHA METAL CO", note: 'matched "metal"' }],

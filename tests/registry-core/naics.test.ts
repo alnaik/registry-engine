@@ -61,6 +61,15 @@ describe("lookupCodes", () => {
     expect(lookupCodes(["canvas", "bag"]).map(h => h.code)).toContain("314910");
   });
 
+  it("matches stems only at a word start", () => {
+    const codes = lookupCodes(["canvas", "bag"]).map(h => h.code);
+    expect(codes).not.toContain("111219");
+    expect(codes).not.toContain("236210");
+    expect(codes[0]).toBe("314910");
+    const fab = lookupCodes(["metal", "fabrication"]).map(h => h.code);
+    expect(fab.some(c => c === "332312" || c === "332322")).toBe(true);
+  });
+
   it("honors max and returns [] for no words or no matches", () => {
     expect(lookupCodes(["metal"], 3).length).toBeLessThanOrEqual(3);
     expect(lookupCodes([])).toEqual([]);

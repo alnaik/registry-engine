@@ -32,12 +32,15 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 const server = createServer();
 await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
 const appPort = (server.address() as AddressInfo).port;
+// Searches are kept here, so the Recent searches box is on the page and scanned.
+const historyDir = mkdtempSync(join(tmpdir(), "re-axe-history-"));
 server.on("request", createApp({
   search: sheetSearch,
   llmAvailable: async () => false,
   contactsProvider: () => null,
   port: appPort,
   publicDir: fileURLToPath(new URL("../../apps/web/public", import.meta.url)),
+  historyDir,
 }));
 const BASE = `http://localhost:${appPort}`;
 
@@ -161,6 +164,7 @@ try {
   chrome.kill();
   server.close();
   rmSync(profile, { recursive: true, force: true });
+  rmSync(historyDir, { recursive: true, force: true });
 }
 console.log(`\n${blocking} serious/critical, ${minor} moderate/minor violation(s).`);
 process.exit(blocking > 0 ? 1 : 0);

@@ -2,7 +2,10 @@ export interface FetchRetryOptions {
   headers?: Record<string, string> | undefined;
   appToken?: string | undefined;  // Socrata app token -> X-App-Token header
   maxRetries?: number | undefined;
+  timeoutMs?: number | undefined;  // per-attempt deadline (default 20_000)
 }
+
+const MAX_BACKOFF_MS = 30_000;
 
 export class Limiter {
   private running = 0;
@@ -46,8 +49,7 @@ export class Limiter {
 
 function jitteredBackoff(attempt: number): number {
   const base = 1000;
-  const max = 30000;
-  const exp = Math.min(base * 2 ** attempt, max);
+  const exp = Math.min(base * 2 ** attempt, MAX_BACKOFF_MS);
   // ±50% jitter
   const jitter = exp * 0.5 * (Math.random() * 2 - 1);
   return Math.max(0, exp + jitter);
@@ -58,6 +60,7 @@ export async function fetchWithRetry(
   opts: FetchRetryOptions = {}
 ): Promise<Response> {
   const maxRetries = opts.maxRetries ?? 4;
+  const timeoutMs = opts.timeoutMs ?? 20_000;
   const headers: Record<string, string> = { ...(opts.headers ?? {}) };
   if (opts.appToken !== undefined) {
     headers["X-App-Token"] = opts.appToken;
@@ -67,7 +70,7 @@ export async function fetchWithRetry(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     let resp: Response;
     try {
-      resp = await fetch(url, { headers });
+      resp = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
     } catch (err) {
       lastError = err;
       if (attempt < maxRetries) {
@@ -85,7 +88,7 @@ export async function fetchWithRetry(
           if (retryAfter !== null) {
             const parsed = parseFloat(retryAfter);
             if (!isNaN(parsed)) {
-              delay = parsed * 1000;
+              delay = Math.min(parsed * 1000, MAX_BACKOFF_MS);
             }
           }
         }

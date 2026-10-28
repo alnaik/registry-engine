@@ -132,6 +132,17 @@ describe("SocrataDriver", () => {
     const results = await driver.fetch(CO_SOS, req({ keywords: ["a e i o u llc inc".slice(0, 3)], limit: 1, cities: [] }));
     expect(results.length).toBeLessThanOrEqual(1);
   });
+
+  it("asks only for as many rows as the limit needs", async () => {
+    vi.stubGlobal("fetch", fixtureFetch([], []));
+    await driver.fetch(CO_SOS, req({ limit: 5 }));
+    expect(urls[0]).toContain("$limit=5&");
+  });
+
+  it("rejects on a non-OK HTTP status", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404, json: async () => [] }) as unknown as Response));
+    await expect(driver.fetch(CO_SOS, req())).rejects.toThrow("co_sos: HTTP 404");
+  });
 });
 
 // A category-plane source like the Colorado farm-products filings: no status

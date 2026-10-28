@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { Limiter, buildSoqlUrl } from "../../packages/registry-core/src/util/http.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { Limiter, buildSoqlUrl, fetchWithRetry } from "../../packages/registry-core/src/util/http.js";
 
 describe("Limiter", () => {
   it("runs tasks concurrently up to maxConcurrent", async () => {
@@ -70,5 +70,39 @@ describe("buildSoqlUrl", () => {
     expect(url).toContain("$limit=1000");
     expect(url).toContain("$offset=0");
     expect(url).toContain("$order=");
+  });
+});
+
+describe("fetchWithRetry deadlines", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("rejects when an attempt exceeds timeoutMs", async () => {
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      })
+    ));
+    const started = Date.now();
+    await expect(fetchWithRetry("https://example.test/slow", { timeoutMs: 20, maxRetries: 0 })).rejects.toBeDefined();
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("caps Retry-After at 30 s", async () => {
+    vi.useFakeTimers();
+    const fetchStub = vi.fn()
+      .mockResolvedValueOnce(new Response("", { status: 429, headers: { "Retry-After": "3600" } }))
+      .mockResolvedValueOnce(new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchStub);
+    let settled = false;
+    const p = fetchWithRetry("https://example.test/limited", { maxRetries: 1 }).then(r => { settled = true; return r; });
+    await vi.advanceTimersByTimeAsync(29_000);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    const resp = await p;
+    expect(resp.status).toBe(200);
+    expect(fetchStub).toHaveBeenCalledTimes(2);
   });
 });

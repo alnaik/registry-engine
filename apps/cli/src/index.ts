@@ -9,6 +9,12 @@ const DEFAULT_LEADS = 12;   // the engine's default --leads
 // Validation harness: the full pipeline, with LLM calls through the Claude
 // Code CLI (headless) — subscription-billed, no API key.
 
+// Flags that only make sense with a value; given bare, they are an error
+// (otherwise "--csv" would write a file named "true").
+const VALUE_FLAGS: Record<string, string> = {
+  csv: "leads.csv", near: "80202", naics: "332312", model: "sonnet", region: "US-CO", shards: "http://localhost:8080",
+};
+
 function parseArgs(argv: string[]): { command: string; positional: string[]; flags: Record<string, string> } {
   const args = argv.slice(2);
   const command = args[0] ?? "help";
@@ -18,7 +24,14 @@ function parseArgs(argv: string[]): { command: string; positional: string[]; fla
     const arg = args[i];
     if (arg === undefined) continue;
     const match = arg.match(/^--([^=]+)(?:=(.*))?$/);
-    if (match !== null) flags[match[1] ?? ""] = match[2] ?? "true";
+    if (match !== null) {
+      const name = match[1] ?? "";
+      if ((match[2] === undefined || match[2] === "") && VALUE_FLAGS[name] !== undefined) {
+        console.error(`--${name} needs a value (e.g. --${name}=${VALUE_FLAGS[name]})`);
+        process.exit(1);
+      }
+      flags[name] = match[2] ?? "true";
+    }
     else positional.push(arg);
   }
   return { command, positional, flags };
@@ -164,7 +177,7 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   // as filed: no search link, no maps link), then a count of name matches.
   const groups = partitionLeads(out.ranked, out.map.intent.naics);
   const shown = groups.businesses.slice(0, leads ?? DEFAULT_LEADS);
-  console.log(`Showing ${shown.length} | fetched: ${fetchedCounts.join(", ") || "no sources"} | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}${out.llmUsage === null ? "\n" : ""}`);
+  console.log(`Showing ${shown.length} | fetched: ${fetchedCounts.join(", ") || "no sources"} | LLM calls: ${out.llmCalls}/${MAX_LLM_CALLS_PER_SEARCH}${out.map.llmError !== undefined ? " (the AI step failed; see the warning above)" : ""}${out.llmUsage === null ? "\n" : ""}`);
   if (out.llmUsage !== null) {
     const u = out.llmUsage;
     const byLabel = (label: string) => u.calls.filter(k => k.label === label).reduce((n, k) => n + k.inputTokens + k.outputTokens, 0);
@@ -346,7 +359,11 @@ async function main(): Promise<void> {
   try {
     if (command === "search") await cmdSearch(positional, flags);
     else if (command === "codes") cmdCodes(positional);
-    else printHelp();
+    else if (command === "help") printHelp();
+    else {
+      printHelp();
+      process.exit(2);
+    }
   } catch (err) {
     console.error("Error:", err instanceof Error ? err.message : String(err));
     process.exit(1);

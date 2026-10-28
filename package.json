@@ -14,10 +14,11 @@
     "a11y": "vite-node scripts/a11y/axe.ts"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.20.5",
     "axe-core": "^4.14.0",
     "typescript": "^5.5.0",
-    "vite-node": "^2.1.0",
-    "vitest": "^2.1.0"
+    "vite": "^8.3.5",
+    "vite-node": "^6.0.0",
+    "vitest": "^5.0.5"
   }
 }

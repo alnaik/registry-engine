@@ -39,6 +39,8 @@ email pattern to a lead.
 (b) `probe()` now verifies published contacts only — an email or website
     contact from the registry itself — checked A + MX over DNS-over-HTTPS.
     Name-slug guessing is removed entirely.
+    *Amended v7 (F1): only a website contact is probed; an email address's
+    host is never probed and never marks the web presence verified.*
 
 (c) Leads with no published domain to verify carry a prefilled DuckDuckGo
     search URL (`"<legal name>" <city> <state>`) instead of a guessed one,

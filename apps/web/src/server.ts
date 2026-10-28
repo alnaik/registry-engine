@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ClaudeCodeBackend, leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck } from "@registry-engine/qualify";
@@ -16,6 +17,7 @@ export interface AppDeps {
   contactsProvider: () => string | null;
   port: number;
   publicDir: string;
+  historyDir?: string | undefined;   // finished searches kept on disk; undefined = no history
 }
 
 const MAX_BODY_BYTES = 10 * 1024;
@@ -23,6 +25,9 @@ const MORE_LEADS = 300;
 const GROUP_LEADS = 100;      // individuals' records and name-only matches sent per search
 const DEFAULT_LEADS = 12;
 const DEFAULT_RADIUS_MI = 25; // the summary's "within N miles" when no radius is set
+const HISTORY_MAX = 20;
+const HISTORY_ID_RE = /^[a-f0-9]{40}$/;
+const HISTORY_FILE_RE = /^[a-f0-9]{40}\.json$/;
 
 const REGION_NAMES: Record<string, string> = { "US-CO": "Colorado", "US-CT": "Connecticut", "US-NY": "New York" };
 
@@ -145,6 +150,53 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       return;
     }
 
+    if (method === "GET" && path === "/api/history") {
+      sendJson(res, 200, await listHistory(deps.historyDir));
+      return;
+    }
+
+    if (method === "GET" && path.startsWith("/api/history/")) {
+      const id = path.slice("/api/history/".length);
+      if (!HISTORY_ID_RE.test(id)) {
+        sendJson(res, 400, { error: "bad id" });
+        return;
+      }
+      const stored = await readHistoryFile(deps.historyDir, `${id}.json`);
+      if (stored === null) {
+        sendJson(res, 404, { error: "not found" });
+        return;
+      }
+      let entry: { params?: unknown; ranAt?: unknown; map?: unknown; result?: unknown };
+      try {
+        entry = JSON.parse(stored) as typeof entry;
+      } catch {
+        sendJson(res, 404, { error: "not found" });
+        return;
+      }
+      sendJson(res, 200, { params: entry.params, ranAt: entry.ranAt, map: entry.map ?? null, result: entry.result });
+      return;
+    }
+
+    if (method === "GET" && path === "/api/csv" && url.searchParams.has("id")) {
+      const id = url.searchParams.get("id") ?? "";
+      if (!HISTORY_ID_RE.test(id)) {
+        sendJson(res, 400, { error: "bad id" });
+        return;
+      }
+      const csv = await readHistoryFile(deps.historyDir, `${id}.csv`);
+      if (csv === null) {
+        sendJson(res, 404, { error: "not found" });
+        return;
+      }
+      res.writeHead(200, {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="leads.csv"',
+        "Cache-Control": "no-store",
+      });
+      res.end(csv);
+      return;
+    }
+
     if (method === "GET" && path === "/api/csv") {
       if (last === null) {
         sendJson(res, 404, { error: "no search yet" });
@@ -200,6 +252,9 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       const sourceNames = new Map(SOURCES.map(s => [s.id, s.name]));
       // Per-source counts for "About this search", gathered from the stream.
       const fetchedBy = new Map<string, { count: number; capped: boolean; error: boolean }>();
+      // The map event's line is kept with the stored result: the reading line
+      // and the "Before you call" caveats live there.
+      let mapLine: Record<string, unknown> | null = null;
       const outcome = await deps.search(params.query, {
         llm: params.noLlm ? undefined : { backend: new ClaudeCodeBackend() },
         near: params.near,
@@ -214,6 +269,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
           if (event.type === "fetched") fetchedBy.set(event.sourceId, { count: event.count, capped: event.capped, error: false });
           if (event.type === "source_error" && !fetchedBy.has(event.sourceId)) fetchedBy.set(event.sourceId, { count: 0, capped: false, error: true });
           const line = translateEvent(event);
+          if (event.type === "map") mapLine = line;
           if (line !== null) write(line);
         },
       });
@@ -225,7 +281,11 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       }
       const existenceIds = outcome.routed.filter(s => s.plane === "existence").map(s => s.id);
       last = { ranked: outcome.ranked, existenceIds };
-      write(buildResult(outcome, existenceIds, params, sourceNames, fetchedBy));
+      const result = buildResult(outcome, existenceIds, params, sourceNames, fetchedBy);
+      if (deps.historyDir !== undefined) {
+        await saveHistory(deps.historyDir, params, mapLine, result, leadsToCsv(outcome.ranked, existenceIds));
+      }
+      write(result);
     } catch (err) {
       write({ type: "error", message: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -241,6 +301,96 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       else if (!res.writableEnded) res.end();
     });
   };
+}
+
+// ---- search history: <id>.json + <id>.csv per search, newest 20 kept ----------------
+
+// Server-only key: the same request (region, words, place, codes, direction)
+// overwrites its earlier run.
+export function historyId(params: Pick<SearchParams, "region" | "query" | "near" | "naics" | "direction">): string {
+  const key = JSON.stringify([
+    params.region ?? "",
+    params.query.trim().toLowerCase(),
+    (params.near ?? "").trim().toLowerCase(),
+    [...(params.naics ?? [])].sort().join(","),
+    params.direction ?? "auto",
+  ]);
+  return createHash("sha1").update(key).digest("hex");
+}
+
+async function writeAtomic(dir: string, name: string, body: string): Promise<void> {
+  const tmp = join(dir, `${name}.tmp-${process.pid}-${Date.now()}`);
+  await writeFile(tmp, body);
+  await rename(tmp, join(dir, name));
+}
+
+// A write failure is logged and never fails the search.
+async function saveHistory(dir: string, params: SearchParams, map: Record<string, unknown> | null, result: Record<string, unknown>, csv: string): Promise<void> {
+  try {
+    const id = historyId(params);
+    await mkdir(dir, { recursive: true, mode: 0o700 });
+    const entry = { id, ranAt: new Date().toISOString(), params, map, result };
+    await writeAtomic(dir, `${id}.json`, JSON.stringify(entry));
+    await writeAtomic(dir, `${id}.csv`, csv);
+    const files = await historyFiles(dir);
+    for (const f of files.slice(HISTORY_MAX)) {
+      const stale = f.name.slice(0, -".json".length);
+      await unlink(join(dir, `${stale}.json`)).catch(() => {});
+      await unlink(join(dir, `${stale}.csv`)).catch(() => {});
+    }
+  } catch (err) {
+    console.error(`[history] couldn't save this search: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+// History .json files, newest first by mtime. Only names matching the id pattern.
+async function historyFiles(dir: string): Promise<{ name: string; mtimeMs: number }[]> {
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return [];
+  }
+  const out: { name: string; mtimeMs: number }[] = [];
+  for (const name of names) {
+    if (!HISTORY_FILE_RE.test(name)) continue;
+    try {
+      out.push({ name, mtimeMs: (await stat(join(dir, name))).mtimeMs });
+    } catch {
+      // removed between readdir and stat
+    }
+  }
+  return out.sort((a, b) => b.mtimeMs - a.mtimeMs);
+}
+
+// `name` is built only from a validated id.
+async function readHistoryFile(dir: string | undefined, name: string): Promise<string | null> {
+  if (dir === undefined) return null;
+  try {
+    return await readFile(join(dir, name), "utf8");
+  } catch {
+    return null;
+  }
+}
+
+async function listHistory(dir: string | undefined): Promise<Record<string, unknown>[]> {
+  if (dir === undefined) return [];
+  const out: Record<string, unknown>[] = [];
+  for (const f of await historyFiles(dir)) {
+    const text = await readHistoryFile(dir, f.name);
+    if (text === null) continue;
+    try {
+      const entry = JSON.parse(text) as { id: string; ranAt: string; params: Partial<SearchParams>; result: { sheet?: { businesses?: number } } };
+      const p = entry.params;
+      out.push({
+        id: entry.id, query: p.query, near: p.near, naics: p.naics, direction: p.direction, region: p.region,
+        ranAt: entry.ranAt, businesses: entry.result.sheet?.businesses,
+      });
+    } catch {
+      // a file that fails to parse is skipped
+    }
+  }
+  return out;
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown, headOnly = false): void {
