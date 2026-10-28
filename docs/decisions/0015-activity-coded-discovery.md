@@ -46,8 +46,9 @@ Route on **NAICS codes**, not on keywords.
    secondary signal, scored below coded matches.
 4. Ranking = category fit (code match, keyword match) + evidence of operating
    (independent sources, current SoS standing, recent dated records). Web
-   presence and contacts are **not** scored. They are reported as a label,
-   and `--hidden` filters to leads with no website on any public record.
+   presence and contacts are **not** scored. They are reported as a label.
+   (`--hidden`, a filter to leads with no website on any public record, was
+   removed in v7b.)
 5. Output is a call sheet: what the business is (code + which agency says
    so), size, liveness evidence, how to reach it, a short opener, and a CSV
    of every ranked lead.

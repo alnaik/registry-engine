@@ -14,7 +14,7 @@ import { publishedDomain } from "./probe.js";
 // model only writes prose, capped and validated, never echoing raw records.
 
 // Whether the business has a website on any public record. A label for the
-// call sheet and the --hidden filter — never a score input.
+// call sheet — never a score input.
 export type WebPresence = "verified" | "unresolved" | "none";
 
 export interface RankContext {
@@ -245,7 +245,8 @@ export async function briefLeads(
       e.employees !== undefined ? `jobs: ${e.employees}` : "",
       e.lastSeen !== undefined ? `last record: ${e.lastSeen}` : "",
       e.contacts.length > 0 ? `contacts: ${e.contacts.join(" ")}` : "no contacts",
-      `web: ${l.web}`,
+      // "none" only means the filing has no website field: never tell the model "no website".
+      l.web !== "none" ? `web: ${l.web}` : "",
       foundOnline(l.found),
     ].filter(Boolean).join(" | ");
   }).join("\n");

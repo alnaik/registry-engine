@@ -78,7 +78,6 @@
                 <select id="region" class="opt-select"></select>
               </div>
             </div>
-            <label class="opt-check"><input type="checkbox" id="hidden-only"> <span>Only businesses with no website on record</span></label>
             <div>
               <label class="opt-check"><input type="checkbox" id="find-contacts" checked> <span>Look up websites and phones for the top results <span class="quiet">(uses your Exa or Parallel credits)</span></span></label>
               <p class="fine quiet" id="contacts-hint" hidden>Set EXA_API_KEY or PARALLEL_API_KEY to turn this on.</p>
@@ -146,6 +145,7 @@
             <button type="button" id="save" class="btn sm">Save search</button>
           </div>
           <p id="new-since" class="fine quiet" hidden></p>
+          <p id="registry-line" class="fine quiet" hidden></p>
           <p class="print-only print-head" id="print-head"></p>
           <div id="bands"></div>
           <p id="filter-empty" class="state-box quiet" hidden>No businesses in this list match the filter.</p>

@@ -12,5 +12,5 @@ export { exaProvider, parallelProvider, providerFromEnv, extractContact, isLikel
 export type { WebResult, WebSearchProvider, FoundContact, ContactCache } from "./verbs/contacts.js";
 export { ClaudeCodeBackend } from "./llm/claudeCodeBackend.js";
 export { CSV_HEADER, csvCell, leadsToCsv } from "./csv.js";
-export { summaryLines, summaryCounts, sheetCounts, partitionLeads, hasPhone } from "./summary.js";
+export { summaryLines, summaryCounts, sheetCounts, partitionLeads, hasPhone, SECONDS_PER_NAME } from "./summary.js";
 export type { SheetCounts } from "./summary.js";
