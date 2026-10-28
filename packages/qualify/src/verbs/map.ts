@@ -208,7 +208,8 @@ export async function mapQuery(
   if (llm !== null) {
     try {
       const hint = opts.locationHint?.trim().slice(0, 60);
-      let prompt = hint ? `${query}\n\nUser's location: ${hint}` : query;
+      const request = query.slice(0, 300);
+      let prompt = hint ? `${request}\n\nUser's location: ${hint}` : request;
       if (opts.direction === "buy") prompt += "\n\nDirection (fixed by the user): buy — they need a product or service; return supplier codes.";
       else if (opts.direction === "sell") prompt += "\n\nDirection (fixed by the user): sell — they sell something; return buyer codes.";
       const raw = await llm.call(prompt, { tier: "cheap", label: "map", maxTokens: 400, system: MAP_SYSTEM });

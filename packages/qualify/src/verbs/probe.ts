@@ -1,12 +1,14 @@
 import type { Entity } from "@registry-engine/registry-core";
 import { Limiter } from "@registry-engine/registry-core";
 
-// probe(): zero-token contact verification. Published contacts (email or
-// website) are checked A + MX over Cloudflare's CORS-enabled
-// DNS-over-HTTPS; there is no name-based domain guessing. An MX hit on a
-// published domain yields a pattern email guess — always marked unverified
-// in evidence. Entities with no published domain to verify are left for
-// the web-search link generated downstream in brief().
+// probe(): zero-token contact verification. A published website contact
+// is checked A + MX over Cloudflare's CORS-enabled DNS-over-HTTPS; there is
+// no name-based domain guessing. An email address is not a website: its
+// host is never probed and never makes the web label "verified" (the email
+// stays in contacts as filed). An MX hit on a published website domain
+// yields a pattern email guess — always marked unverified in evidence.
+// Entities with no published website to verify are left for the web-search
+// link generated downstream in brief().
 
 const DOH_BASE = "https://cloudflare-dns.com/dns-query";
 const FREEMAIL = new Set([
@@ -129,12 +131,11 @@ function applyToEntity(entity: Entity, r: ProbeResult): void {
   }
 }
 
-// A published email/website contact beats any guess — extract its domain.
+// A published website contact beats any guess — extract its host. Only
+// URL-shaped contacts yield a domain; an email address never does.
 export function publishedDomain(entity: Entity): string | null {
   for (const c of entity.contacts) {
-    const email = c.match(/^[^@\s]+@([a-z0-9.-]+\.[a-z]{2,})$/i)?.[1]?.toLowerCase();
-    if (email !== undefined && !FREEMAIL.has(email)) return email;
-    const host = c.match(/^(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i)?.[1]?.toLowerCase();
+    const host = c.match(/^(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,})/i)?.[1]?.toLowerCase();
     if (host !== undefined && c.includes(".") && !c.includes("@") && !FREEMAIL.has(host)) return host;
   }
   return null;
@@ -149,6 +150,7 @@ async function hasRecords(domain: string, type: "A" | "MX", limiter: Limiter, do
     const resp = await limiter.run(() =>
       doFetch(`${DOH_BASE}?name=${encodeURIComponent(domain)}&type=${type}`, {
         headers: { accept: "application/dns-json" },
+        signal: AbortSignal.timeout(5_000),
       })
     );
     if (!resp.ok) return false;

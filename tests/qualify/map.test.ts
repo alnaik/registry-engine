@@ -113,6 +113,16 @@ describe("mapQuery — LLM", () => {
     expect(MAP_SYSTEM).toContain("never add a caveat about a missing location");
   });
 
+  it("caps the request sent to the model at 300 chars", async () => {
+    const prompts: string[] = [];
+    const backend: RawLlm = { complete: async prompt => { prompts.push(prompt); return '{"naics":["332312"]}'; } };
+    const query = "metal fabrication ".repeat(60).slice(0, 1000);
+    expect(query.length).toBe(1000);
+    await mapQuery(query, createLlm({ backend }), CO);
+    expect(prompts[0]!.startsWith(query.slice(0, 300))).toBe(true);
+    expect(prompts[0]!.length).toBe(300);
+  });
+
   it("all codes invalid -> falls back to the no-LLM path", async () => {
     const { llm, calls } = countingLlm('{"naics":["999999","12"],"keywords":["potato"]}');
     const r = await mapQuery("restaurants in boulder", llm, CO);

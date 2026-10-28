@@ -265,17 +265,19 @@ export class SocrataDriver implements Driver {
     const rows: Record<string, unknown>[] = [];
     let offset = 0;
     while (rows.length < limit) {
+      const requested = Math.min(PAGE_SIZE, limit - rows.length);
       const url = buildSoqlUrl(`${source.endpoint}/${datasetId}.json`, {
         $where: where,
-        $limit: String(PAGE_SIZE),
+        $limit: String(requested),
         $offset: String(offset),
         $order: order ?? ":id",
       });
       const resp = await limiter.run(() => fetchWithRetry(url, opts));
+      if (!resp.ok) throw new Error(`${source.id}: HTTP ${resp.status}`);
       const page = (await resp.json()) as Record<string, unknown>[];
       rows.push(...page);
-      if (page.length < PAGE_SIZE) break;
-      offset += PAGE_SIZE;
+      if (page.length < requested) break;
+      offset += requested;
     }
     return rows.slice(0, Math.max(limit, 0));
   }

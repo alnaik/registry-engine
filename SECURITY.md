@@ -17,8 +17,9 @@ user's request, in `map` and `brief`. The other is registry text inside
 
 **Mitigations:**
 1. **Data, not instructions.** Both system prompts tell the model to treat
-   the request and lead data as data. The request is sent JSON-stringified
-   and capped at 300 chars.
+   the request and lead data as data. The request is capped at 300 chars:
+   map sends the request as text, capped at 300; brief sends it
+   JSON-stringified.
    - `packages/qualify/src/verbs/map.ts` (`MAP_SYSTEM`), `packages/qualify/src/verbs/brief.ts` (`BRIEF_SYSTEM`, packing in `briefLeads`)
 2. **Schema-constrained parsing.** The map output keeps only NAICS codes
    that exist in the official list (`isNaicsCode`), capped at 6. Keywords
@@ -98,7 +99,8 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 
 1. Concurrency limiters on every external source: Socrata 4, ECHO 2, DNS
    probes 4.
-2. Jittered exponential backoff on 429/5xx (`fetchWithRetry`).
+2. Jittered exponential backoff on 429/5xx (`fetchWithRetry`). Each request
+   attempt has a 20 s deadline (DNS probe 5 s); Retry-After is capped at 30 s.
 3. An optional Socrata app token sent as `X-App-Token`.
 4. Bulk-only sources (PPP) are served from local shards, never queried per
    search.
@@ -205,6 +207,13 @@ credits is a target for other websites open in the same browser.
    `mailto:` values are sanitized.
 5. Static files come from an exact whitelist, so no path is built from the
    URL.
+6. **Search history.** Each finished search is kept as `<id>.json` and
+   `<id>.csv` under the user's home (`~/.cache/registry-engine/searches`,
+   created with mode 0o700), the newest 20 only. The files contain whatever
+   the sheet showed, including individuals' records as filed. The id is a
+   server-computed SHA-1; `/api/history/:id` and `/api/csv?id=` accept only
+   `/^[a-f0-9]{40}$/` (400 otherwise), and no path is built from any other
+   input. Opening a stored search is a pure read; there is no delete endpoint.
 - `apps/web/src/server.ts`, `apps/web/public/app.js`
 
 ---
@@ -247,3 +256,7 @@ credits is a target for other websites open in the same browser.
   only (Threat 1, item 6). Registry standing gains "inactive" (dissolved, delinquent),
   opt-in per source via `quirks.backfillInactive`; its extra SoQL clause uses only the
   manifest's `statusValue` (Threat 6, item 2). CSV adds `individual_record`.
+- v3.8 (2026-10-27, v7 Phase F audit fixes): each request attempt has a 20 s deadline
+  (DNS probe 5 s) and Retry-After is capped at 30 s (Threat 4). Threat 1 wording: map
+  sends the request as text capped at 300; brief sends it JSON-stringified. The web app
+  keeps the 20 newest searches on disk, mode 0o700, ids validated (Threat 8, item 6).

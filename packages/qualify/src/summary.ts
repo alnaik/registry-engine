@@ -14,14 +14,14 @@ export function summaryCounts(ranked: Lead[], mapCodes: string[]): { total: numb
 export function summaryLines(ranked: Lead[], mapCodes: string[]): string[] {
   const { total, businesses, individuals, nameOnly, noWebsite } = summaryCounts(ranked, mapCodes);
   const extra = [
-    individuals > 0 ? `+${individuals} individuals' records, listed separately` : "",
+    individuals > 0 ? `+${individuals} ${individuals === 1 ? "individual's record" : "individuals' records"}, listed separately` : "",
     nameOnly > 0 ? `+${nameOnly} name matches, lower confidence` : "",
   ].filter(Boolean);
   const lines = [
-    `Found ${businesses} businesses with an industry code for this request${extra.length > 0 ? ` (${extra.join("; ")})` : ""}`,
+    `Found ${businesses} ${businesses === 1 ? "business" : "businesses"} with an industry code for this request${extra.length > 0 ? ` (${extra.join("; ")})` : ""}`,
   ];
   // Says nothing when it is true of every lead.
-  if (noWebsite < total) lines.push(`${noWebsite} have no website listed in the records searched — business records get a search link.`);
+  if (noWebsite < total) lines.push(`${noWebsite} ${noWebsite === 1 ? "has" : "have"} no website listed in the records searched — business records get a search link.`);
   return lines;
 }
 
