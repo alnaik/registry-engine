@@ -108,7 +108,7 @@ describe("scoreEntity", () => {
 
 describe("webPresence and search URL", () => {
   it("verified: the probe resolved a domain; unresolved: a published domain exists but did not resolve; none: neither", () => {
-    const withSite = entity({ contacts: ["info@example.com"] });
+    const withSite = entity({ contacts: ["https://example.com"] });
     expect(webPresence(withSite, probeResult("x", { domain: "example.com", a: true }))).toBe("verified");
     expect(webPresence(withSite, probeResult("x", { domain: "example.com", mx: true }))).toBe("verified");
     expect(webPresence(withSite, probeResult("x"))).toBe("unresolved");
@@ -123,7 +123,7 @@ describe("webPresence and search URL", () => {
     expect(l!.web).toBe("none");
     expect(new URL(l!.searchUrl!).searchParams.get("q")).toBe(`"No Domain Co" Mocktown CO`);
 
-    const site = entity({ id: "s", contacts: ["info@example.com"] });
+    const site = entity({ id: "s", contacts: ["https://example.com"] });
     const probes = new Map([["s", probeResult("s", { domain: "example.com", a: true, mx: true, published: true })]]);
     const [verified] = rankEntities([site], probes, CTX);
     expect(verified!.web).toBe("verified");
