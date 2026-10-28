@@ -20,10 +20,18 @@ from URL-shaped contacts (the second branch). An email address never yields a
 domain, so it is never DNS-probed and never turns `web` into `verified`. The
 email stays in `entity.contacts` as filed. The `info@` guess stays, and now
 only follows a filed website whose MX resolves (unchanged `hasEmail` guard).
-Tests: `tests/qualify/probe.test.ts` — the case that expects
-`sales@acmegems.com` → `acmegems.com` flips to `null`; add a case: contacts
-`["ldiess@mccarronlaw.com"]` → `publishedDomain` null and `webPresence` is
-`"none"`. Check the Leevers case (line ~65) still states what the code does.
+Since the URL branch is then the only path, require an alphabetic TLD in its
+regex so a dotted phone ("303.555.0100") is not a host.
+Tests to update (reviewer's list): `tests/qualify/probe.test.ts:28-30`
+(`sales@acmegems.com` → null); `probe.test.ts:64-74` Leevers → contacts
+`["debbiel@leevers.com","https://leevers.com"]`, expect domain `leevers.com`
+and `emailGuess` null; `tests/qualify/brief.test.ts:111-115,126-132` fixture
+`withSite` → `"https://example.com"`; `tests/qualify/engine-coded.test.ts`
+Visser's contact → `"https://visser.example"`. Add: contacts
+`["ldiess@mccarronlaw.com"]` → `publishedDomain` null, `webPresence`
+`"none"`. Run `tests/e2e-golden.test.ts` and confirm it still passes.
+Update the header comment in `probe.ts` (lines ~4-9 and ~132) and add a
+one-line amendment to ADR 0013 (it says probe verifies "an email or website").
 Why not "email host resolves" as a third label: it adds a state the sheet
 would have to explain, for no decision the caller makes differently.
 
@@ -35,14 +43,20 @@ rejects like a network error and is retried by the existing loop. In the 429
 branch: `delay = Math.min(parsed * 1000, 30_000)` (the same ceiling
 `jitteredBackoff` uses; lift `30000` into one `MAX_BACKOFF_MS` constant used
 by both). Every driver already calls `fetchWithRetry`, so no driver changes.
-Tests (`tests/registry-core/http.test.ts`): (a) a stubbed `fetch` that only
-settles when its signal aborts, `timeoutMs: 20, maxRetries: 0` → rejects
-within 1 s; (b) 429 with `Retry-After: 3600` then 200, `maxRetries: 1`, fake
-timers → resolves after advancing 30 s, not 3600 s. Pass `fetch` in through
-`opts.fetch?` only if the test can't stub `globalThis.fetch` cleanly (the
-socrata/echo tests show the existing pattern; follow it).
-`SECURITY.md` Threat 4: one sentence that every government call has a 20 s
-deadline and Retry-After is capped at 30 s; changelog v3.8.
+Also `packages/qualify/src/verbs/probe.ts` `hasRecords`: pass
+`signal: AbortSignal.timeout(5_000)` to the DoH fetch (the existing catch
+turns a timeout into `false`); a stalled DoH call otherwise blocks the probe's
+`Promise.all` on every search.
+Note: the signal also covers the body read, and a stall during `resp.json()`
+rejects in the driver (a `source_error`), not in the retry loop. Worst case
+per request is about 5 attempts × 20 s plus backoff.
+Tests (`tests/registry-core/http.test.ts`, `vi.stubGlobal("fetch", …)`):
+(a) a stubbed `fetch` that only settles when its signal aborts,
+`timeoutMs: 20, maxRetries: 0` → rejects within 1 s; (b) 429 with
+`Retry-After: 3600` then 200, `maxRetries: 1`, `vi.useFakeTimers` →
+resolves after advancing 30 s, not 3600 s. No `opts.fetch` injection.
+`SECURITY.md` Threat 4: "each request attempt has a 20 s deadline (DNS
+probe 5 s); Retry-After is capped at 30 s"; changelog v3.8.
 Not in scope: aborting the search when the browser tab closes (needs a signal
 through every verb; the freeze was reasoned, not observed).
 
@@ -51,7 +65,9 @@ through every verb; the freeze was reasoned, not observed).
 counts only at a word start: `new RegExp("(^|[^a-z0-9])" + escape(stem))`
 over the lowercased text. Right side stays open (stems are prefixes:
 "fabr" must still find "fabricating"). Escape regex metacharacters in the
-stem. Known remaining prefix hit: "bag" → "bagels"; accepted.
+stem and compile the stem RegExps once per `lookupCodes` call, not inside
+`matched` (which runs ~20k times). Known remaining prefix hits: "bag" →
+"bagels", "bagasse"; accepted.
 Tests (`tests/registry-core/naics.test.ts`): `lookupCodes(["canvas","bag"])`
 does not contain `111219` (cabbage) or `236210` (garbage); still contains
 `314910` first; `["metal","fabrication"]` still finds 332312/332322.
@@ -60,12 +76,16 @@ does not contain `111219` (cabbage) or `236210` (garbage); still contains
 `packages/qualify/src/verbs/map.ts`: build the prompt from
 `query.slice(0, 300)`. Test in `tests/qualify/map.test.ts`: a 1,000-char
 query → the stub LLM's prompt starts with the first 300 chars and the query
-part is 300 long. `SECURITY.md` already claims this; no doc change.
+part is 300 long. `SECURITY.md` Threat 1 says the request is "JSON-stringified and capped at
+300" for map and brief; map sends plain text. Fix the wording: "map sends the
+request as text, capped at 300; brief sends it JSON-stringified". Do not
+JSON-stringify the map prompt (it would change the validated prompt and
+break `map.test.ts:111-112`).
 
 ### F5. Socrata asks for what it needs and checks the status (audit M4)
 `packages/registry-core/src/drivers/socrata.ts`, `pages`: `$limit` is
-`Math.min(PAGE_SIZE, limit - rows.length)`; stop when a page is shorter than
-what was requested. Before `resp.json()`: `if (!resp.ok) throw new
+`Math.min(PAGE_SIZE, limit - rows.length)` (`limit` may be `Infinity`);
+`offset += requested`; stop when a page is shorter than what was requested. Before `resp.json()`: `if (!resp.ok) throw new
 Error(\`${source.id}: HTTP ${resp.status}\`)`. Tests
 (`tests/registry-core/socrata-driver.test.ts`): a fetch with `limit: 5`
 requests `$limit=5`; a 404 response rejects (the engine already turns a
@@ -88,33 +108,47 @@ owner declined.
 - The "find buyers instead" link: `setDirection(other)`, then the same
   check with `{ ...app.lastParams, direction: other }`; run only when it
   passes. A sheet is never replaced by a search that is known to be empty.
-- `renderEmpty`: when `app.status && app.status.llm === false`, the tip
-  reads "Finding buyers needs industry codes when the AI step is off. Look
-  them up with the code finder above." and sets `app.codeBoxReason` to the
-  same sentence then `updateCodeBox()`; the "Turn off Skip AI" sentence only
-  appears when the AI is available.
+- One helper `blockForCodes()` used by all three paths: `updateCodeBox()`,
+  `scrollTo($("code-box"))`, `$("code-q").focus()`. Add
+  `aria-describedby="code-why"` to `#code-q` in index.html.
+- `renderEmpty`: keep the existing gate (`p.noLlm && app.map &&
+  app.map.direction === "sell"`) and add `&& !p.naics`. Inside it, branch on
+  wording only: when `app.status && app.status.llm === false` the tip reads
+  "Finding buyers needs industry codes when the AI step is off. Look them up
+  with the code finder above."; otherwise the current sentence.
+What this does not catch: "Let us guess" with the server guessing sell
+(the README hot-sauce example). That search still runs and returns empty;
+the code box already shows there (the map event sets `codeBoxReason`), and
+F7 only improves the wording.
 Tests: `tests/web/labels.test.ts` pins label text, not flows; no new test
 harness for app.js. The reviewer checks the three paths by reading.
 
 ### F8. CLI flags and plural (audit L1, L2)
-`apps/cli/src/index.ts`: `--csv` or `--near` given without `=value` → print
-`--csv needs a path (--csv=leads.csv)` / `--near needs a place or ZIP
-(--near=80202)` and exit 1. Unknown command → help, exit 2.
-`packages/qualify/src/summary.ts`: "1 business" / "n businesses".
-Test: `tests/qualify/summary.test.ts` for the singular.
+`apps/cli/src/index.ts`: one `VALUE_FLAGS` list (`csv`, `near`, `naics`,
+`model`, `region`, `shards`); any of them given without `=value` → print
+`--<flag> needs a value (e.g. --csv=leads.csv)` and exit 1. Unknown command
+→ help, exit 2; no-args and `help` keep exit 0.
+`packages/qualify/src/summary.ts`: "1 business" / "n businesses"; same for
+"1 has no website" and "+1 individual's record".
+Test: `tests/qualify/summary.test.ts` for the singular forms.
 
-### F9. Copy opener inside the click (audit L3)
-`apps/web/public/app.js`, `copyText`: try the selection + `execCommand("copy")`
-path synchronously first (still inside the user gesture); on success report
-"Copied"; otherwise `await navigator.clipboard.writeText`; if that rejects,
-toast "Press Ctrl+C (or Cmd+C) to copy the selected text." with the text
-left selected.
+### F9. Copy opener (audit L3) — dropped
+Reviewer: `copyText` already toasts on every failure path and user
+activation outlasts a rejected promise in Chrome and Firefox; the audit
+marked it inconclusive. Nothing observed, nothing changed.
+
+### F10. Individual's record never gets the web tag (audit M3, residual)
+`apps/web/public/app.js` `trustLine` (~line 1039): the fallback to `webTag`
+is skipped for `lead.individual` (`t.tag || (lead.individual ? null :
+webTag(lead))`). Only reachable when an individual's record joins a
+registry entry; one line.
 
 ### Not changed (stale: the audit ran before the v6 field sheet)
-M2 (intro promised phones: the sentence is gone), M3 (individual's web
-chip: individuals are a separate group with no web row), L4 (progress list
-hidden: the step list is no longer hidden on a clean search). The reviewer
-confirms each on `main` before this phase starts.
+M2 (intro promised phones: the sentence is gone), M3 (individuals are a
+separate group with no web row; the residual is F10), L4 (the step list is
+still hidden on every result, but the per-source counts moved into "About
+this search", which was the audit's own alternative fix). Confirmed by the
+reviewer on 5ea00b7.
 
 ## Phase G — search history (owner request, 2026-10-27)
 
@@ -128,30 +162,41 @@ side; the browser's "Saved searches" keeps its meaning (what's new since).
 - `AppDeps.historyDir?: string`. `main.ts` passes
   `join(homedir(), ".cache", "registry-engine", "searches")` (next to the
   contacts cache). Undefined (tests that don't care) = no history.
-- `historyId(params)`: sha1 hex of `JSON.stringify([query.trim()
-  .toLowerCase(), (near ?? "").trim().toLowerCase(), naics sorted and joined
-  by ",", direction ?? "auto"])` — the same tuple as the UI's `searchId`, so
-  a saved search and its history entry agree.
-- After `buildResult` succeeds: `mkdir -p` the dir and write
-  `<id>.json` = `{ id, ranAt, params, result, ranked, existenceIds }`
-  (`ranked` + `existenceIds` so `/api/csv` can be rebuilt). Write to a temp
-  name then rename. Then prune: keep the 20 newest by `ranAt`. A write
-  failure is logged to stderr and never fails the search.
-- `GET /api/history` → newest first: `[{ id, query, near, naics,
-  direction, ranAt, businesses: result.sheet.businesses }]`. Reads the
-  directory, parses each file; a file that fails to parse is skipped.
+- `historyId(params)`: sha1 hex of `JSON.stringify([region ?? "",
+  query.trim().toLowerCase(), (near ?? "").trim().toLowerCase(), naics
+  sorted and joined by ",", direction ?? "auto"])`. Server-only; the page
+  never computes it. Region is in it so a CO and a CT search with the same
+  words don't overwrite each other.
+- After `buildResult` succeeds: `mkdir -p` the dir (mode 0o700; the files
+  hold individuals' records as filed) and write two files, each via a temp
+  name then rename: `<id>.json` = `{ id, ranAt, params, map, result }`
+  where `map` is the `translateEvent` line of the map event (the reading
+  line and the "Before you call" caveats live there, not in `result`), and
+  `<id>.csv` = `leadsToCsv(ranked, existenceIds)` (about 1 KB per lead;
+  full Lead objects would be 2–4 MB per search). Then prune: keep the 20
+  newest `.json` by mtime and delete their pairs. A write failure is logged
+  to stderr and never fails the search.
+- `GET /api/history` → `200 []` when `historyDir` is undefined. Otherwise
+  newest first by mtime, only names matching `/^[a-f0-9]{40}\.json$/`:
+  `[{ id, query, near, naics, direction, region, ranAt, businesses:
+  result.sheet.businesses }]`; a file that fails to parse is skipped.
 - `GET /api/history/:id` → id must match `/^[a-f0-9]{40}$/` (400 otherwise;
-  the path is built only from the validated id). 404 if missing. 409 while
-  `busy`. On success set `last = { ranked, existenceIds }` (so Download CSV
-  matches the open sheet) and return `{ params, ranAt, result }`.
+  the path is built only from the validated id). 404 if missing. A pure
+  read: returns `{ params, ranAt, map, result }`, no server state changes.
+- `GET /api/csv?id=<40 hex>` → serves `<id>.csv` from the dir (404 if
+  missing; 400 on a bad id). Without `id` it behaves as today (`last`).
 - No delete endpoint; pruning is the only removal.
-Tests (`tests/web/server.test.ts`, temp dir per test): a search writes one
-file and `/api/history` lists it; `/api/history/:id` returns the stored
-result and a fresh `createApp` with the same dir serves `/api/csv` from it;
-a bad id → 400; a missing id → 404; 21 searches with different queries →
-20 files remain, oldest gone. `SECURITY.md` Threat 8: one paragraph (local
-files under the user's home, id validated, no path from input, contains
-whatever the sheet showed), changelog v3.8.
+Tests (`tests/web/server.test.ts`, temp dir per test): a search writes the
+pair and `/api/history` lists it; `/api/history/:id` returns the stored
+result and map; a fresh `createApp` with the same dir serves
+`/api/csv?id=` from it; `/api/history` with no dir → `[]`; a bad id → 400;
+a missing id → 404; 21 searches with different queries → 20 pairs remain,
+oldest gone. `SECURITY.md` Threat 8: one paragraph (local files under the
+user's home, 0o700, id validated, no path from input, contains whatever
+the sheet showed), changelog v3.8. README line ~69 ("saved searches are
+stored in your browser"): add one sentence on the server-side history.
+`scripts/a11y/axe.ts`: pass a temp `historyDir` so the Recent box is
+scanned.
 
 ### G2. Page: "Recent searches"
 `apps/web/public/index.html`: a `#recent` box under `#saved`, same classes
@@ -162,16 +207,23 @@ empty.
   query, then near / codes / direction / "ran <date>" / "<n> businesses";
   buttons **Open** and **Run again**. Called at startup and after every
   finished search.
-- Open: `GET /api/history/:id`; set the form fields from `params`
-  (query, near, naics, direction, radius, Skip AI); `app.lastParams =
-  params`; `resetForRun(params)`; `showResult(result, { stored: ranAt })`.
+- One `fillForm(params)`: query, near, naics (`string[]` joined with
+  ", "), direction (`setDirection(params.direction || "auto")`), radius;
+  Skip AI only when `!$("no-llm").disabled` (the server may have forced it
+  on); region only when `#region-field` is visible; then `updateCodeBox()`.
+- Open: `GET /api/history/:id`; `fillForm(params)`; `app.lastParams =
+  readParams()` (one params shape everywhere; the stored one has an array
+  for naics); `resetForRun(app.lastParams)`; `$("steps").hidden = true`;
+  `app.map = map`; `$("csv").href = "/api/csv?id=" + id` (`resetForRun`
+  puts it back to `/api/csv`); `showResult(result, { stored: ranAt })`.
 - `showResult(result, opts = {})`: when `opts.stored`, skip the saved-search
-  seen/lastRunAt update (opening is not a run), and `#new-since` shows
+  seen/lastRunAt update (opening is not a run); `#new-since` shows
   "Results from <date>. Run again to refresh." instead of the new-since
-  sentence. The print head uses the stored date.
-- Run again: fills the form the same way and calls `runSearch` (through the
-  F7 guard).
-- Errors (server gone, 409, 404) go to `toast`. Rendering uses `h()` /
+  sentence; the print head uses the stored date; `renderAbout` gets no
+  `seconds` (no "Time 1 s" for an opened sheet).
+- Run again: `fillForm(params)` then the submit path (so the F7 guard
+  applies).
+- Errors (server gone, 404) go to `toast`. Rendering uses `h()` /
   `textContent` only.
 A11y: the two buttons carry `aria-label`s like the saved rows. `npm run
 a11y` must stay clean.
