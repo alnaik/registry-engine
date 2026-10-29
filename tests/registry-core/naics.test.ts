@@ -70,6 +70,30 @@ describe("lookupCodes", () => {
     expect(fab.some(c => c === "332312" || c === "332322")).toBe(true);
   });
 
+  it("short stems must end the word: no bakeries or bagasse for bag", () => {
+    const codesOf = (q: string) => lookupCodes(q.split(" ")).map(h => h.code);
+    const titlesOf = (q: string) => lookupCodes(q.split(" ")).map(h => h.title);
+    const canvasBag = lookupCodes(["canvas", "bag"]);
+    expect(canvasBag[0]!.code).toBe("314910");
+    for (const h of canvasBag) expect(h.title).not.toMatch(/baker|pulp/i);
+    for (const t of titlesOf("bag")) expect(t).not.toMatch(/baker|pulp/i);
+    expect(codesOf("bag")).toEqual(expect.arrayContaining(["314910", "322220", "326111"]));
+    expect(codesOf("hot sauce")).toContain("311941");
+    for (const t of titlesOf("hot sauce")) expect(t).not.toMatch(/hotel|casino/i);
+    const tote = codesOf("sew tote bags");
+    expect(tote.slice(0, 5)).not.toContain("221320");
+    expect(tote.slice(0, 5)).not.toContain("237110");
+    expect(tote).toEqual(expect.arrayContaining(["315210", "314910"]));
+    expect(codesOf("machining")).toContain("332710");
+    expect(codesOf("welding")).toContain("333992");
+    expect(codesOf("welders")).toContain("333992");
+    expect(codesOf("bakeries")).toEqual(expect.arrayContaining(["311811", "311812"]));
+    expect(codesOf("bakery")).toContain("311811");
+    expect(codesOf("brewery")).toContain("312120");
+    expect(codesOf("printing")).toContain("323111");
+    expect(codesOf("gasoline")).toContain("447110");
+  });
+
   it("honors max and returns [] for no words or no matches", () => {
     expect(lookupCodes(["metal"], 3).length).toBeLessThanOrEqual(3);
     expect(lookupCodes([])).toEqual([]);

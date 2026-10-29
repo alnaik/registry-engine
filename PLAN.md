@@ -1,3 +1,480 @@
+# v9 — public release: drop the CLI, document the API, code-finder fix, UI clarity pass, hygiene
+
+Working branch: `v8-byok` (continues after the v8 commit 8db2cf3). Owner
+decisions 2026-10-28: one phase, no sub-phases. Email in git history stays
+(owner's call; no history rewrite). No sample result row on the empty page.
+`.claude/agents/` stays. Everything below ships in one PR with v8.
+
+## J1 — remove the CLI; the HTTP endpoints and the library are the API ✅ (2026-10-28; apps/cli deleted, lockfile refreshed; README "HTTP API and library"; CLAUDE.md, SECURITY v3.11 and K5 comments reworded)
+
+- Delete `apps/cli/` entirely. Remove `"apps/cli/src/**/*.ts"` from
+  `tsconfig.json` include. Run `npm install` so `package-lock.json` drops
+  the workspace. No tests reference it (checked).
+- `README.md`: replace the "## CLI" section with "## HTTP API and library":
+  - The local server is the API. One curl example against
+    `POST /api/search` with `Content-Type: application/json` and
+    `Host: localhost:4317` (the Host check is deliberate: the API is
+    local-only), body `{"query": "...", "near": "..."}`; the response is
+    newline-delimited JSON, one event per line, ending with a `result`
+    line. List the event types in one line each: `map`, `routed`, `origin`,
+    `fetched`, `source_error`, `backfill_progress`, `recent`, `error`,
+    `result`. Point at `apps/web/src/server.ts` (`parseSearchParams`) for
+    the accepted fields, and list the other routes in one line each:
+    `GET /api/status`, `GET /api/codes?q=`, `GET /api/history`,
+    `GET /api/history/:id`, `GET /api/csv?id=`.
+  - The library: `import { search } from "@registry-engine/qualify"` with a
+    five-line example (query, region, no LLM, print names). Note the ≤2
+    LLM calls budget and that `llm` is optional.
+  - Token table: drop the two CLI rows; keep the web row; drop "and the CLI
+    prints them after the results"; "measured through claude -p" stays.
+- `CLAUDE.md`: Commands section drops the CLI block and the "CLI flags"
+  paragraph; the `--check-all` mention moves to one sentence under the web
+  app ("the web app's Check all button sets `backfillAll`"); the
+  strip-types note becomes "`node --experimental-strip-types` does not work
+  on this repo (NodeNext `.js` imports); use vite-node"; package layout
+  drops `apps/cli`; "Delivery surface" is the web app only (plus the HTTP
+  API and the library). Keep the ADR references.
+- `SECURITY.md`: every "CLI" mention (lines ~42, 74, 85, 108, 132, 167,
+  238) is reworded to the web app / API or removed where it only described
+  the CLI (Threat 3: the CSV export is the web app's `/api/csv`). Changelog
+  v3.11: "CLI removed; HTTP API documented."
+- `PLAN.md` older sections may keep CLI wording (history).
+
+## J2 — code finder: "canvas bag" must not return bakeries or bagasse ✅ (2026-10-28; K6 rule incl. `ies` and the `y` rule, no existing test broke; K7 assertions added)
+
+`packages/registry-core/src/naics.ts`, `lookupCodes` + `stem`:
+- Today a stem matches at a word start with the right side open, so `bag`
+  matches `bagels` and `bagasse`. New rule: the stem must be followed by
+  the end of the word or by one of the stemmer's own suffixes
+  (`s|es|ed|er|ers|ing|ation|ication`), then a non-alphanumeric or end.
+  Build the regex once per stem as today.
+- Tests (`tests/registry-core/naics.test.ts` or wherever `lookupCodes` is
+  tested): `canvas bag` returns 314910 (textile bag and canvas mills) in
+  the top results and no code whose title contains "baker" or "pulp";
+  `bakery` still returns bakeries (stem `baker` → `bakeries` matches via
+  `ies`? No: `bakery` stems to `bakery` (no suffix rule hits, length rule);
+  the coder must verify `bakery`, `bakeries`, `welding`, `welders` all
+  still hit their codes and add those four as assertions, adjusting the
+  suffix list only if one of them fails).
+
+## J3 — UI clarity pass (`apps/web/public/*`, `design.html` samples updated) ✅ (2026-10-28; `.label`, displayName/displayCity pinned, placeholder weight, examples, buttons, favicon/wordmark, renderEmpty tips; a11y 0 serious)
+
+1. **Spaced small caps only for distance headings.** `.eyebrow` keeps its
+   style but is used only by `.band-head` headings ("Within 10 miles", …).
+   Every other `eyebrow` (form labels, "We read this as", "Before you
+   call", "About this search", group headings, the My calls headings)
+   becomes a plain label class `.label` (same size `--t1`, weight `--wb`,
+   no letter-spacing, no uppercase, color `--ink-2`). The test
+   `tests/web/public-assets.test.ts:32` is updated to the new class.
+2. **Display case for names and cities.** `labels.js` gets
+   `displayName(name)` and `displayCity(city)`, pure, pinned by tests:
+   - If the string has any lowercase letter, return it unchanged (as filed).
+   - Otherwise title-case each word, except: words of ≤3 letters stay upper
+     when they are in a small allow-list (`LLC`, `INC`, `CO`, `LP`, `LLP`,
+     `PC`, `DBA`, `USA`, and two-letter state codes), words with a digit
+     stay as filed, `HVAC` stays upper, and the particles `of`, `and`,
+     `the`, `&` are lower unless first. Apostrophe-S stays lower (`JOE'S` → `Joe's`).
+   - Applied at render only: lead rows, the open row, My calls rows,
+     openers that quote the name, the trust/registry lines that show the
+     filed name. CSV, history files, aria-labels and `textContent` of
+     copy-to-clipboard stay as filed (the owner says the name as filed on
+     the phone; the sheet also keeps a "filed as" line in the open row when
+     display differs from filed).
+3. **Placeholder looks like a placeholder.** `.ask-input::placeholder`
+   color `--rule-2`, weight `--w`, and the query placeholder text becomes
+   `What you need, or what you sell` (the label text above it goes; the
+   label stays visually hidden for screen readers via an existing
+   `.sr-only` class or a new one).
+4. **Examples** replaced with three that show the range, still `.example`
+   buttons but styled as small outline buttons (`btn sm`), not links:
+   `Who would buy my small-batch hot sauce near Boulder`,
+   `A shop that can powder-coat 200 steel brackets`,
+   `A wholesale buyer for 40 acres of pinto beans`. The "Try:" prefix stays.
+5. **Buttons instead of inline links for actions.** `linkish` is kept only
+   for the "Show them" link inside a band's "N more" line. These become
+   `btn sm`: `#more-toggle` ("More options"), "find buyers instead" /
+   "find suppliers instead" in the reading line, "adjust" next to
+   Industries (relabel "Change codes"), and the Check all button already
+   is a button. The filters stay a segmented group (`.seg`), unchanged.
+6. **Favicon and wordmark.** Inline SVG favicon as a `data:` URI in
+   `<link rel="icon">`: a 32×32 teal (`#0d6f67`) rounded square with a
+   white "R" in the system sans, nothing else. The `h1.brand-mark` gets a
+   12×12 teal square (CSS `::before`, `--act`) before the text, no image
+   file. CSP: `img-src 'self' data:` must be allowed for the icon; check
+   `server.ts` CSP header and `tests/web/server.test.ts` CSP assertions.
+7. **"Before you call" on the empty buyer page.** When `renderEmpty` runs
+   for a buyer search and `app.map.caveats` exist, the caveats already
+   print in the reading line; `renderEmpty` must not repeat them as tips.
+   The empty-tips list is at most three items, each one sentence, and the
+   first tip for a buyer search with no codes is the one that explains
+   codes; drop "Try different words" when the direction is sell.
+8. `design.html` gains samples for `.label`, the new examples row, the
+   `displayName` cases (all caps → title, mixed stays, LLC/HVAC), and the
+   favicon/wordmark; `/design` remains free of serious a11y violations.
+
+## J4 — hygiene (coder does the file moves; the orchestrator runs gitleaks) ✅ (2026-10-28; docs/handoffs and LEARNING.md deleted, LICENSE-MIT → LICENSE; screenshots NOT re-captured: the capture includes the owner's Recent searches list, old images kept)
+
+Gitleaks (K18): "gitleaks 8.30.1 scanned all 71 commits on 2026-10-28: no leaks found. The PACA shard's filed gmail addresses are public records (Threat 5) and did not trip it."
+
+- Delete `docs/handoffs/` (four files). `original-kickoff.md` is the only
+  reference to `LICENSE-MIT`'s old scope and goes with it.
+- Rename `LICENSE-MIT` → `LICENSE` (content unchanged) and update the
+  README line and PLAN v8 A12 wording.
+- `.claude/agents/coder.md` stays. `registry-engine-audit.md` stays untracked.
+- Orchestrator after the coder: `brew install gitleaks` (or `npx`-free
+  binary) and `gitleaks detect --source . --log-opts="--all"`; record the
+  result in PLAN.
+
+## Amendments after the independent review (2026-10-28) — these override J1–J4 where they differ
+
+K1. **README API section.** `curl -N -X POST http://localhost:4317/api/search -H 'Content-Type: application/json' -d '{"query":"…","near":"80302"}'`.
+    State: any other Host header gets 403 (local-only by design); one
+    search at a time (429); bad fields 400; non-JSON 415. Event types, one
+    line each: `map`, `origin`, `routed`, `fetched`, `source_error`,
+    `merged`, `backfilled`, `backfill_progress`, `probed`, `recent`,
+    `contacts`, then exactly one of `result` or `error`. Body fields (see
+    `parseSearchParams`): `query`, `near`, `radiusMi`, `naics`, `leads`,
+    `region`, `direction`, `checkAll`, `findContacts`, `noLlm`. Routes also
+    include `GET /api/csv` (last search) and HEAD on `/api/status`.
+K2. **README library section.** "Inside this repo, run with `npx vite-node your-script.ts`; the packages aren't published." Example:
+    `const out = await search("metal fabrication", { region: "US-CO", contacts: null })`
+    then `out.ranked.slice(0, 10).map(l => l.entity.name)`. Say: leaving
+    out `llm` means the static table (supplier searches only); pass
+    `llm: { backend: llmBackendFromEnv().backend }` for the ≤2 AI calls;
+    `contacts: null` keeps paid lookups off even when a key is in the env.
+K3. **CLAUDE.md** check-all wording: "the web app's Check all button sends
+    `checkAll: true`, which the server passes as `backfillAll`." Fix line
+    81 ("…the web summary and the CLI"). Keep "Claude Code CLI (`claude -p`)"
+    wording wherever it refers to Claude Code, not to apps/cli.
+K4. **SECURITY.md** edits: line ~42 drop the `--verbose` clause; ~74 "The
+    web server checks `region` against the manifest (`parseSearchParams`)";
+    ~85 "The web app's `/api/csv` and My calls export write…"; ~108 drop
+    "CLI `--check-all`"; ~132 "displayed in the web app"; ~167 "The web app
+    labels them 'Agent/principals'". Changelog lines (238, 246) stay as
+    history. Add v3.11.
+K5. **Other apps/cli mentions**: engine.ts:68, adapter.ts:26 ("the web app
+    injects a `claude -p` or API backend"), labels.js:279 ("summary.ts's
+    copy"), labels.test.ts:263 title, ADR 0018:17 ("The page says which
+    path is billed"). `summaryLines` stays exported (test-only now).
+K6. **J2 rule, replacing the J2 text**: stems of 4+ letters keep today's
+    open right side. A stem shorter than 4 letters must be followed by
+    `(?:s|es|ed|ing)?` and then a non-alphanumeric or the end:
+    `re = new RegExp("(^|[^a-z0-9])" + esc(s) + (s.length < 4 ? "(?:s|es|ed|ing)?(?![a-z0-9])" : ""))`.
+    Comment: "Known trade-off: 'gas' no longer reaches 'gasoline'; type the full word."
+    Plus the stemmer change (owner accepted): add `ies` to the suffix list
+    before `es`, and drop a trailing `y` when 5+ letters remain. Existing
+    naics tests at lines 58–70 stay unchanged and must pass; if the `y`
+    rule breaks any existing test, keep the `ies` rule only and report it.
+K7. **J2 tests** (naics.test.ts): `canvas bag` → `codes[0] === "314910"`
+    and no title `/baker|pulp/i` in all 15; `bag` → no `/baker|pulp/i`,
+    contains 314910, 322220, 326111; `hot sauce` → contains 311941, no
+    `/hotel|casino/i`; `sew tote bags` → no 221320 or 237110 in the top 5,
+    contains 315210 and 314910; `machining` → 332710; `welding` and
+    `welders` → 333992; `bakeries` → 311811 and 311812; `bakery` → 311811;
+    `brewery` → 312120; `printing` → 323111; `gasoline` → 447110.
+K8. **J3.1 exact list** → `.label`: index.html:26, 31, 51, 59, 69, 77, 94,
+    107, 112, 162; app.js:622, 675, 1165, 1285, 1296, 1299, 1468;
+    design.html every non-band `eyebrow` including `design-label`
+    captions. Keep `.eyebrow` only at app.js:1139 and design.html:86. Move
+    app.css:138, 187, 212–217 selectors to `.label` (the group summary
+    `+`/`−` `::before` lives there). public-assets.test.ts:32 regex →
+    `class: "label"`. "About this search" is a `<summary>`, untouched. ADR
+    0017 Decision gets one line: "Uppercase spaced eyebrows only for
+    distance bands; other headings and labels use `.label`."
+K9. **J3.2 displayName rules (replace)**: any lowercase letter → unchanged.
+    Split on spaces. Keep as filed: tokens containing a digit, `&`, `/`,
+    or a `.` other than trailing; tokens with no vowel `[AEIOUY]` (CNC, DJ,
+    TV, RV, LLC, LLP, PC); allow-list INC, CO, LP, PLLC, DBA, USA, HVAC, II,
+    III, IV (matched ignoring a trailing `.` or `,`). Particles OF, AND,
+    THE, FOR, AT, IN, ON, DE, LA, DEL, Y → lowercase unless first word.
+    Otherwise capitalize each hyphen-separated part; after an apostrophe a
+    lone final `S` is lowercase, any other letter uppercase (`JOE'S` →
+    `Joe's`, `O'BRIEN` → `O'Brien`). No state-code rule.
+    **displayCity**: title-case each word with the same hyphen/apostrophe
+    handling, no allow-list, no particles (`LA JUNTA` → `La Junta`).
+K10. **J3.2 where applied**: `displayName` at app.js:1241 (`.lr-name`) and
+    1487 (My calls), never for `lead.individual === true` or for
+    officers/principals (as filed, ADR 0017); My calls entries store
+    `individual: lead.individual === true` (app.js:1425–1437), entries
+    without the field render as filed. `displayCity` only at app.js:1202
+    (distance cell) and 1484 (My calls sub-line); the Reach "Address" row
+    stays as filed. New `reachList` row `row("Filed as", lead.name)` when
+    display ≠ filed. Aria-labels at 1294, 1413, 1469 use the display form.
+    CSV, history, stored `entry.name`, clipboard text stay as filed. Drop
+    "openers" and "trust/registry lines" from J3.2 (openers never carry
+    the name). Both functions in labels.d.ts; pins in labels.test.ts:
+    `ACME WELDING LLC` → `Acme Welding LLC`, `JOE'S HVAC INC.` → `Joe's HVAC INC.`,
+    `O'BRIEN CNC` → `O'Brien CNC`, `MADE IN USA CO` → `Made in USA CO`,
+    `A-1 SIGNS` → `A-1 Signs`, `B&B FARMS` → `B&B Farms`, `Mixed Case Inc`
+    unchanged; `LA JUNTA` → `La Junta`.
+K11. **J3.3 placeholder (replace)**: keep `color: var(--ink-2)` (a lighter
+    colour fails WCAG contrast); the difference comes from weight: the
+    placeholder is `--w`, typed text `--wb` (set `.ask-input` to `--wb`).
+    Only the `#query` placeholder text changes; its label gets
+    `class="label visually-hidden"` (existing class, app.css:56). The Near
+    label stays visible.
+K12. **J3.4 examples**: `class="btn sm example"`, `.examples-line` gets
+    `align-items: center`; clicking an example clears `#near` so the town
+    in the example is the centre.
+K13. **J3.5**: remove the dead `.linkish.tap` rule; update design.html
+    samples at lines 41, 50, 56.
+K14. **J3.6 favicon**: `<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6f67'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='%23fff'%3ER%3C/text%3E%3C/svg%3E">`
+    in index.html and design.html. CSP already allows `img-src 'self' data:`
+    (server.ts:35): no server change; add `expect(csp).toContain("img-src 'self' data:")`
+    at server.test.ts:139 and :151. `.brand-mark::before { display:inline-block; width:12px; height:12px; background:var(--act); margin-right:var(--s2) }`.
+K15. **J3.7 renderEmpty (replace)**: at most 3 tips, in order: (a) if
+    `app.map && app.map.direction === "sell" && app.map.naics.length === 0`:
+    "Finding buyers needs industry codes: turn on the AI step, or add codes
+    with the code finder under More options." and the reading line's
+    "Before you call" skips the map.ts:228 caveat when `renderEmpty` runs;
+    (b) if `p.radiusMi`: the existing radius tip; (c) if direction is not
+    sell: "Try different words, like \"metal fabrication shop\"."; (d)
+    "Add industry codes with the code finder under More options." only when
+    (a) didn't run. Cut at 3.
+K16. **J3.8**: design.js imports `displayName`/`displayCity` from
+    `/labels.js` and fills a sample `<dl>` via `textContent`.
+K17. **J4 additions**: delete `LEARNING.md` (describes removed packages).
+    After everything passes, re-capture the README screenshots with
+    `node scripts/docs/capture.mjs` (it drives the web app; 2 AI calls) so
+    docs/media matches the new page; if Chromium isn't found, report and
+    leave the old images.
+K18. Orchestrator note: gitleaks 8.30.1 scanned all 71 commits on
+    2026-10-28: no leaks found. The PACA shard's filed gmail addresses are
+    public records (Threat 5) and did not trip it.
+
+## Acceptance
+`npm test`, `npm run typecheck`, `npm run a11y` pass; one live web search
+on the Claude Code path with the server on `PORT=4399` then stopped;
+screenshots are NOT re-captured in this phase (the capture script keeps
+working: it drives the web app, not the CLI).
+
+# v8 — bring your own keys, env only (before the repo goes public)
+
+Working branch: `v8-byok` (off `main` after PR #11). Owner decision
+2026-10-28: open-source the repo as a **run-it-yourself** tool. Every user
+runs it on their own machine with their own credentials, read from the
+environment only. No key field in the page, no hosted version. The server
+stays single-user and localhost-bound (SECURITY Threat 8 unchanged).
+
+What is true today, checked 2026-10-28: no secret has ever been committed
+(history scanned), there are no `.env` files, the only secrets are
+`EXA_API_KEY` / `PARALLEL_API_KEY` read at start, and the AI step works only
+through `claude -p`. The adapter already has an Anthropic Messages backend
+(`anthropicApiBackend`, not exported) that nothing wires up.
+
+Scope rule: fix the mechanism (one place decides the LLM backend, and the
+page/CLI tell the truth about who gets billed), document the keys, say what
+is covered. Nothing else.
+
+## Phase I1 — one place picks the LLM backend from the environment ✅ (2026-10-28; `llmBackendFromEnv` in `packages/qualify/src/llm/fromEnv.ts`, billing on the web result and CLI line; A6 API-key live gate: not run (no key in the orchestrator's shell), owner runs it before flipping visibility; Claude Code path re-measured: tote CLI 13,856 tokens $0.050, hot sauce 80302 CLI 14,351 $0.047, tote web 14,120 $0.050)
+
+`packages/qualify/src/llm/adapter.ts`
+- Add `export type LlmBilling = "subscription" | "api"`.
+- `RawLlm` gets an optional readonly `billing?: LlmBilling`. The Anthropic
+  backend sets `"api"`; `ClaudeCodeBackend` sets `"subscription"`.
+- `Llm.usage()` (the object the engine copies into `SearchOutcome.llmUsage`)
+  gains `billing: LlmBilling | null` (the raw backend's value, null when the
+  backend declares none). Update the `LlmUsage`-summary type accordingly and
+  the engine's copy, so the web stream and the CLI see it.
+- `anthropicApiBackend(apiKey, modelOverride?)`: export it; when
+  `modelOverride` is set it replaces `opts.model` (same contract as
+  `ClaudeCodeBackend`). Nothing else in it changes. `costUsd` stays `null`
+  on this path (the Messages API returns no price).
+- New `export function llmBackendFromEnv(env: Record<string, string | undefined> = process.env, modelOverride?: string): { backend: RawLlm; billing: LlmBilling }`
+  (put it in `claudeCodeBackend.ts` or a new `fromEnv.ts`, coder's choice,
+  exported from the qualify index):
+  - `ANTHROPIC_API_KEY` set and non-empty → `{ backend: anthropicApiBackend(key, modelOverride), billing: "api" }`.
+  - otherwise → `{ backend: new ClaudeCodeBackend(modelOverride), billing: "subscription" }`
+    (fails at call time if `claude` is missing, exactly as today).
+  The key is read once here and lives only inside the backend closure. It
+  is never logged, never put in an event, never written to history.
+
+`apps/cli/src/index.ts`
+- Replace `new ClaudeCodeBackend(flags["model"])` with
+  `llmBackendFromEnv(process.env, flags["model"]).backend`.
+- The usage line: keep tokens; the cost/billing tail becomes
+  - billing `subscription`: `· about $X at API prices — billed to your Claude subscription via claude -p` (today's text)
+  - billing `api`: `— billed to your Anthropic API key` (no dollar figure: the API returns none; the README table gives the order of magnitude)
+- Help text: "LLM calls (max N/search) use ANTHROPIC_API_KEY when set,
+  otherwise the Claude Code CLI (claude -p) on your subscription. --model
+  is passed through as given (API model id, or a CLI alias like sonnet)."
+
+`apps/web/src/server.ts`, `apps/web/src/main.ts`
+- `AppDeps.llmAvailable: () => Promise<boolean>` becomes
+  `llm: () => Promise<{ backend: RawLlm; billing: LlmBilling } | null>`.
+  `main.ts` implements it: `ANTHROPIC_API_KEY` set → `llmBackendFromEnv()`
+  result; else `claude --version` succeeds → `llmBackendFromEnv()` result;
+  else null. (Same probe as today's `llmAvailable`, moved.)
+- `/api/status` returns `llm: boolean` as before **plus**
+  `llmBilling: "subscription" | "api" | null`. Nothing about the key itself
+  reaches the browser.
+- The search handler uses `(await deps.llm())?.backend`; when `noLlm` or
+  null, omit `llm` as today.
+
+`apps/web/public/labels.js`, `app.js`, `index.html`, `labels.d.ts`, `design.html`
+- "AI calls" row: `billing === "api"` → `2 · 13.5k tokens · billed to your Anthropic API key`;
+  otherwise today's text (`about $0.06 at API prices` when a cost exists).
+  The predicate lives in `labels.js`.
+- `#llm-hint` when `status.llm` is false: "AI is off: set ANTHROPIC_API_KEY,
+  or install Claude Code and log in, then restart." (static text in the HTML, no data).
+- The AI-failure note (app.js, `event.llmError`) becomes
+  "The AI step failed (…). Check your ANTHROPIC_API_KEY, or if you use
+  Claude Code run claude in a terminal and log in. Call notes below are templates."
+- `design.html` sample: add the API-billing variant of the row.
+
+Tests
+- `tests/qualify/adapter.test.ts`: `llmBackendFromEnv` picks the API
+  backend with the key, Claude Code without; empty-string key counts as
+  unset; `modelOverride` reaches the API request body; `usage().billing`
+  reflects the backend; a stub backend with no `billing` yields null.
+- `tests/web/server.test.ts`: `/api/status` carries `llmBilling`; search
+  uses the backend from `deps.llm`; `deps.llm` returning null means no LLM
+  config reaches `search` (assert on the stub's received config).
+- `tests/web/labels.test.ts`: the "AI calls" row for both billings.
+- Existing fixtures that stub `llmAvailable` move to `llm`.
+
+## Phase I2 — say what is covered ✅ (2026-10-28; `coverageLine` appended to the ask-bar fine print; README coverage line, ECHO in the coverage sentence, "Add a state or a source")
+
+- `/api/status` already returns `regions`. `app.js` renders one quiet line
+  under the State select (or under the ask bar when there is one region):
+  "Public records for CO, CT and NY. Other states: add a source to the
+  manifest (see README)." built from `status.regions` with `textContent`.
+  Text builder in `labels.js` (`coverageLine(regions)`), pinned by a test.
+- README: a **Coverage** paragraph right under the title paragraph: Colorado
+  has every source; Connecticut and New York have their state registry plus
+  PACA; EPA facilities are nationwide; other states are a manifest entry
+  (link to the section in CLAUDE.md). Keep the sources table as is.
+- README: a short **Add a state or a source** section after the sources
+  table, three cases: (1) a registry on Socrata, a static shard, or ECHO is a
+  manifest entry (point at `zero-code-state.test.ts` as the guarantee and
+  at the `SourceSpec` keys listed in CLAUDE.md); (2) PPP for another state is
+  `build_ppp_shards.py --state XX` over the public SBA CSVs; (3) another
+  platform (CKAN, ArcGIS, bulk CSV) needs a new driver in
+  `packages/registry-core/src/drivers/`, which is the one case that is code.
+  ZIP and place centroids are already nationwide.
+
+## Phase I3 — keys and data-flow documentation ✅ (2026-10-28; .env.example, .gitignore, README keys/data/cost/MIT, CLAUDE.md, SECURITY item 7 + v3.10, ADR 0018, handoff paths, license fields)
+
+- `.env.example` at the repo root: the three optional variables with a
+  one-line comment each (`ANTHROPIC_API_KEY`, `EXA_API_KEY`,
+  `PARALLEL_API_KEY`) and a header saying the app reads the shell
+  environment, nothing loads this file automatically (`export` or `source`
+  it). `.gitignore` adds `.env` and `.env.*` with `!.env.example`.
+- README "Run" section: rename the bullets to **Bring your own keys**:
+  AI via `ANTHROPIC_API_KEY` or Claude Code login; contacts via Exa or
+  Parallel; nothing is required. Add a short **Where your data goes** list:
+  the server listens on localhost only; a search calls the public registries
+  listed in the table, Anthropic (or your Claude Code login) for the two AI
+  calls, and Exa/Parallel only if you set a key; finished searches are kept
+  under `~/.cache/registry-engine`; keys are read from the environment, never
+  stored or shown in the page.
+- README cost section: note that with an API key the sheet shows tokens only
+  and the bill is on your Anthropic console.
+- `CLAUDE.md`: the "default path makes 2 LLM calls via the Claude Code CLI"
+  sentences (Commands section, CLI flags) say "via `ANTHROPIC_API_KEY` when
+  set, otherwise the Claude Code CLI". Nothing else.
+- `SECURITY.md` Threat 8: new item 7 "Credentials": keys are read from the
+  process environment at start, held only inside the backend closures,
+  never written to history files or logs, and `/api/status` exposes only
+  which billing path is active. Changelog entry v3.10.
+- ADR 0018 (short): public repo as a run-it-yourself tool; env-only
+  credentials; no key field and no hosted mode, with the reasons (keys never
+  touch the page or disk; the server's threat model assumes one local user;
+  hosting other people's keys is a different product).
+
+## Amendments after the independent review (2026-10-28) — these override the text above
+
+A1. **No `billing` on `RawLlm`, `Llm` or `SearchOutcome`.** `llmBackendFromEnv`
+    returns `{ backend, billing }` with `billing: "claude-code" | "api-key"`
+    (export the type `LlmBilling`). The CLI uses that value directly. The web
+    server's `buildResult` adds `llmBilling: LlmBilling | null` (null when
+    noLlm or no backend), so the stream and history carry it. Pre-v8 history
+    files have no field and fall back to today's text. Drop the adapter
+    "stub backend with no billing" test; add a server test asserting
+    `result.llmBilling` for both paths and null under noLlm.
+A2. **`anthropicApiBackend` must work live.** On this path only:
+    `output_config: { effort: "low" }`, `max_tokens: Math.max(opts.maxTokens, 4000)`,
+    `signal: AbortSignal.timeout(120_000)`, drop the
+    `anthropic-dangerous-direct-browser-access` header. On `!resp.ok` parse
+    the JSON body and throw `Anthropic API error <status> (<error.type>: <error.message sliced to 120>)`,
+    never the raw body (fallback: `Anthropic API error <status>`). Throw when
+    `stop_reason` is `max_tokens` or `refusal`. Keep `createLlm({apiKey})`
+    as is (it calls the same function); do not add a third way.
+A3. **CLI `--model` fail-fast**: when billing is `api-key` and `--model` is
+    set and does not start with `claude-`, `fail("--model with ANTHROPIC_API_KEY needs a full model id, e.g. claude-sonnet-5-5")`.
+    Help text: "LLM calls (max N/search) use ANTHROPIC_API_KEY when set
+    (full model ids), otherwise your Claude Code login (claude -p; aliases
+    like sonnet work)."
+A4. **Probe once.** `main.ts` memoizes `llm()` (one promise, resolved
+    lazily on first call). Fixtures to move from `llmAvailable` to `llm`:
+    tests/web/server.test.ts (two sites), tests/web/sheet-fixture.test.ts,
+    and **scripts/a11y/axe.ts** (not covered by typecheck; `npm run a11y`
+    must still pass).
+A5. **Labels read the result, not the status.** The "AI calls" row reads
+    `result.llmBilling`: `api-key` → `2 · 13.5k tokens · billed to your Anthropic API key`;
+    `claude-code` or missing → today's text, but the CLI/README wording
+    "billed to your Claude subscription" becomes "via your Claude Code login
+    (claude -p)" everywhere (Claude Code may itself be on a key, Bedrock or
+    Vertex). The llmError hint is chosen by `status.llmBilling` in
+    `labels.js` (`llmFailedHint(billing)`): api-key → "Check ANTHROPIC_API_KEY";
+    claude-code → "Run claude in a terminal and log in"; then "Call notes
+    below are templates." Pinned by labels.test.ts.
+A6. **Live acceptance for I1**: with a real `ANTHROPIC_API_KEY` in the shell,
+    one supplier and one buyer CLI search succeed (map parsed, brief not a
+    template), tokens recorded here in PLAN; re-measure the README token
+    table rows from the Claude Code path at the same time (the table still
+    names Haiku 4.5 / Sonnet 5). If the orchestrator has no key, the gate is
+    recorded as "not run" and the owner runs it before flipping visibility.
+A7. **I2 UI: one always-visible line.** `coverageLine(regions)` in
+    `labels.js` → "Public records for CO, CT and NY." appended to the
+    existing `.quiet.fine` span in `.ask-actions` (index.html:37) via
+    `textContent`. No manifest wording in the page; nothing under the State
+    select.
+A8. **I2 README**: fix the existing coverage sentence under the sources
+    table to include EPA ECHO (nationwide); add one short coverage line to
+    the title paragraph; no new paragraph. "Add a state" says: PPP needs
+    `build_ppp_shards.py --state XX` **and** `US-XX` in the `ppp` entry's
+    `quirks.shardRegions`; town-name centers need
+    `python3 -I scripts/data/build_geo.py --states CO,CT,NY,XX`
+    (ZIPs are already national, places are per state); the zero-code
+    guarantee test pins the **socrata** driver; an existence registry wants
+    `quirks.cities` for town detection. Delete "centroids are already nationwide".
+A9. **`.env.example`** uses `export VAR=` lines and says `source .env` (or
+    `set -a; . ./.env; set +a`), because plain `VAR=` lines don't reach
+    child processes.
+A10. **"Where your data goes"** also lists: Cloudflare DNS-over-HTTPS for
+    lead domains (`probe.ts`); the contacts cache at
+    `~/.cache/registry-engine/contacts.json` (30 days); saved searches at
+    `~/.cache/registry-engine/searches`; the browser's localStorage for My
+    calls; and what Anthropic receives (the request text and the record
+    facts of the top N leads, individuals' names withheld).
+A11. **SECURITY item 7** wording: keys are "read from the process
+    environment only (never from a request, a file or the page), held inside
+    the backend closures, never written to history or logs; API error text
+    is reduced to status and error type before it reaches the page or
+    history; `/api/status` exposes only which billing path is active."
+A12. **Public-release hygiene (same phase, same PR):**
+    - `docs/handoffs/v2-handoff.md` lines 3 and 8, `docs/handoffs/v5-handoff.md`
+      lines 3 and 5: replace absolute `/Users/...` paths and the remote URL
+      with repo-relative wording.
+    - License: the root `LICENSE` (`LICENSE-MIT` until v9) covers the whole repo. Add
+      `"license": "MIT"` to the root `package.json` and to qualify, cli and
+      web package.json; one README line "MIT, see LICENSE"; CLAUDE.md
+      package layout drops the "MIT." from registry-core's line (it is the
+      whole repo now).
+    - ADR 0018 adds one line: the PPP and PACA shards are public federal
+      records that name individuals, published as filed (SECURITY Threat 5),
+      and shipping them in the repo is a deliberate choice.
+    - Not in scope for the coder: git author email in history and old
+      Co-Authored-By trailers (owner's call); `registry-engine-audit.md`
+      stays untracked.
+
+## Out of scope (owner decisions)
+- A key field in the page or browser storage of keys. Env only.
+- Hosting, multi-user history, rate limiting for strangers.
+- Pricing tokens on the API path.
+- Flipping the GitHub visibility: the owner does that after merge.
+
 # v7b — web label only from a lookup; check every name against the registry
 
 Working branch: `v7b-web-label-check-all` (off `main` after PR #10). Owner

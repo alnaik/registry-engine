@@ -65,8 +65,8 @@ export interface SearchOutcome {
   recentWindow: { days: number; radiusMi: number } | null;   // null = the recent-filings query did not run
   registryLookup: RegistryLookup;
   // Diagnostics: the map call's raw answer when the parser rejected it
-  // (truncated, control characters replaced). Untrusted text: the CLI prints
-  // it under --verbose and the web server logs it to stderr; it never goes to
+  // (truncated, control characters replaced). Untrusted text: the web server
+  // logs it to stderr; it never goes to
   // another LLM call, a query or the browser. null = nothing to report.
   mapRawAnswer: string | null;
 }
