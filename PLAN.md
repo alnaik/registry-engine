@@ -132,6 +132,93 @@ Tests
   touch the page or disk; the server's threat model assumes one local user;
   hosting other people's keys is a different product).
 
+## Amendments after the independent review (2026-10-28) — these override the text above
+
+A1. **No `billing` on `RawLlm`, `Llm` or `SearchOutcome`.** `llmBackendFromEnv`
+    returns `{ backend, billing }` with `billing: "claude-code" | "api-key"`
+    (export the type `LlmBilling`). The CLI uses that value directly. The web
+    server's `buildResult` adds `llmBilling: LlmBilling | null` (null when
+    noLlm or no backend), so the stream and history carry it. Pre-v8 history
+    files have no field and fall back to today's text. Drop the adapter
+    "stub backend with no billing" test; add a server test asserting
+    `result.llmBilling` for both paths and null under noLlm.
+A2. **`anthropicApiBackend` must work live.** On this path only:
+    `output_config: { effort: "low" }`, `max_tokens: Math.max(opts.maxTokens, 4000)`,
+    `signal: AbortSignal.timeout(120_000)`, drop the
+    `anthropic-dangerous-direct-browser-access` header. On `!resp.ok` parse
+    the JSON body and throw `Anthropic API error <status> (<error.type>: <error.message sliced to 120>)`,
+    never the raw body (fallback: `Anthropic API error <status>`). Throw when
+    `stop_reason` is `max_tokens` or `refusal`. Keep `createLlm({apiKey})`
+    as is (it calls the same function); do not add a third way.
+A3. **CLI `--model` fail-fast**: when billing is `api-key` and `--model` is
+    set and does not start with `claude-`, `fail("--model with ANTHROPIC_API_KEY needs a full model id, e.g. claude-sonnet-5-5")`.
+    Help text: "LLM calls (max N/search) use ANTHROPIC_API_KEY when set
+    (full model ids), otherwise your Claude Code login (claude -p; aliases
+    like sonnet work)."
+A4. **Probe once.** `main.ts` memoizes `llm()` (one promise, resolved
+    lazily on first call). Fixtures to move from `llmAvailable` to `llm`:
+    tests/web/server.test.ts (two sites), tests/web/sheet-fixture.test.ts,
+    and **scripts/a11y/axe.ts** (not covered by typecheck; `npm run a11y`
+    must still pass).
+A5. **Labels read the result, not the status.** The "AI calls" row reads
+    `result.llmBilling`: `api-key` → `2 · 13.5k tokens · billed to your Anthropic API key`;
+    `claude-code` or missing → today's text, but the CLI/README wording
+    "billed to your Claude subscription" becomes "via your Claude Code login
+    (claude -p)" everywhere (Claude Code may itself be on a key, Bedrock or
+    Vertex). The llmError hint is chosen by `status.llmBilling` in
+    `labels.js` (`llmFailedHint(billing)`): api-key → "Check ANTHROPIC_API_KEY";
+    claude-code → "Run claude in a terminal and log in"; then "Call notes
+    below are templates." Pinned by labels.test.ts.
+A6. **Live acceptance for I1**: with a real `ANTHROPIC_API_KEY` in the shell,
+    one supplier and one buyer CLI search succeed (map parsed, brief not a
+    template), tokens recorded here in PLAN; re-measure the README token
+    table rows from the Claude Code path at the same time (the table still
+    names Haiku 4.5 / Sonnet 5). If the orchestrator has no key, the gate is
+    recorded as "not run" and the owner runs it before flipping visibility.
+A7. **I2 UI: one always-visible line.** `coverageLine(regions)` in
+    `labels.js` → "Public records for CO, CT and NY." appended to the
+    existing `.quiet.fine` span in `.ask-actions` (index.html:37) via
+    `textContent`. No manifest wording in the page; nothing under the State
+    select.
+A8. **I2 README**: fix the existing coverage sentence under the sources
+    table to include EPA ECHO (nationwide); add one short coverage line to
+    the title paragraph; no new paragraph. "Add a state" says: PPP needs
+    `build_ppp_shards.py --state XX` **and** `US-XX` in the `ppp` entry's
+    `quirks.shardRegions`; town-name centers need
+    `python3 -I scripts/data/build_geo.py --states CO,CT,NY,XX`
+    (ZIPs are already national, places are per state); the zero-code
+    guarantee test pins the **socrata** driver; an existence registry wants
+    `quirks.cities` for town detection. Delete "centroids are already nationwide".
+A9. **`.env.example`** uses `export VAR=` lines and says `source .env` (or
+    `set -a; . ./.env; set +a`), because plain `VAR=` lines don't reach
+    child processes.
+A10. **"Where your data goes"** also lists: Cloudflare DNS-over-HTTPS for
+    lead domains (`probe.ts`); the contacts cache at
+    `~/.cache/registry-engine/contacts.json` (30 days); saved searches at
+    `~/.cache/registry-engine/searches`; the browser's localStorage for My
+    calls; and what Anthropic receives (the request text and the record
+    facts of the top N leads, individuals' names withheld).
+A11. **SECURITY item 7** wording: keys are "read from the process
+    environment only (never from a request, a file or the page), held inside
+    the backend closures, never written to history or logs; API error text
+    is reduced to status and error type before it reaches the page or
+    history; `/api/status` exposes only which billing path is active."
+A12. **Public-release hygiene (same phase, same PR):**
+    - `docs/handoffs/v2-handoff.md` lines 3 and 8, `docs/handoffs/v5-handoff.md`
+      lines 3 and 5: replace absolute `/Users/...` paths and the remote URL
+      with repo-relative wording.
+    - License: the root `LICENSE-MIT` covers the whole repo. Add
+      `"license": "MIT"` to the root `package.json` and to qualify, cli and
+      web package.json; one README line "MIT, see LICENSE-MIT"; CLAUDE.md
+      package layout drops the "MIT." from registry-core's line (it is the
+      whole repo now).
+    - ADR 0018 adds one line: the PPP and PACA shards are public federal
+      records that name individuals, published as filed (SECURITY Threat 5),
+      and shipping them in the repo is a deliberate choice.
+    - Not in scope for the coder: git author email in history and old
+      Co-Authored-By trailers (owner's call); `registry-engine-audit.md`
+      stays untracked.
+
 ## Out of scope (owner decisions)
 - A key field in the page or browser storage of keys. Env only.
 - Hosting, multi-user history, rate limiting for strangers.
