@@ -123,6 +123,123 @@ decisions 2026-10-28: one phase, no sub-phases. Email in git history stays
   binary) and `gitleaks detect --source . --log-opts="--all"`; record the
   result in PLAN.
 
+## Amendments after the independent review (2026-10-28) — these override J1–J4 where they differ
+
+K1. **README API section.** `curl -N -X POST http://localhost:4317/api/search -H 'Content-Type: application/json' -d '{"query":"…","near":"80302"}'`.
+    State: any other Host header gets 403 (local-only by design); one
+    search at a time (429); bad fields 400; non-JSON 415. Event types, one
+    line each: `map`, `origin`, `routed`, `fetched`, `source_error`,
+    `merged`, `backfilled`, `backfill_progress`, `probed`, `recent`,
+    `contacts`, then exactly one of `result` or `error`. Body fields (see
+    `parseSearchParams`): `query`, `near`, `radiusMi`, `naics`, `leads`,
+    `region`, `direction`, `checkAll`, `findContacts`, `noLlm`. Routes also
+    include `GET /api/csv` (last search) and HEAD on `/api/status`.
+K2. **README library section.** "Inside this repo, run with `npx vite-node your-script.ts`; the packages aren't published." Example:
+    `const out = await search("metal fabrication", { region: "US-CO", contacts: null })`
+    then `out.ranked.slice(0, 10).map(l => l.entity.name)`. Say: leaving
+    out `llm` means the static table (supplier searches only); pass
+    `llm: { backend: llmBackendFromEnv().backend }` for the ≤2 AI calls;
+    `contacts: null` keeps paid lookups off even when a key is in the env.
+K3. **CLAUDE.md** check-all wording: "the web app's Check all button sends
+    `checkAll: true`, which the server passes as `backfillAll`." Fix line
+    81 ("…the web summary and the CLI"). Keep "Claude Code CLI (`claude -p`)"
+    wording wherever it refers to Claude Code, not to apps/cli.
+K4. **SECURITY.md** edits: line ~42 drop the `--verbose` clause; ~74 "The
+    web server checks `region` against the manifest (`parseSearchParams`)";
+    ~85 "The web app's `/api/csv` and My calls export write…"; ~108 drop
+    "CLI `--check-all`"; ~132 "displayed in the web app"; ~167 "The web app
+    labels them 'Agent/principals'". Changelog lines (238, 246) stay as
+    history. Add v3.11.
+K5. **Other apps/cli mentions**: engine.ts:68, adapter.ts:26 ("the web app
+    injects a `claude -p` or API backend"), labels.js:279 ("summary.ts's
+    copy"), labels.test.ts:263 title, ADR 0018:17 ("The page says which
+    path is billed"). `summaryLines` stays exported (test-only now).
+K6. **J2 rule, replacing the J2 text**: stems of 4+ letters keep today's
+    open right side. A stem shorter than 4 letters must be followed by
+    `(?:s|es|ed|ing)?` and then a non-alphanumeric or the end:
+    `re = new RegExp("(^|[^a-z0-9])" + esc(s) + (s.length < 4 ? "(?:s|es|ed|ing)?(?![a-z0-9])" : ""))`.
+    Comment: "Known trade-off: 'gas' no longer reaches 'gasoline'; type the full word."
+    Plus the stemmer change (owner accepted): add `ies` to the suffix list
+    before `es`, and drop a trailing `y` when 5+ letters remain. Existing
+    naics tests at lines 58–70 stay unchanged and must pass; if the `y`
+    rule breaks any existing test, keep the `ies` rule only and report it.
+K7. **J2 tests** (naics.test.ts): `canvas bag` → `codes[0] === "314910"`
+    and no title `/baker|pulp/i` in all 15; `bag` → no `/baker|pulp/i`,
+    contains 314910, 322220, 326111; `hot sauce` → contains 311941, no
+    `/hotel|casino/i`; `sew tote bags` → no 221320 or 237110 in the top 5,
+    contains 315210 and 314910; `machining` → 332710; `welding` and
+    `welders` → 333992; `bakeries` → 311811 and 311812; `bakery` → 311811;
+    `brewery` → 312120; `printing` → 323111; `gasoline` → 447110.
+K8. **J3.1 exact list** → `.label`: index.html:26, 31, 51, 59, 69, 77, 94,
+    107, 112, 162; app.js:622, 675, 1165, 1285, 1296, 1299, 1468;
+    design.html every non-band `eyebrow` including `design-label`
+    captions. Keep `.eyebrow` only at app.js:1139 and design.html:86. Move
+    app.css:138, 187, 212–217 selectors to `.label` (the group summary
+    `+`/`−` `::before` lives there). public-assets.test.ts:32 regex →
+    `class: "label"`. "About this search" is a `<summary>`, untouched. ADR
+    0017 Decision gets one line: "Uppercase spaced eyebrows only for
+    distance bands; other headings and labels use `.label`."
+K9. **J3.2 displayName rules (replace)**: any lowercase letter → unchanged.
+    Split on spaces. Keep as filed: tokens containing a digit, `&`, `/`,
+    or a `.` other than trailing; tokens with no vowel `[AEIOUY]` (CNC, DJ,
+    TV, RV, LLC, LLP, PC); allow-list INC, CO, LP, PLLC, DBA, USA, HVAC, II,
+    III, IV (matched ignoring a trailing `.` or `,`). Particles OF, AND,
+    THE, FOR, AT, IN, ON, DE, LA, DEL, Y → lowercase unless first word.
+    Otherwise capitalize each hyphen-separated part; after an apostrophe a
+    lone final `S` is lowercase, any other letter uppercase (`JOE'S` →
+    `Joe's`, `O'BRIEN` → `O'Brien`). No state-code rule.
+    **displayCity**: title-case each word with the same hyphen/apostrophe
+    handling, no allow-list, no particles (`LA JUNTA` → `La Junta`).
+K10. **J3.2 where applied**: `displayName` at app.js:1241 (`.lr-name`) and
+    1487 (My calls), never for `lead.individual === true` or for
+    officers/principals (as filed, ADR 0017); My calls entries store
+    `individual: lead.individual === true` (app.js:1425–1437), entries
+    without the field render as filed. `displayCity` only at app.js:1202
+    (distance cell) and 1484 (My calls sub-line); the Reach "Address" row
+    stays as filed. New `reachList` row `row("Filed as", lead.name)` when
+    display ≠ filed. Aria-labels at 1294, 1413, 1469 use the display form.
+    CSV, history, stored `entry.name`, clipboard text stay as filed. Drop
+    "openers" and "trust/registry lines" from J3.2 (openers never carry
+    the name). Both functions in labels.d.ts; pins in labels.test.ts:
+    `ACME WELDING LLC` → `Acme Welding LLC`, `JOE'S HVAC INC.` → `Joe's HVAC INC.`,
+    `O'BRIEN CNC` → `O'Brien CNC`, `MADE IN USA CO` → `Made in USA CO`,
+    `A-1 SIGNS` → `A-1 Signs`, `B&B FARMS` → `B&B Farms`, `Mixed Case Inc`
+    unchanged; `LA JUNTA` → `La Junta`.
+K11. **J3.3 placeholder (replace)**: keep `color: var(--ink-2)` (a lighter
+    colour fails WCAG contrast); the difference comes from weight: the
+    placeholder is `--w`, typed text `--wb` (set `.ask-input` to `--wb`).
+    Only the `#query` placeholder text changes; its label gets
+    `class="label visually-hidden"` (existing class, app.css:56). The Near
+    label stays visible.
+K12. **J3.4 examples**: `class="btn sm example"`, `.examples-line` gets
+    `align-items: center`; clicking an example clears `#near` so the town
+    in the example is the centre.
+K13. **J3.5**: remove the dead `.linkish.tap` rule; update design.html
+    samples at lines 41, 50, 56.
+K14. **J3.6 favicon**: `<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6f67'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='%23fff'%3ER%3C/text%3E%3C/svg%3E">`
+    in index.html and design.html. CSP already allows `img-src 'self' data:`
+    (server.ts:35): no server change; add `expect(csp).toContain("img-src 'self' data:")`
+    at server.test.ts:139 and :151. `.brand-mark::before { display:inline-block; width:12px; height:12px; background:var(--act); margin-right:var(--s2) }`.
+K15. **J3.7 renderEmpty (replace)**: at most 3 tips, in order: (a) if
+    `app.map && app.map.direction === "sell" && app.map.naics.length === 0`:
+    "Finding buyers needs industry codes: turn on the AI step, or add codes
+    with the code finder under More options." and the reading line's
+    "Before you call" skips the map.ts:228 caveat when `renderEmpty` runs;
+    (b) if `p.radiusMi`: the existing radius tip; (c) if direction is not
+    sell: "Try different words, like \"metal fabrication shop\"."; (d)
+    "Add industry codes with the code finder under More options." only when
+    (a) didn't run. Cut at 3.
+K16. **J3.8**: design.js imports `displayName`/`displayCity` from
+    `/labels.js` and fills a sample `<dl>` via `textContent`.
+K17. **J4 additions**: delete `LEARNING.md` (describes removed packages).
+    After everything passes, re-capture the README screenshots with
+    `node scripts/docs/capture.mjs` (it drives the web app; 2 AI calls) so
+    docs/media matches the new page; if Chromium isn't found, report and
+    leave the old images.
+K18. Orchestrator note: gitleaks 8.30.1 scanned all 71 commits on
+    2026-10-28: no leaks found. The PACA shard's filed gmail addresses are
+    public records (Threat 5) and did not trip it.
+
 ## Acceptance
 `npm test`, `npm run typecheck`, `npm run a11y` pass; one live web search
 on the Claude Code path with the server on `PORT=4399` then stopped;
