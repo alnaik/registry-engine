@@ -1,3 +1,98 @@
+# v11 — tester follow-ups: location input, out-of-state ZIP, retries, proxy note
+
+Working branch: `v11-location-retry`. Owner decisions 2026-10-29: from an
+outside tester's run. Fix location parsing, reject an out-of-state ZIP or
+town before the search runs, stop retrying unreachable sources four times,
+and document the proxy setting (no proxy code). One PR.
+
+## N1 — ZIP-to-state table (data, national) ✅ (2026-10-29; 413 tests green)
+
+- New `packages/registry-core/src/geo/zip-states.json`: every state keyed by
+  postal code → `{ "name": "<full name>", "zip3": [[lo, hi], ...] }` (3-digit
+  ZIP prefixes, inclusive). Use exactly these ranges:
+  AL Alabama 350-369 · AK Alaska 995-999 · AZ Arizona 850-865 · AR Arkansas 716-729 ·
+  CA California 900-961 · CO Colorado 800-816 · CT Connecticut 060-069 ·
+  DE Delaware 197-199 · DC District of Columbia 200-205, 569 · FL Florida 320-349 ·
+  GA Georgia 300-319, 398-399 · HI Hawaii 967-968 · ID Idaho 832-838 ·
+  IL Illinois 600-629 · IN Indiana 460-479 · IA Iowa 500-528 · KS Kansas 660-679 ·
+  KY Kentucky 400-427 · LA Louisiana 700-714 · ME Maine 039-049 ·
+  MD Maryland 206-219 · MA Massachusetts 010-027, 055 · MI Michigan 480-499 ·
+  MN Minnesota 550-567 · MS Mississippi 386-397 · MO Missouri 630-658 ·
+  MT Montana 590-599 · NE Nebraska 680-693 · NV Nevada 889-898 ·
+  NH New Hampshire 030-038 · NJ New Jersey 070-089 · NM New Mexico 870-884 ·
+  NY New York 005, 100-149 · NC North Carolina 270-289 · ND North Dakota 580-588 ·
+  OH Ohio 430-459 · OK Oklahoma 730-749 · OR Oregon 970-979 ·
+  PA Pennsylvania 150-196 · RI Rhode Island 028-029 · SC South Carolina 290-299 ·
+  SD South Dakota 570-577 · TN Tennessee 370-385 · TX Texas 750-799, 885 ·
+  UT Utah 840-847 · VT Vermont 050-059 · VA Virginia 201, 220-246 ·
+  WA Washington 980-994 · WV West Virginia 247-268 · WI Wisconsin 530-549 ·
+  WY Wyoming 820-831 · PR Puerto Rico 006-009.
+  (Known edge: 06390 Fishers Island NY reads as CT. Accepted.)
+- In `geo.ts`: `export function zipState(zip: string): string | undefined`
+  (postal code from the first 3 digits; undefined if not 5 digits or no
+  range) and `export function stateName(code: string): string | undefined`.
+  Export both from `packages/registry-core/src/index.ts`.
+- National on purpose: adding a state needs no change here.
+
+## N2 — `resolveLocation` accepts common forms and refuses other states ✅ (2026-10-29; 413 tests green)
+
+In `packages/registry-core/src/geo.ts`, `resolveLocation(region, input)`:
+- ZIP+4: `^\d{5}-\d{4}$` resolves as its first 5 digits; label `ZIP <5 digits>`.
+- A ZIP whose `zipState` is known and isn't the region's state → `undefined`.
+- Trailing state on a town: strip `,? <code>` or `,? <full name>` at the end
+  (case-insensitive, whitespace-tolerant) when it names the region's state,
+  then resolve the rest as a place. `Denver, CO`, `denver co`,
+  `Denver, Colorado`, `Castle Rock CO` all resolve in US-CO. A trailing
+  *other* state (`Hartford, CT` in US-CO) → `undefined`. A place whose own
+  name ends in a word that happens to be a state code must still resolve when
+  typed bare (try the whole text as a place first; strip only if that misses).
+- Also export `function locationState(input: string): string | undefined`:
+  the state the input names explicitly (a ZIP's `zipState`, or a trailing
+  state code/name), else undefined. Used by N3.
+- Tests in `tests/registry-core/geo.test.ts`: each form above; `80202-1234`;
+  `06103` and `Hartford, CT` in US-CO → undefined; `06103` in US-CT resolves;
+  existing cases unchanged.
+
+## N3 — the server rejects a `near` in another state before searching ✅ (2026-10-29; 413 tests green)
+
+Amended in review: the 400 fires only when `near` also fails to resolve in the region, so a real town ending in a state word (`North Washington`, CO) passes.
+
+In `apps/web/src/server.ts` `parseSearchParams`, after `region` is known: if
+`near` is set and `locationState(near)` is a state other than the region's,
+throw `BadRequest` (400) with
+`"<near>" is in <State name>, and this search covers <region name>. Pick <State name> as the state if it's covered, or use a <region name> ZIP or town.`
+(Names from `stateName` / the existing `REGION_NAMES`.) The page already
+shows a 400's `error` text, so no app.js change. Test in
+`tests/web/server.test.ts`: `near: "06103"` with region US-CO → 400 with
+"Connecticut" in the message; `near: "80202-1234"` → 200.
+
+## N4 — unreachable sources are retried once, not four times ✅ (2026-10-29; 413 tests green)
+
+In `packages/registry-core/src/util/http.ts` `fetchWithRetry`: when `fetch`
+throws (connection refused, DNS failure, per-attempt timeout), retry at most
+once in total for the call, then throw. 429/5xx keep the current
+`maxRetries` and backoff. Tests in `tests/registry-core/http.test.ts`
+(fake timers, as the file already does): a fetch that always throws is called
+exactly 2 times; a fetch that throws once then succeeds returns the response;
+always-503 behavior unchanged.
+
+## N5 — docs ✅ (2026-10-29; 413 tests green)
+
+- `README.md`, right after "Tested on Node 24.": one sentence — behind a
+  proxy, set `HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1` before `npm start`
+  (Node 24 reads them; there is no proxy setting in the app).
+- `README.md`: wherever it describes what `near` accepts, say ZIP, ZIP+4 or
+  a town (optionally with the state), in the chosen state.
+- `SECURITY.md` Threat 4 item 2: network failures (no response) are retried
+  once; 429/5xx keep the backoff. Changelog v3.13 (2026-10-29, v11). Bump
+  header version/date.
+
+## Done when
+
+`npm test` and `npm run typecheck` pass; no other files change.
+
+---
+
 # v10 — security audit follow-ups: PACA emails, error text, oversized bodies, raw AI log, reporting
 
 Working branch: `paca-drop-emails`. Owner decisions 2026-10-29: git history

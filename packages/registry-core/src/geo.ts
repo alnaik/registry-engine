@@ -1,5 +1,6 @@
 import zipData from "./geo/zips.json" with { type: "json" };
 import placeData from "./geo/places.json" with { type: "json" };
+import stateData from "./geo/zip-states.json" with { type: "json" };
 import type { Entity } from "./entity.js";
 
 // Distance from the user's location, zero network. ZIP and place centroids
@@ -12,6 +13,8 @@ export interface LatLon { lat: number; lon: number }
 
 const ZIPS = zipData as unknown as Readonly<Record<string, readonly [number, number]>>;
 const PLACES = placeData as unknown as Readonly<Record<string, Readonly<Record<string, readonly [number, number]>>>>;
+
+const STATES = stateData as unknown as Readonly<Record<string, { name: string; zip3: readonly (readonly [number, number])[] }>>;
 
 const EARTH_RADIUS_MI = 3958.8;
 
@@ -50,18 +53,82 @@ export function milesBetween(a: LatLon, b: LatLon): number {
   return 2 * EARTH_RADIUS_MI * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-// A 5-digit ZIP or a place name in the region -> a labelled point.
-export function resolveLocation(region: string, input: string): { label: string; point: LatLon } | undefined {
-  const text = input.trim();
-  if (/^\d{5}$/.test(text)) {
-    const point = zipCentroid(text);
-    return point === undefined ? undefined : { label: `ZIP ${text}`, point };
+// Postal code of the state a 5-digit ZIP belongs to, from its first 3 digits.
+export function zipState(zip: string): string | undefined {
+  const text = zip.trim();
+  if (!/^\d{5}$/.test(text)) return undefined;
+  const prefix = Number(text.slice(0, 3));
+  for (const [code, state] of Object.entries(STATES)) {
+    if (state.zip3.some(([lo, hi]) => prefix >= lo && prefix <= hi)) return code;
   }
+  return undefined;
+}
+
+export function stateName(code: string): string | undefined {
+  const key = code.trim().toUpperCase();
+  return Object.hasOwn(STATES, key) ? STATES[key]!.name : undefined;
+}
+
+// Every way a state can end a location ("co", "colorado"), longest first so
+// "West Virginia" wins over "Virginia".
+const STATE_SUFFIXES = Object.entries(STATES)
+  .flatMap(([code, state]) => [
+    { code, text: code },
+    { code, text: state.name },
+  ])
+  .sort((a, b) => b.text.length - a.text.length)
+  .map(({ code, text }) => ({
+    code,
+    re: new RegExp(`^(.*?\\S)(?:\\s*,\\s*|\\s+)${text.replace(/ /g, "\\s+")}$`, "i"),
+  }));
+
+// "Denver, CO" / "denver colorado" -> the town and the state it names.
+function splitTrailingState(text: string): { rest: string; state: string } | undefined {
+  for (const { code, re } of STATE_SUFFIXES) {
+    const m = re.exec(text);
+    if (m !== null) return { rest: m[1]!, state: code };
+  }
+  return undefined;
+}
+
+// The state a location names explicitly: a ZIP's state, or a trailing state
+// code or name on a town. Undefined when it names none.
+export function locationState(input: string): string | undefined {
+  const text = input.trim();
+  const zip = /^(\d{5})(?:-\d{4})?$/.exec(text);
+  if (zip !== null) return zipState(zip[1]!);
+  return splitTrailingState(text)?.state;
+}
+
+function placeResult(region: string, text: string): { label: string; point: LatLon } | undefined {
   const point = placeCentroid(region, text);
   if (point === undefined) return undefined;
   const state = region.split("-")[1];
   const name = placeKey(text).replace(/\b[a-z]/g, c => c.toUpperCase());
   return { label: state === undefined ? name : `${name}, ${state}`, point };
+}
+
+// A ZIP (5 digits or ZIP+4) or a place name in the region, optionally with
+// the region's state after it -> a labelled point. A ZIP or town in another
+// state resolves to nothing.
+export function resolveLocation(region: string, input: string): { label: string; point: LatLon } | undefined {
+  const text = input.trim();
+  const regionState = region.split("-")[1];
+  const zip = /^(\d{5})(?:-\d{4})?$/.exec(text);
+  if (zip !== null) {
+    const five = zip[1]!;
+    const inState = zipState(five);
+    if (inState !== undefined && inState !== regionState) return undefined;
+    const point = zipCentroid(five);
+    return point === undefined ? undefined : { label: `ZIP ${five}`, point };
+  }
+  // The whole text first, so a place whose name ends in a state word still
+  // resolves typed bare.
+  const whole = placeResult(region, text);
+  if (whole !== undefined) return whole;
+  const split = splitTrailingState(text);
+  if (split === undefined || split.state !== regionState) return undefined;
+  return placeResult(region, split.rest);
 }
 
 // Where a business is: its ZIP centroid, else its city's centroid.

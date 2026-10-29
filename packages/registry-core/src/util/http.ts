@@ -67,13 +67,17 @@ export async function fetchWithRetry(
   }
 
   let lastError: unknown;
+  // No response at all (refused, DNS, timeout) means the source is probably
+  // down: one retry for the whole call, not the full 429/5xx budget.
+  let networkRetried = false;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     let resp: Response;
     try {
       resp = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
     } catch (err) {
       lastError = err;
-      if (attempt < maxRetries) {
+      if (attempt < maxRetries && !networkRetried) {
+        networkRetried = true;
         await sleep(jitteredBackoff(attempt));
         continue;
       }

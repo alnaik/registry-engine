@@ -44,7 +44,8 @@ shell environment when the app starts ([`.env.example`](.env.example) lists them
 - **My calls** lives in your browser's localStorage.
 - Keys are read from the environment, never stored or shown in the page.
 
-Tested on Node 24.
+Tested on Node 24. Behind a proxy, set `HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1`
+before `npm start` (Node 24 reads them; there is no proxy setting in the app).
 
 ## How a search works
 
@@ -52,6 +53,8 @@ Tested on Node 24.
 turns the request into the industry codes (NAICS) of the businesses to
 contact: makers and suppliers if you need something, likely buyers if you
 sell something. It guesses the direction and says so; one click flips it.
+"Near" takes a ZIP, ZIP+4 or a town (optionally with the state), in the state
+you chose.
 
 <img src="docs/media/search-form.png" alt="The ask bar: what you need or sell, near, Find businesses, More options" width="640">
 

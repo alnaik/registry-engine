@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   zipCentroid, placeCentroid, regionPlaces, milesBetween, resolveLocation, entityPoint,
+  zipState, stateName, locationState,
 } from "../../packages/registry-core/src/geo.js";
 import type { Entity } from "../../packages/registry-core/src/entity.js";
 
@@ -61,6 +62,71 @@ describe("resolveLocation", () => {
     expect(place.point).toEqual(placeCentroid("US-CO", "castle rock"));
     expect(resolveLocation("US-CO", "Atlantis")).toBeUndefined();
     expect(resolveLocation("US-CO", "00000")).toBeUndefined();
+  });
+});
+
+describe("resolveLocation forms and states", () => {
+  it("resolves ZIP+4 as its first 5 digits", () => {
+    const r = resolveLocation("US-CO", "80202-1234")!;
+    expect(r.label).toBe("ZIP 80202");
+    expect(r.point).toEqual(zipCentroid("80202"));
+    expect(resolveLocation("US-CO", "8020-12345")).toBeUndefined();
+  });
+
+  it("accepts a trailing state code or name that matches the region", () => {
+    const denver = placeCentroid("US-CO", "denver");
+    for (const input of ["Denver, CO", "denver co", "Denver, Colorado", "DENVER  COLORADO", "Denver,CO"]) {
+      const r = resolveLocation("US-CO", input)!;
+      expect(r.label).toBe("Denver, CO");
+      expect(r.point).toEqual(denver);
+    }
+    expect(resolveLocation("US-CO", "Castle Rock CO")!.label).toBe("Castle Rock, CO");
+    expect(resolveLocation("US-CO", "Atlantis, CO")).toBeUndefined();
+  });
+
+  it("refuses a ZIP or a town in another state", () => {
+    expect(resolveLocation("US-CO", "06103")).toBeUndefined();
+    expect(resolveLocation("US-CO", "Hartford, CT")).toBeUndefined();
+    expect(resolveLocation("US-CO", "Hartford, Connecticut")).toBeUndefined();
+    expect(resolveLocation("US-CT", "06103")!.label).toBe("ZIP 06103");
+  });
+
+  it("resolves a place whose own name ends in a state word when typed bare", () => {
+    // "North Washington" is a CO place; the whole text is tried before any strip.
+    expect(resolveLocation("US-CO", "North Washington")!.label).toBe("North Washington, CO");
+    expect(resolveLocation("US-CO", "North Washington, CO")!.label).toBe("North Washington, CO");
+    expect(resolveLocation("US-NY", "Port Washington")!.label).toBe("Port Washington, NY");
+  });
+});
+
+describe("zipState, stateName and locationState", () => {
+  it("maps a ZIP to its state from the first 3 digits", () => {
+    expect(zipState("80202")).toBe("CO");
+    expect(zipState("06103")).toBe("CT");
+    expect(zipState("10001")).toBe("NY");
+    expect(zipState("00501")).toBe("NY");
+    expect(zipState("20001")).toBe("DC");
+    expect(zipState("00601")).toBe("PR");
+    expect(zipState("99950")).toBe("AK");
+    expect(zipState("80202-1234")).toBeUndefined();
+    expect(zipState("8020")).toBeUndefined();
+    expect(zipState("abcde")).toBeUndefined();
+    expect(zipState("00000")).toBeUndefined();
+  });
+
+  it("names a state from its postal code", () => {
+    expect(stateName("CO")).toBe("Colorado");
+    expect(stateName("ct")).toBe("Connecticut");
+    expect(stateName("ZZ")).toBeUndefined();
+  });
+
+  it("reports the state a location names explicitly", () => {
+    expect(locationState("06103")).toBe("CT");
+    expect(locationState("80202-1234")).toBe("CO");
+    expect(locationState("Hartford, CT")).toBe("CT");
+    expect(locationState("Charleston West Virginia")).toBe("WV");
+    expect(locationState("Denver")).toBeUndefined();
+    expect(locationState("00000")).toBeUndefined();
   });
 });
 

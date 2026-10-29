@@ -105,4 +105,39 @@ describe("fetchWithRetry deadlines", () => {
     expect(resp.status).toBe(200);
     expect(fetchStub).toHaveBeenCalledTimes(2);
   });
+
+  it("retries a fetch that throws once, then gives up", async () => {
+    vi.useFakeTimers();
+    const fetchStub = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", fetchStub);
+    const p = fetchWithRetry("https://example.test/down");
+    const assertion = expect(p).rejects.toThrow("fetch failed");
+    await vi.advanceTimersByTimeAsync(60_000);
+    await assertion;
+    expect(fetchStub).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns the response when a thrown fetch succeeds on the retry", async () => {
+    vi.useFakeTimers();
+    const fetchStub = vi.fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchStub);
+    const p = fetchWithRetry("https://example.test/flaky");
+    await vi.advanceTimersByTimeAsync(60_000);
+    const resp = await p;
+    expect(resp.status).toBe(200);
+    expect(fetchStub).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the full retry budget for 503 responses", async () => {
+    vi.useFakeTimers();
+    const fetchStub = vi.fn().mockImplementation(() => Promise.resolve(new Response("", { status: 503 })));
+    vi.stubGlobal("fetch", fetchStub);
+    const p = fetchWithRetry("https://example.test/busy");
+    await vi.advanceTimersByTimeAsync(120_000);
+    const resp = await p;
+    expect(resp.status).toBe(503);
+    expect(fetchStub).toHaveBeenCalledTimes(5);
+  });
 });
