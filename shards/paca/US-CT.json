@@ -2,7 +2,7 @@
  "source": "paca",
  "region": "US-CT",
  "generated": "2026-07-18",
- "protocol_note": "Recorded from apps.mrp.usda.gov ServiceNow widget API (no CORS; Node-only). See docs/data/paca.md.",
+ "protocol_note": "Recorded from apps.mrp.usda.gov ServiceNow widget API (no CORS; Node-only). See docs/data/paca.md. email_address removed before commit (bulk personal addresses); phone and website kept.",
  "records": [
   {
    "license_number": "19192942",
@@ -23,7 +23,6 @@
     "MICHAEL BOZZUTO"
    ],
    "telephone_number": "(205) 250-5374",
-   "email_address": "RSTEINIS@BOZZUTOS.COM",
    "website": ""
   },
   {
@@ -42,7 +41,6 @@
     "ANTHONY CARALUZZI JR"
    ],
    "telephone_number": "(203) 748-3547",
-   "email_address": "STEVE@CARALUZZIS.COM",
    "website": ""
   },
   {
@@ -61,7 +59,6 @@
     "PETER MALONE"
    ],
    "telephone_number": "(203) 265-1525",
-   "email_address": "mike.schuster@thurstonfoods.com",
    "website": "www.thurstonfoods.com"
   },
   {
@@ -87,7 +84,6 @@
     "ANDREW RYBICK"
    ],
    "telephone_number": "(860) 623-0176",
-   "email_address": "apaterwic@geisslers.com",
    "website": "www.geisslers.com"
   },
   {
@@ -108,7 +104,6 @@
     "CHARLES KNOX"
    ],
    "telephone_number": "(203) 272-3511",
-   "email_address": "JESPOSITO@BOZZUTOS.COM",
    "website": "www.bozzutos.com"
   },
   {
@@ -134,7 +129,6 @@
     "K. CINGARI ARTICLE IV TRUST U/A R. CINGA"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -152,7 +146,6 @@
     "JOSEPH DESARBO JR"
    ],
    "telephone_number": "(203) 624-5127",
-   "email_address": "maria@CARBONELLA.COM",
    "website": "www.carbonellaanddesarbo.com"
   },
   {
@@ -174,7 +167,6 @@
     "RICHARD LOTSTEIN"
    ],
    "telephone_number": "(860) 760-3998",
-   "email_address": "kblaise@hpcfs.com",
    "website": ""
   },
   {
@@ -194,7 +186,6 @@
     "CHARLES JARJURA"
    ],
    "telephone_number": "(203) 574-0632",
-   "email_address": "jarjuraj@yahoo.com",
    "website": ""
   },
   {
@@ -211,7 +202,6 @@
     "JOSEPH MASCARI"
    ],
    "telephone_number": "(203) 410-9552",
-   "email_address": "josephinefarace@sbcglobal.net",
    "website": ""
   },
   {
@@ -231,7 +221,6 @@
     "LISA LAUDANO"
    ],
    "telephone_number": "(203) 933-9323",
-   "email_address": "COSMO@COSMOSFOODS.COM",
    "website": "WWW.COSMOSFOODS.COM"
   },
   {
@@ -250,7 +239,6 @@
     "NANCY DOLNIER"
    ],
    "telephone_number": "(203) 726-7283",
-   "email_address": "TIMMAYD@GMAIL.COM",
    "website": ""
   },
   {
@@ -268,7 +256,6 @@
     "DENNIS SILVA"
    ],
    "telephone_number": "(203) 479-5349",
-   "email_address": "DSILVA@CITYLINEFOODS.COM",
    "website": ""
   },
   {
@@ -290,7 +277,6 @@
     "KEITH BISHOP"
    ],
    "telephone_number": "(203) 453-2338",
-   "email_address": "keith.bishop@bishopsorchards.com",
    "website": "WWW.BISHOPSORCHARDS.COM"
   },
   {
@@ -308,7 +294,6 @@
     "MICHAEL BOZZUTO"
    ],
    "telephone_number": "(203) 929-7982",
-   "email_address": "jesposito@bozzutos.com",
    "website": ""
   },
   {
@@ -325,7 +310,6 @@
     "BARBARA GIGLIOTTI"
    ],
    "telephone_number": "(203) 468-7825",
-   "email_address": "buyer.nhp@gmail.com",
    "website": ""
   },
   {
@@ -345,7 +329,6 @@
     "CHRISTOPHER ROMEO"
    ],
    "telephone_number": "(860) 529-2200",
-   "email_address": "CLROMEO.WESTSIDEMKT@GMAIL.COM",
    "website": ""
   },
   {
@@ -363,7 +346,6 @@
     "FRANCES DODGE"
    ],
    "telephone_number": "(203) 787-1055",
-   "email_address": "mariefranoffice379@yahoo.com",
    "website": ""
   },
   {
@@ -381,7 +363,6 @@
     "MICHAEL MCQUADE"
    ],
    "telephone_number": "(401) 596-2054",
-   "email_address": "melanie@mcquadesmarket.com",
    "website": ""
   },
   {
@@ -407,7 +388,6 @@
     "SHELLEY LABONNE"
    ],
    "telephone_number": "(203) 263-1940",
-   "email_address": "BOBJR@LABONNES.COM",
    "website": ""
   },
   {
@@ -426,7 +406,6 @@
     "JASON SARDILLI"
    ],
    "telephone_number": "(860) 525-3237",
-   "email_address": "jimp@sardilliproduce.com",
    "website": "www.sardilliproduce.com"
   },
   {
@@ -447,7 +426,6 @@
     "WILLIAM DRISCOLL IV"
    ],
    "telephone_number": "(860) 527-5510",
-   "email_address": "jenniferparmelee3@gmail.com",
    "website": ""
   },
   {
@@ -470,7 +448,6 @@
     "CHRISTINE SHEEHAN"
    ],
    "telephone_number": "(860) 646-4277",
-   "email_address": "CATHLEEN@HIGHLANDPARKMARKET.COM",
    "website": "WWW.HIGHLANDPARKMARKET.COM"
   },
   {
@@ -498,7 +475,6 @@
     "STEWART LEONARD JR"
    ],
    "telephone_number": "(203) 847-7213",
-   "email_address": "BBUCKNAM@STEWLEONARDS.COM",
    "website": ""
   },
   {
@@ -515,7 +491,6 @@
     "LUIS MARQUEZ"
    ],
    "telephone_number": "(203) 853-7210",
-   "email_address": "luis_marquez2@aol.com",
    "website": ""
   },
   {
@@ -532,7 +507,6 @@
     "SEBASTIAN FONTANA"
    ],
    "telephone_number": "(860) 223-0590",
-   "email_address": "thefarmstore166@gmail.com",
    "website": ""
   },
   {
@@ -552,7 +526,6 @@
     "KENNETH CAPANO JR"
    ],
    "telephone_number": "(860) 887-0409",
-   "email_address": "bre.flores@wakefern.com",
    "website": ""
   },
   {
@@ -573,7 +546,6 @@
     "FRANCISCO PENA"
    ],
    "telephone_number": "(203) 330-1094",
-   "email_address": "fpena@aol.com",
    "website": ""
   },
   {
@@ -592,7 +564,6 @@
     "CARLOS PENA"
    ],
    "telephone_number": "(203) 366-9060",
-   "email_address": "ALEXFOODINC@HOTMAIL.COM",
    "website": ""
   },
   {
@@ -610,7 +581,6 @@
     "GRADE A MARKET INC"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -627,7 +597,6 @@
     "ALFREDO PARZIALE"
    ],
    "telephone_number": "(860) 727-8790",
-   "email_address": "TINAROSEPRODUCE@GMAIL.COM",
    "website": ""
   },
   {
@@ -646,7 +615,6 @@
     "GRADE A MARKET INC"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -671,7 +639,6 @@
     "COAST TO COAST HLDING INC"
    ],
    "telephone_number": "(203) 271-2006",
-   "email_address": "kpalmieri@ctcproduce.com",
    "website": "WWW.CTCPRODUCE.COM"
   },
   {
@@ -691,7 +658,6 @@
     "ROBERTA CARALUZZI"
    ],
    "telephone_number": "(203) 748-3547",
-   "email_address": "CDEE@CARALUZZIS.COM",
    "website": ""
   },
   {
@@ -708,7 +674,6 @@
     "DON SARDILLI"
    ],
    "telephone_number": "(860) 525-3237",
-   "email_address": "jimp@sardilliproduce.com",
    "website": ""
   },
   {
@@ -728,7 +693,6 @@
     "WILLIAM MASCARI"
    ],
    "telephone_number": "(203) 469-9366",
-   "email_address": "BILLY@CEDROBANANAS.COM",
    "website": ""
   },
   {
@@ -750,7 +714,6 @@
     "ANTHONY WALKER"
    ],
    "telephone_number": "(281) 899-4281",
-   "email_address": "entity.management@sysco.com",
    "website": "WWW.FRESHPOINT.COM"
   },
   {
@@ -770,7 +733,6 @@
     "GRADE A MARKET INC"
    ],
    "telephone_number": "(203) 978-0464",
-   "email_address": "joseph.diaspro@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -788,7 +750,6 @@
     "LAWRENCE TIBBETTS JR"
    ],
    "telephone_number": "(203) 496-0661",
-   "email_address": "APRILTIBBETTS@ATT.NET",
    "website": ""
   },
   {
@@ -805,7 +766,6 @@
     "JEFFREY MUSTO"
    ],
    "telephone_number": "(203) 509-2538",
-   "email_address": "lisa.musto410@gmail.com",
    "website": ""
   },
   {
@@ -831,7 +791,6 @@
     "LEONARD FAMILY TR THOMAS P, Daniel Arthu"
    ],
    "telephone_number": "(203) 847-7214",
-   "email_address": "WCARPENTER@STEWLEONARDS.COM",
    "website": ""
   },
   {
@@ -848,7 +807,6 @@
     "NICHOLAS CASERTANO JR"
    ],
    "telephone_number": "(203) 758-3735",
-   "email_address": "Casertano@snet.net",
    "website": ""
   },
   {
@@ -865,7 +823,6 @@
     "EMILIO PARENTE"
    ],
    "telephone_number": "(860) 623-9137",
-   "email_address": "EMILY@HARKENSMARKET.NECOXMAIL.COM",
    "website": ""
   },
   {
@@ -890,7 +847,6 @@
     "MICHAEL SCHONBERG"
    ],
    "telephone_number": "(860) 571-5624",
-   "email_address": "entity.management@sysco.com",
    "website": ""
   },
   {
@@ -912,7 +868,6 @@
     "PETER FERRARO"
    ],
    "telephone_number": "(203) 776-3462",
-   "email_address": "al@ferraromarket.com",
    "website": ""
   },
   {
@@ -930,7 +885,6 @@
     "GRADE A MARKET INC"
    ],
    "telephone_number": "(203) 225-9224",
-   "email_address": "joseph.diaspro@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -950,7 +904,6 @@
     "CHARLES JOSEPH III"
    ],
    "telephone_number": "(860) 693-3666",
-   "email_address": "CHUCK.JOSEPH@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -969,7 +922,6 @@
     "SPENCER AN"
    ],
    "telephone_number": "(718) 346-6500",
-   "email_address": "lossprevention@bogopausa.com",
    "website": ""
   },
   {
@@ -987,7 +939,6 @@
     "GRADE A MARKET INC"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "joseph.diaspro@wakefern.com",
    "website": ""
   },
   {
@@ -1007,7 +958,6 @@
     "JORDAN COE"
    ],
    "telephone_number": "(860) 895-8390",
-   "email_address": "JCOE@WAVERLYMARKETS.COM",
    "website": "WWW.SHOPRITE.COM"
   },
   {
@@ -1026,7 +976,6 @@
     "WILLIAM DRISCOLL III"
    ],
    "telephone_number": "(860) 240-7508",
-   "email_address": "HEARTOFTHEHARVEST@GMAIL.COM",
    "website": "WWW.HEARTOFTHEHARVEST.NET"
   },
   {
@@ -1045,7 +994,6 @@
     "THOMAS CINGARI"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -1064,7 +1012,6 @@
     "DAVID BRENNER"
    ],
    "telephone_number": "(860) 355-2667",
-   "email_address": "DAVID@THEMARKETCT.COM",
    "website": "themarketct.com"
   },
   {
@@ -1083,7 +1030,6 @@
     "DAVID BRENNER"
    ],
    "telephone_number": "(860) 567-8647",
-   "email_address": "DAVID@THEMARKETCT.COM",
    "website": "themarketct.com"
   },
   {
@@ -1102,7 +1048,6 @@
     "SOUNG KIM"
    ],
    "telephone_number": "(203) 532-1400",
-   "email_address": "SONNYSPRODUCE@HOTMAIL.COM",
    "website": ""
   },
   {
@@ -1121,7 +1066,6 @@
     "LEONARDO ESPINAL"
    ],
    "telephone_number": "(203) 754-5700",
-   "email_address": "CHERRYVALLEY155@GMAIL.COM",
    "website": ""
   },
   {
@@ -1143,7 +1087,6 @@
     "GARAFALO MARKETS LLC"
    ],
    "telephone_number": "(475) 202-5180",
-   "email_address": "Harry.garafalo@Wakefern.com",
    "website": ""
   },
   {
@@ -1164,7 +1107,6 @@
     "LEONARD 2006 TR MARIANNE, "
    ],
    "telephone_number": "(203) 750-6118",
-   "email_address": "WCARPENTER@STEWLEONARDS.COM",
    "website": ""
   },
   {
@@ -1185,7 +1127,6 @@
     "BRANFORD INVESTMENT PARNTERS LLC"
    ],
    "telephone_number": "(475) 227-3446",
-   "email_address": "justin.kuntz@ripebarjuice.com",
    "website": "ripebarjuice.com"
   },
   {
@@ -1202,7 +1143,6 @@
     "FRANK MUSTO"
    ],
    "telephone_number": "(860) 471-8439",
-   "email_address": "fmusto@juicegrape.com",
    "website": "WWW.JUICEGRAPE.COM"
   },
   {
@@ -1224,7 +1164,6 @@
     "HARRY GARAFALO"
    ],
    "telephone_number": "(203) 876-7868",
-   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -1246,7 +1185,6 @@
     "JAMES DESTEFANO"
    ],
    "telephone_number": "(203) 876-7868",
-   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -1269,7 +1207,6 @@
     "GARAFALO MARKETS LLC"
    ],
    "telephone_number": "(203) 876-7868",
-   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -1290,7 +1227,6 @@
     "JENNIFER DIMYAN"
    ],
    "telephone_number": "(203) 270-7500",
-   "email_address": "JEN@CARALUZZIS.COM",
    "website": ""
   },
   {
@@ -1307,7 +1243,6 @@
     "SPENCER AN"
    ],
    "telephone_number": "(203) 610-6995",
-   "email_address": "lossprevention@bogopausa.com",
    "website": ""
   },
   {
@@ -1325,7 +1260,6 @@
     "GRUBMARKET INC"
    ],
    "telephone_number": "(570) 558-2409",
-   "email_address": "ATLANTICFRESH1@AOL.COM",
    "website": ""
   },
   {
@@ -1344,7 +1278,6 @@
     "GRADE A MARKET INC"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "JOSEPH.DIASPRO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -1366,7 +1299,6 @@
     "HARRY GARAFALO"
    ],
    "telephone_number": "(203) 795-0628",
-   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -1383,7 +1315,6 @@
     "KEITH GNAZZO"
    ],
    "telephone_number": "(860) 747-8758",
-   "email_address": "keith@gnazzos.com",
    "website": ""
   },
   {
@@ -1405,7 +1336,6 @@
     "Ann Garafalo"
    ],
    "telephone_number": "(203) 876-7868",
-   "email_address": "harry.garafalo@wakefern.com",
    "website": ""
   },
   {
@@ -1428,7 +1358,6 @@
     "GARAFALO MARKETS LLC"
    ],
    "telephone_number": "(203) 876-7868",
-   "email_address": "HARRY.GARAFALO@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -1449,7 +1378,6 @@
     "MICHAEL CIPRIANO"
    ],
    "telephone_number": "(860) 276-4000",
-   "email_address": "dosborne@ferrarofoods.com",
    "website": "napolifoodsinc.com"
   },
   {
@@ -1470,7 +1398,6 @@
     "JORDAN COE"
    ],
    "telephone_number": "(860) 645-3240",
-   "email_address": "jcoe@waverlymarkets.com",
    "website": "www.shoprite.com"
   },
   {
@@ -1487,7 +1414,6 @@
     "Patricia Smith"
    ],
    "telephone_number": "(860) 456-3611",
-   "email_address": "patty.smith@willimanticfood.coop",
    "website": "WILLIMANTICFOOD.COOP"
   },
   {
@@ -1505,7 +1431,6 @@
     "ROBERT FUSCO JR"
    ],
    "telephone_number": "(860) 633-4625",
-   "email_address": "BFUSCO@ROBERTSFOODCENTER.COM",
    "website": "WWW.BROOKSIDEMARKETCT.COM"
   },
   {
@@ -1525,7 +1450,6 @@
     "SUSAN DARIN"
    ],
    "telephone_number": "(203) 238-2553",
-   "email_address": "nancy@ragozzino.com",
    "website": ""
   },
   {
@@ -1549,7 +1473,6 @@
     "Reynold Palazhi"
    ],
    "telephone_number": "(860) 632-2262",
-   "email_address": "TONY@ASIAGROCERS.COM",
    "website": "asiagrocers.com"
   },
   {
@@ -1568,7 +1491,6 @@
     "JOHN LIBRO III"
    ],
    "telephone_number": "(860) 246-9969",
-   "email_address": "JLIBRO3rd@yahoo.COM",
    "website": ""
   },
   {
@@ -1590,7 +1512,6 @@
     "Wakefern Food Corp."
    ],
    "telephone_number": "(860) 745-1621",
-   "email_address": "harry.garafalo@wakefern.com",
    "website": ""
   },
   {
@@ -1607,7 +1528,6 @@
     "RICHARD ONOFRIO"
    ],
    "telephone_number": "(203) 469-5624",
-   "email_address": "sbriones@onofriosfreshcut.com",
    "website": ""
   },
   {
@@ -1624,7 +1544,6 @@
     "KRISTINA BAKES"
    ],
    "telephone_number": "(203) 504-8485",
-   "email_address": "IONIANFOODS@OPTONLINE.NET",
    "website": ""
   },
   {
@@ -1645,7 +1564,6 @@
     "JUAN DIAZ"
    ],
    "telephone_number": "(860) 961-9398",
-   "email_address": "nsanewlondon@gmail.com",
    "website": ""
   },
   {
@@ -1662,7 +1580,6 @@
     "JOSEPH MASTROIANNI"
    ],
    "telephone_number": "(203) 640-1839",
-   "email_address": "bigdawg4444@gmail.com",
    "website": ""
   },
   {
@@ -1687,7 +1604,6 @@
     "GRADE A MARKET INC"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "joseph.diaspro@wakefern.com",
    "website": ""
   },
   {
@@ -1706,7 +1622,6 @@
     "Murat Karacayli"
    ],
    "telephone_number": "(203) 606-8981",
-   "email_address": "efesproduce254@gmail.com",
    "website": ""
   },
   {
@@ -1727,7 +1642,6 @@
     "JENNIFER DIMYAN"
    ],
    "telephone_number": "(203) 748-3547",
-   "email_address": "JEN@CARALUZZIS.COM",
    "website": "www.caraluzzis.com"
   },
   {
@@ -1752,7 +1666,6 @@
     "JOHN DEVANNEY"
    ],
    "telephone_number": "(860) 659-1717",
-   "email_address": "CATHLEEN@HIGHLANDPARKMARKET.COM",
    "website": ""
   },
   {
@@ -1772,7 +1685,6 @@
     "GORDON FOOD SERVICE INC"
    ],
    "telephone_number": "(905) 693-3604",
-   "email_address": "alida.kuhr@gfs.com",
    "website": ""
   },
   {
@@ -1791,7 +1703,6 @@
     "Wakefern Food Corporation"
    ],
    "telephone_number": "(203) 299-5719",
-   "email_address": "Joseph.diaspro@wakefern.com",
    "website": "www.shoprite.com"
   },
   {
@@ -1818,7 +1729,6 @@
     "PRATIK PATEL"
    ],
    "telephone_number": "(203) 939-1777",
-   "email_address": "pratik@patelbros.com",
    "website": ""
   },
   {
@@ -1838,7 +1748,6 @@
     "BRYAN DEVOE"
    ],
    "telephone_number": "(860) 658-2271",
-   "email_address": "BDEVOE28@YAHOO.COM",
    "website": "WWW.FITZGERALDSFOODS.COM"
   },
   {
@@ -1856,7 +1765,6 @@
     "Jocelyne Verrastro"
    ],
    "telephone_number": "(860) 868-7351",
-   "email_address": "washington.food.mark@snet.net",
    "website": "washingtonfoodmarket.com"
   },
   {
@@ -1874,7 +1782,6 @@
     "JUAN SANCHEZ"
    ],
    "telephone_number": "(203) 642-4400",
-   "email_address": "producemarket_01@hotmail.com",
    "website": ""
   },
   {
@@ -1896,7 +1803,6 @@
     "TIMOTHY DEVANNEY"
    ],
    "telephone_number": "(860) 646-4277",
-   "email_address": "cathleen@highlandparkmarket.com",
    "website": "WWW.HIGHLANDPARKMARKET.COM"
   },
   {
@@ -1915,7 +1821,6 @@
     "EDWIN SANCHEZ"
    ],
    "telephone_number": "(203) 838-0888",
-   "email_address": "ctownnorwalk@gmail.com",
    "website": ""
   },
   {
@@ -1935,7 +1840,6 @@
     "THEODORE ARMATA JR"
    ],
    "telephone_number": "(860) 228-4311",
-   "email_address": "TEDSIGA@AOL.COM",
    "website": ""
   },
   {
@@ -1953,7 +1857,6 @@
     "DIMOS MITAS"
    ],
    "telephone_number": "(203) 874-6462",
-   "email_address": "MINAFOODS@OPTONLINE.NET",
    "website": "WWW.MINAFOODSINC.COM"
   },
   {
@@ -1979,7 +1882,6 @@
     "MAXWELL PRESS"
    ],
    "telephone_number": "(860) 793-2700",
-   "email_address": "drew.yurko@lipmanfamilyfarms.com",
    "website": "lipmanfamilyfarms.com"
   },
   {
@@ -2003,7 +1905,6 @@
     "Amy Duval"
    ],
    "telephone_number": "(860) 701-9123",
-   "email_address": "gm@fiddleheadsfood.coop",
    "website": "https://fiddleheadsfood.weebly.com/"
   },
   {
@@ -2022,7 +1923,6 @@
     "SPENCER AN"
    ],
    "telephone_number": "(718) 346-6500",
-   "email_address": "maria.g@bogopausa.com",
    "website": "www.foodbazaar.com"
   },
   {
@@ -2042,7 +1942,6 @@
     "ALEXANDER STEWART"
    ],
    "telephone_number": "(203) 966-4848",
-   "email_address": "ALEX@STEWARTSMARKET.COM",
    "website": "STEWARTSMARKET.COM"
   },
   {
@@ -2066,7 +1965,6 @@
     "Ethoa LLC"
    ],
    "telephone_number": "(718) 328-4120",
-   "email_address": "j.stewart@sabatinostore.com",
    "website": ""
   },
   {
@@ -2083,7 +1981,6 @@
     "DENNIS KOVACS"
    ],
    "telephone_number": "(203) 234-2162",
-   "email_address": "DJKCNFM@GMAIL.COM",
    "website": ""
   },
   {
@@ -2105,7 +2002,6 @@
     "DONALD DRUST"
    ],
    "telephone_number": "(203) 626-7760",
-   "email_address": "ELENA.PARSONS@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -2125,7 +2021,6 @@
     "FAMILY D MARKETS INC"
    ],
    "telephone_number": "(860) 736-0044",
-   "email_address": "ELENA.PARSONS@WAKEFERN.COM",
    "website": ""
   },
   {
@@ -2144,7 +2039,6 @@
     "MICHAEL DISAPIO"
    ],
    "telephone_number": "(203) 879-4317",
-   "email_address": "SALES@PATSIGA.NET",
    "website": "WWW.PATSIGA.NET"
   },
   {
@@ -2165,7 +2059,6 @@
     "JOSEPH PALMER JR"
    ],
    "telephone_number": "(203) 655-2077",
-   "email_address": "ACCOUNTSPAYABLE@PALMERSDARIEN.COM",
    "website": ""
   },
   {
@@ -2189,7 +2082,6 @@
     "CAMLYN MILLER-STEVENS"
    ],
    "telephone_number": "(860) 673-3256",
-   "email_address": "CAPRI@OMASPRIDE.COM",
    "website": "WWW.OMASPRIDE.COM"
   },
   {
@@ -2209,7 +2101,6 @@
     "HARSH PATEL"
    ],
    "telephone_number": "(860) 742-7361",
-   "email_address": "management@coventrypublicmarket.com",
    "website": "coventrypublicmarket.com"
   },
   {
@@ -2227,7 +2118,6 @@
     "DANIEL CHAVEZ MELGAREJO"
    ],
    "telephone_number": "(201) 362-4746",
-   "email_address": "tamara.chavez@brandwhiteperu.com",
    "website": "https://brandwhiteperu.com/"
   },
   {
@@ -2246,7 +2136,6 @@
     "JOHN FALCONE"
    ],
    "telephone_number": "(860) 489-4109",
-   "email_address": "audrey61168@gmail.com",
    "website": ""
   },
   {
@@ -2264,7 +2153,6 @@
     "AARON PETERSON"
    ],
    "telephone_number": "",
-   "email_address": "abaker@petersonfarmsinc.com",
    "website": ""
   },
   {
@@ -2282,7 +2170,6 @@
     "JOHN SANTACROCE"
    ],
    "telephone_number": "(203) 865-4119",
-   "email_address": "JOHN@MINORES.COM",
    "website": "MINORES.COM"
   },
   {
@@ -2301,7 +2188,6 @@
     "ANDRES FERREIRA"
    ],
    "telephone_number": "(860) 505-8130",
-   "email_address": "AFB0233@AMFMANAGEMENT.COM",
    "website": ""
   },
   {
@@ -2318,7 +2204,6 @@
     "BILAL MUSID"
    ],
    "telephone_number": "(860) 816-6052",
-   "email_address": "sabalivepoultry@yahoo.com",
    "website": ""
   }
  ]

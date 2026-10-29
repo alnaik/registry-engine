@@ -4,7 +4,10 @@ National registry of businesses licensed to buy/sell/broker fresh & frozen
 produce in interstate commerce. Category signal: being licensed IS the
 "produce" category. Detail records carry principals, trade names, branches,
 **telephone, email, website** — usable for both the category and contact
-planes.
+planes. The committed shards keep telephone and website and drop
+`email_address`: about 665 of the filed addresses are personal mailboxes
+(Gmail, AOL, Yahoo), and a bulk file in a public repo is a harvest target in a
+way the one-at-a-time USDA search is not.
 
 ## Live endpoint (probed, working)
 

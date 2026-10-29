@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck, RawLlm, LlmBilling } from "@registry-engine/qualify";
@@ -233,6 +234,11 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       params = parseSearchParams(await readJson(req));
     } catch (err) {
       if (err instanceof BadRequest) {
+        if (err.status === 413) {
+          // The rest of the body is never read, so don't keep the connection.
+          res.setHeader("Connection", "close");
+          res.on("finish", () => req.destroy());
+        }
         sendJson(res, err.status, { error: err.message });
         return;
       }
@@ -280,9 +286,14 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       });
 
       // The rejected map answer goes to the server's stderr for diagnosis,
-      // never into the result line or the page.
+      // never into the result line or the page, and only when asked for: it
+      // may echo the user's request.
       if (outcome.mapRawAnswer !== null) {
-        console.error(`[map] the AI answer couldn't be used. Raw answer (untrusted):\n${outcome.mapRawAnswer}\n[map] end of raw answer`);
+        if (process.env["REGISTRY_ENGINE_DEBUG"] === "1") {
+          console.error(`[map] the AI answer couldn't be used. Raw answer (untrusted):\n${outcome.mapRawAnswer}\n[map] end of raw answer`);
+        } else {
+          console.error(`[map] the AI answer couldn't be used (${outcome.mapRawAnswer.length} chars). Set REGISTRY_ENGINE_DEBUG=1 to log it.`);
+        }
       }
       const existenceIds = outcome.routed.filter(s => s.plane === "existence").map(s => s.id);
       last = { ranked: outcome.ranked, existenceIds };
@@ -292,7 +303,8 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       }
       write(result);
     } catch (err) {
-      write({ type: "error", message: err instanceof Error ? err.message : String(err) });
+      console.error(err);
+      write({ type: "error", message: forPage(err instanceof Error ? err.message : String(err)) });
     } finally {
       busy = false;
       if (!res.writableEnded) res.end();
@@ -404,24 +416,40 @@ function sendJson(res: ServerResponse, status: number, body: unknown, headOnly =
   res.end(headOnly ? undefined : JSON.stringify(body));
 }
 
-// Reads at most MAX_BODY_BYTES; a larger body is discarded and rejected.
+// Error text that reaches the page or the stored history: home-directory
+// paths become "~" (Node and driver errors can carry them), clipped to 300.
+function forPage(text: string): string {
+  let out = text;
+  const home = homedir();
+  if (home !== "" && home !== "/") out = out.split(home).join("~");
+  out = out.replace(/\/(?:Users|home)\/[^/\s'"]+/g, "~").replace(/[A-Za-z]:\\Users\\[^\\\s'"]+/g, "~");
+  return out.slice(0, 300);
+}
+
+// Reads at most MAX_BODY_BYTES. A larger body is rejected at once, from the
+// declared length or as soon as the streamed bytes pass the cap.
 function readJson(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const declared = Number(req.headers["content-length"]);
+    if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+      reject(new BadRequest("request body too large", 413));
+      return;
+    }
     let size = 0;
-    let tooLarge = Number.isFinite(declared) && declared > MAX_BODY_BYTES;
     const chunks: Buffer[] = [];
-    req.on("data", (chunk: Buffer) => {
+    const onData = (chunk: Buffer): void => {
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) tooLarge = true;
-      if (!tooLarge) chunks.push(chunk);
-    });
-    req.on("error", reject);
-    req.on("end", () => {
-      if (tooLarge) {
+      if (size > MAX_BODY_BYTES) {
+        req.off("data", onData);
+        chunks.length = 0;
         reject(new BadRequest("request body too large", 413));
         return;
       }
+      chunks.push(chunk);
+    };
+    req.on("data", onData);
+    req.on("error", reject);
+    req.on("end", () => {
       try {
         resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
       } catch {
@@ -506,7 +534,7 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
         caveats: event.map.caveats,
         via: event.map.via,
         directionFixed: event.map.directionFixed,
-        ...(event.map.llmError !== undefined ? { llmError: event.map.llmError } : {}),
+        ...(event.map.llmError !== undefined ? { llmError: forPage(event.map.llmError) } : {}),
       };
     case "origin":
       return { type: "origin", origin: event.origin };
@@ -515,7 +543,7 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
     case "fetched":
       return { type: "fetched", sourceId: event.sourceId, count: event.count, capped: event.capped };
     case "source_error":
-      return { type: "source_error", sourceId: event.sourceId, message: event.message };
+      return { type: "source_error", sourceId: event.sourceId, message: forPage(event.message) };
     case "merged":
     case "backfilled":
     case "probed":

@@ -1,3 +1,100 @@
+# v10 — security audit follow-ups: PACA emails, error text, oversized bodies, raw AI log, reporting
+
+Working branch: `paca-drop-emails`. Owner decisions 2026-10-29: git history
+was rewritten after all (email → GitHub noreply, `docs/handoffs/` and
+`server.log` dropped, other branches deleted; supersedes v9's "no history
+rewrite"). PACA shards keep phone and website and drop `email_address`.
+No API token on the local server (accepted risk, M4). Everything ships in
+one PR.
+
+## M0 — PACA shards drop `email_address` ✅ (2026-10-29, commit 3cc909b; shards, manifest `contact_fields`, static-shard + e2e tests, docs/data/paca.md, README)
+
+## M1 — error text that reaches the page or history has local paths removed ✅ (2026-10-29; 402 tests green)
+
+The page and the stored history get error text from three places in
+`apps/web/src/server.ts`: the final `{ type: "error", message }` line in
+`handleSearch`'s catch, `translateEvent`'s `source_error` message, and
+`translateEvent`'s map `llmError`. Driver/Node errors can carry absolute
+paths (`ENOENT: open '/Users/<name>/…'`).
+
+- Add `function forPage(text: string): string` in `server.ts` (module
+  level, near `sendJson`): replace every occurrence of `os.homedir()` with
+  `~` (skip if homedir is empty or `/`), then replace
+  `/\/(?:Users|home)\/[^/\s'"]+/g` with `~` and
+  `/[A-Za-z]:\\Users\\[^\\\s'"]+/g` with `~`, then clip to 300 chars.
+- Apply it at the three sinks above and nowhere else.
+- In `handleSearch`'s catch, also `console.error(err)` (full error, server
+  side only) before writing the line.
+- Tests in `tests/web/server.test.ts`:
+  - search throws `new Error("ENOENT: open '/Users/someone/proj/shards/x.json'")`
+    → final line message contains `~/proj/shards/x.json` and not `/Users/someone`.
+  - a `source_error` event and a map event with `llmError` carrying
+    `/home/someone/x` both stream with `~/x`.
+  - existing "registry exploded" test still passes unchanged.
+
+## M2 — oversized request bodies cut the connection ✅ (2026-10-29; 402 tests green)
+
+`readJson` reads and discards the whole body past 10 KB before answering
+413, and the connection stays open.
+
+- If the declared `Content-Length` exceeds `MAX_BODY_BYTES`, reject at once
+  without reading. If streamed bytes exceed it, stop collecting and reject
+  at once (don't wait for `end`).
+- The 413 response carries `Connection: close`, and after it finishes the
+  request socket is destroyed (`res.on("finish", () => req.destroy())` or
+  equivalent). Other 4xx responses are unchanged.
+- Tests: the existing 413 test still passes and also asserts
+  `headers.connection === "close"`; a new test sends
+  `Content-Length: 1000000` with a tiny body written but the request left
+  open (don't call `end`) and gets 413 back.
+
+## M3 — the rejected raw AI answer is logged only on request ✅ (2026-10-29; 402 tests green)
+
+`handleSearch` writes `outcome.mapRawAnswer` to stderr on every rejected
+map answer.
+
+- Default: one line, `[map] the AI answer couldn't be used (<n> chars). Set REGISTRY_ENGINE_DEBUG=1 to log it.`
+- When `process.env.REGISTRY_ENGINE_DEBUG === "1"`: the existing raw-answer
+  log, unchanged.
+- `.env.example`: add a commented block, `# Log the AI's raw answer when it
+  can't be used (for diagnosis; it may echo your request).` and
+  `export REGISTRY_ENGINE_DEBUG=`.
+- Tests: update "logs a rejected map answer to stderr only…" to set the env
+  var with `vi.stubEnv("REGISTRY_ENGINE_DEBUG", "1")` (restore after); add
+  one without it asserting stderr does NOT contain the raw marker and does
+  contain `couldn't be used`. Stream assertions unchanged.
+
+## M4 — SECURITY.md ✅ (2026-10-29; 402 tests green)
+
+- New section right after the intro paragraph, before Threat 1:
+  `## Reporting a vulnerability` — report privately through GitHub's
+  private vulnerability reporting (the repo's Security tab → "Report a
+  vulnerability"); please don't open a public issue. No email address.
+- Threat 1 item 6: say the raw answer is written to stderr only when
+  `REGISTRY_ENGINE_DEBUG=1`; otherwise only its length.
+- Threat 5: add a bullet — the committed PACA shards keep the filed phone
+  and website and drop the filed email (about 665 were personal mailboxes;
+  a bulk file in a public repo is a harvest target).
+- Threat 8 item 3: oversized bodies get 413 with `Connection: close` and
+  the socket is closed. Item 7: error text sent to the page or history has
+  home-directory paths replaced with `~` (`forPage`).
+- Threat 8 new item 8, **No API token (accepted risk).** The server takes
+  no token, so any local process can start searches that spend the user's
+  AI and web-search credits. Not mitigated: such a process can already
+  read the user's environment/.env keys or run `claude` as the user, so a
+  token would add no protection while breaking the documented curl usage.
+  Other websites remain blocked by items 1–2.
+- Header: Version 3.12, Last updated 2026-10-29. Changelog v3.12
+  (2026-10-29, v10): reporting section; PACA emails not committed;
+  `forPage`; 413 closes the connection; raw AI answer behind
+  `REGISTRY_ENGINE_DEBUG`; no-token accepted risk.
+
+## Done when
+
+`npm test` and `npm run typecheck` pass; no other files change.
+
+---
+
 # v9 — public release: drop the CLI, document the API, code-finder fix, UI clarity pass, hygiene
 
 Working branch: `v8-byok` (continues after the v8 commit 8db2cf3). Owner

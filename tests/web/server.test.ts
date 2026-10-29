@@ -177,7 +177,26 @@ describe("web app server", () => {
     });
 
     it("rejects bodies over 10 KB", async () => {
-      expect((await post({ query: "x".repeat(11_000) })).status).toBe(413);
+      const r = await post({ query: "x".repeat(11_000) });
+      expect(r.status).toBe(413);
+      expect(r.headers["connection"]).toBe("close");
+    });
+
+    it("rejects a large declared length without waiting for the body", async () => {
+      const r = await new Promise<Reply>((resolve, reject) => {
+        const req = request({
+          host: "127.0.0.1", port, method: "POST", path: "/api/search",
+          headers: { Host: `localhost:${port}`, "Content-Type": "application/json", "Content-Length": "1000000" },
+        }, res => {
+          const chunks: Buffer[] = [];
+          res.on("data", (c: Buffer) => chunks.push(c));
+          res.on("end", () => resolve({ status: res.statusCode ?? 0, headers: res.headers, text: Buffer.concat(chunks).toString("utf8") }));
+        });
+        req.on("error", reject);
+        req.write("{}");   // never ended
+      });
+      expect(r.status).toBe(413);
+      expect(r.headers["connection"]).toBe("close");
     });
 
     it("400s bad input", async () => {
@@ -234,11 +253,34 @@ describe("web app server", () => {
       };
       const logged: string[] = [];
       const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => { logged.push(args.map(String).join(" ")); });
+      vi.stubEnv("REGISTRY_ENGINE_DEBUG", "1");
       try {
         const r = await post({ query: "metal fabrication", near: "Denver" });
         expect(r.text).not.toContain("RAW-MAP-ANSWER-7731");
         expect(logged.join("\n")).toContain("RAW-MAP-ANSWER-7731");
       } finally {
+        vi.unstubAllEnvs();
+        spy.mockRestore();
+      }
+    });
+
+    it("logs only the length of a rejected map answer without REGISTRY_ENGINE_DEBUG", async () => {
+      const raw = "Sure! Here are codes:\nRAW-MAP-ANSWER-7731 <img src=x>";
+      behavior = async (_q, cfg) => {
+        const o = makeOutcome();
+        cfg.onEvent?.({ type: "map", map: { ...o.map, llmError: "the AI answer couldn't be used", mapRawAnswer: raw } });
+        return { ...o, mapRawAnswer: raw };
+      };
+      const logged: string[] = [];
+      const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => { logged.push(args.map(String).join(" ")); });
+      vi.stubEnv("REGISTRY_ENGINE_DEBUG", "");
+      try {
+        const r = await post({ query: "metal fabrication", near: "Denver" });
+        expect(r.text).not.toContain("RAW-MAP-ANSWER-7731");
+        expect(logged.join("\n")).not.toContain("RAW-MAP-ANSWER-7731");
+        expect(logged.join("\n")).toContain("couldn't be used");
+      } finally {
+        vi.unstubAllEnvs();
         spy.mockRestore();
       }
     });
@@ -423,6 +465,29 @@ describe("web app server", () => {
       const ok = await post({ query: "metal fabrication" });
       expect(ok.status).toBe(200);
       expect(lines(ok).pop()?.["type"]).toBe("result");
+    });
+
+    it("removes home-directory paths from error text sent to the page", async () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        behavior = async () => { throw new Error("ENOENT: open '/Users/someone/proj/shards/x.json'"); };
+        const failed = lines(await post({ query: "metal fabrication" }));
+        const message = String(failed[failed.length - 1]?.["message"]);
+        expect(message).toContain("~/proj/shards/x.json");
+        expect(message).not.toContain("/Users/someone");
+
+        behavior = async (_q, cfg) => {
+          const o = makeOutcome();
+          cfg.onEvent?.({ type: "source_error", sourceId: "ppp", message: "cannot read /home/someone/x" });
+          cfg.onEvent?.({ type: "map", map: { ...o.map, llmError: "failed in /home/someone/x" } });
+          return o;
+        };
+        const out = lines(await post({ query: "metal fabrication" }));
+        expect(out.find(l => l["type"] === "source_error")?.["message"]).toBe("cannot read ~/x");
+        expect(out.filter(l => l["type"] === "map").some(l => l["llmError"] === "failed in ~/x")).toBe(true);
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 
