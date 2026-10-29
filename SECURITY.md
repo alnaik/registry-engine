@@ -1,10 +1,16 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.7 (v6, field sheet, audit fixes)
-Last updated: 2026-10-27
+Version: 3.12 (v10, security audit follow-ups)
+Last updated: 2026-10-29
 
 The known threats, their mitigations, and where each mitigation lives in the
 code. Update the code locations when code moves.
+
+## Reporting a vulnerability
+
+Report it privately through GitHub's private vulnerability reporting: open
+the repo's Security tab and choose "Report a vulnerability". Please don't
+open a public issue.
 
 ---
 
@@ -39,7 +45,8 @@ user's request, in `map` and `brief`. The other is registry text inside
    rejects the model's answer, the raw text is clipped to 2,000 chars with
    control characters (terminal escapes) replaced (`rawAnswerForLog`) and
    travels only as `SearchOutcome.mapRawAnswer`: the engine strips it from
-   the map result before the brief call, and the web server writes it to stderr, never into the
+   the map result before the brief call. The web server writes it to stderr
+   only when `REGISTRY_ENGINE_DEBUG=1` (otherwise only its length), never into the
    NDJSON stream or the page. It never feeds a prompt or a query.
    - `mapQuery` in `map.ts`, `search` in `engine.ts`, `handleSearch` in `apps/web/src/server.ts`
 7. **No tools for the headless model.** `claude -p` runs with `--tools ""`
@@ -129,6 +136,9 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
   The engine never looks up personal phones, emails or home addresses for
   them.
 - Officers and agents are displayed in the web app but never sent to the LLM.
+- **PACA emails.** The committed PACA shards keep the filed phone and website
+  and drop the filed email. About 665 of them were personal mailboxes, and a
+  bulk file in a public repo is a harvest target.
 
 ---
 
@@ -205,7 +215,9 @@ credits is a target for other websites open in the same browser.
    and the server sends no CORS headers, so cross-origin pages can't trigger
    a search.
 3. One search at a time (429 otherwise), with a 10 KB body cap and
-   validated, length-capped fields.
+   validated, length-capped fields. An oversized body gets 413 with
+   `Connection: close` as soon as the declared or streamed size passes the cap,
+   and the socket is closed.
 4. **XSS.** All registry and web strings are rendered with `textContent`;
    `innerHTML` is never used with data. A strict CSP allows `'self'` only,
    with no inline script. Website links must parse as http(s), and `tel:` /
@@ -224,7 +236,15 @@ credits is a target for other websites open in the same browser.
    from a request, a file or the page), held inside the backend closures,
    never written to history or logs. API error text is reduced to status and
    error type before it reaches the page or history. `/api/status` exposes
-   only which billing path is active (`llmBilling`).
+   only which billing path is active (`llmBilling`). Other error text sent to
+   the page or history has home-directory paths replaced with `~` and is
+   clipped to 300 chars (`forPage`).
+8. **No API token (accepted risk).** The server takes no token, so any local
+   process can start searches that spend the user's AI and web-search credits.
+   Not mitigated: such a process can already read the user's environment or
+   .env keys or run `claude` as the user, so a token would add no protection
+   while breaking the documented curl usage. Other websites remain blocked by
+   items 1 and 2.
 - `apps/web/src/server.ts`, `apps/web/src/main.ts`, `apps/web/public/app.js`,
   `packages/qualify/src/llm/fromEnv.ts`, `packages/qualify/src/llm/adapter.ts`
 
@@ -279,3 +299,6 @@ credits is a target for other websites open in the same browser.
   (`packages/qualify/src/llm/fromEnv.ts`) picks the Anthropic API when `ANTHROPIC_API_KEY`
   is set, else `claude -p`; API errors carry status and error type only (Threat 8, item 7).
 - v3.11 (2026-10-28, v9): CLI removed; HTTP API documented.
+- v3.12 (2026-10-29, v10): reporting section; PACA emails not committed; `forPage`
+  strips home-directory paths from error text; 413 closes the connection; raw AI
+  answer logged only with `REGISTRY_ENGINE_DEBUG=1`; no-token accepted risk.
