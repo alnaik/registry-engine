@@ -94,6 +94,14 @@ Tests
   has every source; Connecticut and New York have their state registry plus
   PACA; EPA facilities are nationwide; other states are a manifest entry
   (link to the section in CLAUDE.md). Keep the sources table as is.
+- README: a short **Add a state or a source** section after the sources
+  table, three cases: (1) a registry on Socrata, a static shard, or ECHO is a
+  manifest entry (point at `zero-code-state.test.ts` as the guarantee and
+  at the `SourceSpec` keys listed in CLAUDE.md); (2) PPP for another state is
+  `build_ppp_shards.py --state XX` over the public SBA CSVs; (3) another
+  platform (CKAN, ArcGIS, bulk CSV) needs a new driver in
+  `packages/registry-core/src/drivers/`, which is the one case that is code.
+  ZIP and place centroids are already nationwide.
 
 ## Phase I3 — keys and data-flow documentation
 
