@@ -36,7 +36,7 @@ const appPort = (server.address() as AddressInfo).port;
 const historyDir = mkdtempSync(join(tmpdir(), "re-axe-history-"));
 server.on("request", createApp({
   search: sheetSearch,
-  llmAvailable: async () => false,
+  llm: async () => null,
   contactsProvider: () => null,
   port: appPort,
   publicDir: fileURLToPath(new URL("../../apps/web/public", import.meta.url)),

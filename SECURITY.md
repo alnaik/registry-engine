@@ -220,7 +220,14 @@ credits is a target for other websites open in the same browser.
    server-computed SHA-1; `/api/history/:id` and `/api/csv?id=` accept only
    `/^[a-f0-9]{40}$/` (400 otherwise), and no path is built from any other
    input. Opening a stored search is a pure read; there is no delete endpoint.
-- `apps/web/src/server.ts`, `apps/web/public/app.js`
+7. **Credentials.** Keys (`ANTHROPIC_API_KEY`, `EXA_API_KEY`,
+   `PARALLEL_API_KEY`) are read from the process environment only (never
+   from a request, a file or the page), held inside the backend closures,
+   never written to history or logs. API error text is reduced to status and
+   error type before it reaches the page or history. `/api/status` exposes
+   only which billing path is active (`llmBilling`).
+- `apps/web/src/server.ts`, `apps/web/src/main.ts`, `apps/web/public/app.js`,
+  `packages/qualify/src/llm/fromEnv.ts`, `packages/qualify/src/llm/adapter.ts`
 
 ---
 
@@ -269,3 +276,6 @@ credits is a target for other websites open in the same browser.
 - v3.9 (2026-10-27, v7b): "check all" registry name lookup (Threat 4, item 5):
   `maxNames` override in `SocrataDriver.fetchByNames`, `backfillAll` in the engine.
   Threat 6 item 6: no website claim without a web lookup; `--hidden` removed.
+- v3.10 (2026-10-28, v8 / ADR 0018): bring your own keys, env only. `llmBackendFromEnv`
+  (`packages/qualify/src/llm/fromEnv.ts`) picks the Anthropic API when `ANTHROPIC_API_KEY`
+  is set, else `claude -p`; API errors carry status and error type only (Threat 8, item 7).

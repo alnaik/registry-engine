@@ -116,12 +116,16 @@ export function createLlm(cfg: LlmConfig = {}): Llm {
   return new Llm(raw, cfg.maxCalls);
 }
 
-function anthropicApiBackend(apiKey: string): RawLlm {
+// Anthropic Messages API backend. With modelOverride set, every tier uses
+// that model (same contract as ClaudeCodeBackend). The Messages API returns
+// no price, so costUsd stays null on this path.
+export function anthropicApiBackend(apiKey: string, modelOverride?: string | undefined): RawLlm {
   return {
     async complete(prompt, opts) {
       const body: Record<string, unknown> = {
-        model: opts.model,
-        max_tokens: opts.maxTokens,
+        model: modelOverride ?? opts.model,
+        max_tokens: Math.max(opts.maxTokens, 4000),
+        output_config: { effort: "low" },
         messages: [{ role: "user", content: prompt }],
       };
       if (opts.system !== undefined) body["system"] = opts.system;
@@ -132,16 +136,28 @@ function anthropicApiBackend(apiKey: string): RawLlm {
           "content-type": "application/json",
           "anthropic-version": "2023-06-01",
           "x-api-key": apiKey,
-          // Required for direct browser use; harmless in Node.
-          "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(120_000),
       });
       if (!resp.ok) {
-        throw new Error(`Anthropic API error ${resp.status}: ${await resp.text()}`);
+        // Status and error type only: the raw body never reaches the page or history.
+        let detail = "";
+        try {
+          const err = (await resp.json()) as { error?: { type?: unknown; message?: unknown } };
+          const type = err?.error?.type;
+          const message = err?.error?.message;
+          if (typeof type === "string" && typeof message === "string") {
+            detail = ` (${type}: ${message.slice(0, 120)})`;
+          }
+        } catch {
+          // fall through to the bare status
+        }
+        throw new Error(`Anthropic API error ${resp.status}${detail}`);
       }
       const data = (await resp.json()) as {
         content: Array<{ type: string; text?: string }>;
+        stop_reason?: string;
         usage?: {
           input_tokens?: number;
           output_tokens?: number;
@@ -156,6 +172,9 @@ function anthropicApiBackend(apiKey: string): RawLlm {
           outputTokens: u.output_tokens ?? 0,
           costUsd: null,
         });
+      }
+      if (data.stop_reason === "max_tokens" || data.stop_reason === "refusal") {
+        throw new Error(`Anthropic API stopped early (${data.stop_reason})`);
       }
       return data.content.filter(b => b.type === "text").map(b => b.text ?? "").join("");
     },

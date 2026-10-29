@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import { spawn } from "node:child_process";
 import { ClaudeCodeBackend } from "../../packages/qualify/src/llm/claudeCodeBackend.js";
 import { createLlm, LlmCallBudgetError, TIER_MODELS, type RawLlm, type RawCompleteOptions } from "../../packages/qualify/src/llm/adapter.js";
+import { llmBackendFromEnv } from "../../packages/qualify/src/llm/fromEnv.js";
 
 vi.mock("node:child_process", () => ({ spawn: vi.fn() }));
 
@@ -177,5 +178,58 @@ describe("ClaudeCodeBackend", () => {
     const none = vi.fn();
     await new ClaudeCodeBackend().complete("hi", { model: "m", maxTokens: 10, onUsage: none });
     expect(none).not.toHaveBeenCalled();
+  });
+});
+
+describe("llmBackendFromEnv", () => {
+  function apiFetch(reply: { ok: boolean; status?: number; json: () => Promise<unknown> }) {
+    const fetchMock = vi.fn(async (_url: string, _init: { body: string; headers: Record<string, string>; signal?: unknown }) => reply);
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("picks the API backend when ANTHROPIC_API_KEY is set, Claude Code otherwise", () => {
+    expect(llmBackendFromEnv({ ANTHROPIC_API_KEY: "sk-test" }).billing).toBe("api-key");
+    const cc = llmBackendFromEnv({});
+    expect(cc.billing).toBe("claude-code");
+    expect(cc.backend).toBeInstanceOf(ClaudeCodeBackend);
+  });
+
+  it("treats an empty key as unset", () => {
+    const picked = llmBackendFromEnv({ ANTHROPIC_API_KEY: "" });
+    expect(picked.billing).toBe("claude-code");
+    expect(picked.backend).toBeInstanceOf(ClaudeCodeBackend);
+  });
+
+  it("sends the key, the model override and the live-safe request shape", async () => {
+    const fetchMock = apiFetch({ ok: true, json: async () => ({ content: [{ type: "text", text: "hi" }], stop_reason: "end_turn" }) });
+    const { backend } = llmBackendFromEnv({ ANTHROPIC_API_KEY: "sk-test" }, "claude-opus-5-5");
+    const out = await createLlm({ backend }).call("ping", { tier: "cheap", maxTokens: 500 });
+    expect(out).toBe("hi");
+    const init = fetchMock.mock.calls[0]![1];
+    const body = JSON.parse(init.body) as Record<string, unknown>;
+    expect(body["model"]).toBe("claude-opus-5-5");
+    expect(body["max_tokens"]).toBe(4000);
+    expect(body["output_config"]).toEqual({ effort: "low" });
+    expect(init.headers["x-api-key"]).toBe("sk-test");
+    expect(init.headers["anthropic-dangerous-direct-browser-access"]).toBeUndefined();
+    expect(init.signal).toBeDefined();
+  });
+
+  it("reduces API errors to status and error type, never the raw body", async () => {
+    apiFetch({ ok: false, status: 401, json: async () => ({ type: "error", error: { type: "authentication_error", message: "invalid x-api-key" }, secret: "RAW-BODY" }) });
+    const { backend } = llmBackendFromEnv({ ANTHROPIC_API_KEY: "sk-test" });
+    await expect(backend.complete("p", { model: "m", maxTokens: 10 })).rejects.toThrow(/^Anthropic API error 401 \(authentication_error: invalid x-api-key\)$/);
+
+    apiFetch({ ok: false, status: 500, json: async () => { throw new Error("not json"); } });
+    await expect(backend.complete("p", { model: "m", maxTokens: 10 })).rejects.toThrow(/^Anthropic API error 500$/);
+  });
+
+  it("throws when the answer stopped at max_tokens or was refused", async () => {
+    const { backend } = llmBackendFromEnv({ ANTHROPIC_API_KEY: "sk-test" });
+    for (const stop of ["max_tokens", "refusal"]) {
+      apiFetch({ ok: true, json: async () => ({ content: [{ type: "text", text: "partial" }], stop_reason: stop }) });
+      await expect(backend.complete("p", { model: "m", maxTokens: 10 })).rejects.toThrow(stop);
+    }
   });
 });

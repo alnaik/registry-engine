@@ -214,6 +214,31 @@ describe("summary sentence and About this search", () => {
     const capped = aboutRows({ ...base, sources: [], registryLookup: { status: "ran", namesChecked: 80, nameCap: 80, candidates: 150, totalNames: 384 }, llmUsage: null, llmCalls: 0 });
     expect(capped).toContainEqual(["Names checked against the state registry", "80 of 384 not already matched (at most 80 per search unless you check all)"]);
   });
+
+  it("the AI calls row follows result.llmBilling: API key, Claude Code, or missing (pre-v8 history)", async () => {
+    const { aboutRows } = await import("../../apps/web/public/labels.js");
+    const usage = { inputTokens: 9000, outputTokens: 4500, costUsd: 0.059, calls: [{}, {}] };
+    const ai = (extra: Record<string, unknown>) =>
+      aboutRows({ ...base, sources: [], llmUsage: usage, llmCalls: 2, ...extra }).find(r => r[0] === "AI calls");
+    expect(ai({ llmBilling: "api-key", llmUsage: { ...usage, costUsd: null } })).toEqual(["AI calls", "2 · 13.5k tokens · billed to your Anthropic API key"]);
+    expect(ai({ llmBilling: "claude-code" })).toEqual(["AI calls", "2 · 13.5k tokens · about $0.06 at API prices"]);
+    expect(ai({})).toEqual(["AI calls", "2 · 13.5k tokens · about $0.06 at API prices"]);
+  });
+
+  it("the AI-failure hint follows the billing path in /api/status", async () => {
+    const { llmFailedHint } = await import("../../apps/web/public/labels.js");
+    expect(llmFailedHint("api-key")).toBe("Check ANTHROPIC_API_KEY. Call notes below are templates.");
+    expect(llmFailedHint("claude-code")).toBe("Run claude in a terminal and log in. Call notes below are templates.");
+  });
+
+  it("the coverage line lists the regions from /api/status", async () => {
+    const { coverageLine } = await import("../../apps/web/public/labels.js");
+    expect(coverageLine(["US-CO", "US-CT", "US-NY"])).toBe("Public records for CO, CT and NY.");
+    expect(coverageLine(["US-CO", "US-NY"])).toBe("Public records for CO and NY.");
+    expect(coverageLine(["US-CO"])).toBe("Public records for CO.");
+    expect(coverageLine([])).toBe("");
+    expect(coverageLine(undefined)).toBe("");
+  });
 });
 
 describe("registry name check line", () => {
