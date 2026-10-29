@@ -260,7 +260,7 @@ describe("registry name check line", () => {
     expect(registryProgressText(200, 384)).toBe("200 of 384 names");
   });
 
-  it("the page's seconds-per-name estimate equals the CLI's", async () => {
+  it("the page's seconds-per-name estimate equals summary.ts's", async () => {
     const { SECONDS_PER_NAME } = await import("../../apps/web/public/labels.js");
     const { SECONDS_PER_NAME: cli } = await import("../../packages/qualify/src/summary.js");
     expect(SECONDS_PER_NAME).toBe(cli);
@@ -294,5 +294,23 @@ describe("trust label at the time of a call (validation log)", () => {
   it("the My calls export carries the label columns", () => {
     const app = readFileSync(join(import.meta.dirname, "../../apps/web/public/app.js"), "utf8");
     expect(app).toMatch(/"outcome", "trust_at_call", "trust_tone_at_call"/);
+  });
+});
+
+describe("display case for names and cities (v9 J3.2)", () => {
+  it("title-cases all-caps names, keeping legal forms, codes and filed mixed case", async () => {
+    const { displayName } = await import("../../apps/web/public/labels.js");
+    expect(displayName("ACME WELDING LLC")).toBe("Acme Welding LLC");
+    expect(displayName("JOE'S HVAC INC.")).toBe("Joe's HVAC INC.");
+    expect(displayName("O'BRIEN CNC")).toBe("O'Brien CNC");
+    expect(displayName("MADE IN USA CO")).toBe("Made in USA CO");
+    expect(displayName("A-1 SIGNS")).toBe("A-1 Signs");
+    expect(displayName("B&B FARMS")).toBe("B&B Farms");
+    expect(displayName("Mixed Case Inc")).toBe("Mixed Case Inc");
+  });
+
+  it("title-cases all-caps cities", async () => {
+    const { displayCity } = await import("../../apps/web/public/labels.js");
+    expect(displayCity("LA JUNTA")).toBe("La Junta");
   });
 });

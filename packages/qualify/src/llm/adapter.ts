@@ -23,7 +23,7 @@ export interface RawCompleteOptions {
 }
 
 // The one thing a backend must do. With an API key the tier picks the
-// model; the CLI injects a `claude -p` backend.
+// model; the web app injects a `claude -p` or API backend.
 export interface RawLlm {
   complete(prompt: string, opts: RawCompleteOptions): Promise<string>;
 }

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Field Sheet Components</title>
   <meta name="description" content="Every component of the Registry Engine field sheet, with fictional data, in light and dark.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6f67'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='%23fff'%3ER%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="/app.css">
   <script type="module" src="/design.js"></script>
 </head>
@@ -14,7 +15,7 @@
   <main class="design-cols" id="cols">
   <section class="design-col" id="light" data-theme="light" aria-label="Light theme">
     <div class="sheet">
-      <p class="eyebrow design-label">Light</p>
+      <p class="label design-label">Light</p>
 
       <header class="mast">
         <h1 class="brand-mark">Registry Engine</h1>
@@ -24,36 +25,53 @@
         </div>
       </header>
 
-      <h2 class="eyebrow design-label">Ask bar</h2>
+      <h2 class="label design-label">Ask bar</h2>
       <section class="ask" aria-label="Ask">
         <div class="ask-row">
           <div class="ask-field">
-            <label class="eyebrow" for="d-q">What you need, or what you sell</label>
+            <label class="label visually-hidden" for="d-q">What you need, or what you sell</label>
             <input id="d-q" class="ask-input q" value="Someone to sew 500 custom tote bags">
           </div>
           <div class="ask-field">
-            <label class="eyebrow" for="d-near">Near</label>
+            <label class="label" for="d-near">Near</label>
             <input id="d-near" class="ask-input" value="Lakeview">
           </div>
         </div>
         <div class="ask-actions">
           <button class="btn primary" type="button">Find businesses</button>
-          <button class="linkish tap" type="button" aria-expanded="false">More options</button>
+          <button class="btn sm" type="button" aria-expanded="false">More options</button>
           <span class="quiet fine">Public records only. Your call notes stay on this computer.</span>
         </div>
+        <div class="ask-field">
+          <label class="label" for="d-empty">Empty query (placeholder)</label>
+          <input id="d-empty" class="ask-input q" placeholder="What you need, or what you sell">
+        </div>
+        <p class="examples-line">
+          <span>Try:</span>
+          <button type="button" class="btn sm example">Who would buy my small-batch hot sauce near Boulder</button>
+          <button type="button" class="btn sm example">A shop that can powder-coat 200 steel brackets</button>
+          <button type="button" class="btn sm example">A wholesale buyer for 40 acres of pinto beans</button>
+        </p>
       </section>
 
-      <h2 class="eyebrow design-label">Reading line</h2>
+      <h2 class="label design-label">Favicon and wordmark</h2>
+      <p><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6f67'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='%23fff'%3ER%3C/text%3E%3C/svg%3E" width="32" height="32" alt="Favicon: a white R on a teal square"> <span class="brand-mark">Registry Engine</span></p>
+
+      <h2 class="label design-label">Label and display case</h2>
+      <p class="label">Plain label (form fields, section headings, group headings)</p>
+      <dl class="reach-dl" id="display-case"></dl>
+
+      <h2 class="label design-label">Reading line</h2>
       <section class="reading" aria-label="How we read it">
         <div class="line">
-          <span class="eyebrow">We read this as</span>
-          <span>looking for <strong>suppliers</strong> <span class="quiet">(guessed)</span> · <button class="linkish" type="button">find buyers instead</button></span>
+          <span class="label">We read this as</span>
+          <span>looking for <strong>suppliers</strong> <span class="quiet">(guessed)</span> · <button class="btn sm" type="button">find buyers instead</button></span>
           <span class="quiet" aria-hidden="true">·</span>
           <span>whole state, sorted from <strong>Lakeview</strong></span>
         </div>
         <div class="line fine quiet">
           <span>Industries: Textile Bag and Canvas Mills · Cut and Sew Apparel Contractors</span>
-          <button class="linkish" type="button">adjust</button>
+          <button class="btn sm" type="button">Change codes</button>
         </div>
         <ul class="steps-list" aria-label="Progress">
           <li data-state="done"><span>Searching public records</span><span class="step-detail">Colorado Secretary of State: 500+ (capped) · SBA PPP loans: 46</span></li>
@@ -61,14 +79,14 @@
         </ul>
       </section>
 
-      <h2 class="eyebrow design-label">Summary sentence</h2>
+      <h2 class="label design-label">Summary sentence</h2>
       <p class="sum"><strong>46 businesses</strong> are coded for this work in Colorado, <strong>19 within 25 miles</strong> of Lakeview. <strong>18</strong> are confirmed on the state registry. <strong>2</strong> publish a phone number.</p>
 
-      <h2 class="eyebrow design-label">Registry name check line</h2>
+      <h2 class="label design-label">Registry name check line</h2>
       <p class="fine quiet">Checked 80 of 384 names against the state registry. <button class="btn sm" type="button">Check all 384 names (about 2 min)</button></p>
       <p class="fine quiet">Checked all 384 names against the state registry.</p>
 
-      <h2 class="eyebrow design-label">Filter segments and tools</h2>
+      <h2 class="label design-label">Filter segments and tools</h2>
       <div class="tools">
         <div class="seg" role="group" aria-label="Show">
           <button type="button" aria-pressed="true">All<span class="n">46</span></button>
@@ -81,7 +99,7 @@
         <button class="btn sm" type="button">Save search</button>
       </div>
 
-      <h2 class="eyebrow design-label">Band heading, lead rows, trust pills</h2>
+      <h2 class="label design-label">Band heading, lead rows, trust pills</h2>
       <section class="band" aria-labelledby="band-d0">
         <h2 class="band-head"><span class="eyebrow" id="band-d0">Within 10 miles</span><span class="fine quiet num">6 businesses</span></h2>
 
@@ -94,14 +112,14 @@
           </button>
           <div class="detail">
             <section>
-              <h3 class="eyebrow">Why it fits</h3>
+              <h3 class="label">Why it fits</h3>
               <p>The SBA loan record (2020–21) lists this business as a textile bag and canvas mill. The state registry shows it in good standing. The code says what the business is, not whether it can take a 500-unit run.</p>
-              <h3 class="eyebrow">What to say</h3>
+              <h3 class="label">What to say</h3>
               <blockquote class="opener-quote">Hi, I'm looking for a local shop to sew 500 custom tote bags. Is that work you take on, and what's your lead time?</blockquote>
               <div><button class="btn sm" type="button">Copy</button></div>
             </section>
             <section>
-              <h3 class="eyebrow">Reach</h3>
+              <h3 class="label">Reach</h3>
               <dl class="reach-dl">
                 <dt>Phone</dt><dd class="quiet">Not on any public record</dd>
                 <dt>Address</dt><dd>100 Example Ave, Lakeview, CO 80000 · <a href="#cols">Map</a></dd>
@@ -109,7 +127,7 @@
                 <dt>Web</dt><dd><a href="#cols">Search the web for this business</a></dd>
               </dl>
               <div class="call-box">
-                <h3 class="eyebrow">Your call</h3>
+                <h3 class="label">Your call</h3>
                 <div class="seg" role="group" aria-label="Call outcome">
                   <button type="button" aria-pressed="false">Not called</button>
                   <button type="button" aria-pressed="true">Reached</button>
@@ -174,9 +192,9 @@
         <p class="band-more">2 more in this band · <button class="linkish" type="button">Show them</button></p>
       </section>
 
-      <h2 class="eyebrow design-label">Collapsed groups</h2>
+      <h2 class="label design-label">Collapsed groups</h2>
       <details class="group" open>
-        <summary><span class="eyebrow">Individuals' records · 1</span><span class="why">Sole proprietors and others filed under a person's name. Shown as filed, with no map link and no web search.</span></summary>
+        <summary><span class="label">Individuals' records · 1</span><span class="why">Sole proprietors and others filed under a person's name. Shown as filed, with no map link and no web search.</span></summary>
         <div class="inner">
           <article class="lead-row">
             <button class="lr-head" type="button" aria-expanded="false">
@@ -190,11 +208,11 @@
         </div>
       </details>
       <details class="group">
-        <summary><span class="eyebrow">Name matches only · 348</span><span class="why">Registry entries whose names contain your words but that carry no industry code for this work. Most are unrelated.</span></summary>
+        <summary><span class="label">Name matches only · 348</span><span class="why">Registry entries whose names contain your words but that carry no industry code for this work. Most are unrelated.</span></summary>
         <div class="inner"><p class="group-note">Bagel shops and handbag boutiques land here. Open this only if the coded list runs dry.</p></div>
       </details>
       <details class="group" open>
-        <summary><span class="eyebrow">Registered in the last 90 days · 1</span><span class="why">New state filings within 25 miles whose names match your words. The registry records no industry code, so these are name matches.</span></summary>
+        <summary><span class="label">Registered in the last 90 days · 1</span><span class="why">New state filings within 25 miles whose names match your words. The registry records no industry code, so these are name matches.</span></summary>
         <div class="inner">
           <article class="lead-row">
             <button class="lr-head" type="button" aria-expanded="false">
@@ -207,7 +225,7 @@
         </div>
       </details>
 
-      <h2 class="eyebrow design-label">About this search</h2>
+      <h2 class="label design-label">About this search</h2>
       <details class="about" open>
         <summary>About this search</summary>
         <table class="about-table">
@@ -223,8 +241,8 @@
         </table>
       </details>
 
-      <h2 class="eyebrow design-label">My calls</h2>
-      <div class="calls-head"><h3 class="eyebrow">My calls · 3</h3><button class="btn sm" type="button">Download CSV</button></div>
+      <h2 class="label design-label">My calls</h2>
+      <div class="calls-head"><h3 class="label">My calls · 3</h3><button class="btn sm" type="button">Download CSV</button></div>
       <div class="calls-wrap" tabindex="0" role="region" aria-label="Calls table">
         <table class="calls-table">
           <thead><tr><th scope="col">Business</th><th scope="col">From search</th><th scope="col">Outcome</th><th scope="col">Note</th><th scope="col">Updated</th></tr></thead>
@@ -236,24 +254,24 @@
         </table>
       </div>
 
-      <h2 class="eyebrow design-label">Empty state</h2>
+      <h2 class="label design-label">Empty state</h2>
       <section class="state-box">
         <h2>No businesses found</h2>
         <p>We searched the public records and nothing matched. A few things to try:</p>
-        <ul><li>Try different words. Describe the kind of business, like "metal fabrication shop".</li><li>Enter industry codes under More options.</li></ul>
+        <ul><li>Try different words, like "metal fabrication shop".</li><li>Add industry codes with the code finder under More options.</li></ul>
       </section>
 
-      <h2 class="eyebrow design-label">Error</h2>
+      <h2 class="label design-label">Error</h2>
       <section class="state-box err">
         <h2>Something went wrong</h2>
         <p>Couldn't reach the Registry Engine server. Is it still running? Start it again with npm start.</p>
         <div><button class="btn sm" type="button">Try again</button></div>
       </section>
 
-      <h2 class="eyebrow design-label">Toast</h2>
+      <h2 class="label design-label">Toast</h2>
       <p class="sheet-toast static">Saved. Run it again later to see what's new.</p>
 
-      <h2 class="eyebrow design-label">Print preview note</h2>
+      <h2 class="label design-label">Print preview note</h2>
       <p class="print-note">Printed, the sheet keeps the rows and the trust line, drops the tools and the ask, keeps band headings, and adds a blank notes line under each row.</p>
     </div>
   </section>

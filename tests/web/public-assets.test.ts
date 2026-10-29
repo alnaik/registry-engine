@@ -29,7 +29,7 @@ describe("web public assets", () => {
   // and the print stylesheet doesn't hide them.
   it("caveats render under a 'Before you call' label and print", () => {
     const app = readFileSync(join(PUBLIC, "app.js"), "utf8");
-    expect(app).toMatch(/class: "caveats" },\s*h\("h2", \{ class: "eyebrow", text: "Before you call" \}\)/);
+    expect(app).toMatch(/class: "caveats" },\s*h\("h2", \{ class: "label", text: "Before you call" \}\)/);
     const css = readFileSync(join(PUBLIC, "app.css"), "utf8");
     const print = css.slice(css.indexOf("@media print"));
     const hidden = print.slice(0, print.indexOf("{ display: none"));

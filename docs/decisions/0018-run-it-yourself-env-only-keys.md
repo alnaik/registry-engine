@@ -14,7 +14,7 @@ adapter had an Anthropic Messages backend that nothing wired up.
   `EXA_API_KEY` and `PARALLEL_API_KEY` are read from the shell at start.
   `llmBackendFromEnv` is the one place that picks the AI backend: the
   Anthropic API when the key is set, otherwise the Claude Code login
-  (`claude -p`). The page and the CLI say which path is billed.
+  (`claude -p`). The page says which path is billed.
 - **No key field in the page and no hosted mode.** Keys never touch the page
   or the disk; the server's threat model assumes one local user; holding
   other people's keys is a different product.
