@@ -118,7 +118,7 @@
         "state": "physical_state",
         "zip": "physical_zip_code"
       },
-      "contact_fields": ["telephone_number", "email_address", "website"],
+      "contact_fields": ["telephone_number", "website"],
       "quirks": {
         "statusValue": "Active",
         "namesField": "trade_names",

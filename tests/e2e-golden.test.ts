@@ -41,9 +41,8 @@ function stubNetwork() {
     if (url.startsWith("https://cloudflare-dns.com/")) {
       const u = new URL(url);
       const name = u.searchParams.get("name")!;
-      // Domains published in the paca shard resolve with A+MX; slug guesses miss.
-      const published = pacaShard.records.some(r =>
-        String(r["email_address"]).endsWith(`@${name}`) || String(r["website"]).includes(name));
+      // Websites published in the paca shard resolve with A+MX; slug guesses miss.
+      const published = pacaShard.records.some(r => String(r["website"]).includes(name));
       return respond({ Status: published ? 0 : 3, Answer: published ? [{ data: "x" }] : [] });
     }
     throw new Error(`E2E stub: unexpected URL ${url}`);

@@ -27,7 +27,7 @@ const PACA: SourceSpec = {
     id: "license_number", name: "name_of_business", status: "license_status",
     city: "physical_city", state: "physical_state", zip: "physical_zip_code",
   },
-  contact_fields: ["telephone_number", "email_address", "website"],
+  contact_fields: ["telephone_number", "website"],
   quirks: {
     statusValue: "Active",
     namesField: "trade_names",
@@ -77,7 +77,8 @@ describe("StaticShardDriver", () => {
     const leevers = results.find(e => e.name.startsWith("LEEVERS"));
     expect(leevers).toBeDefined();
     expect(leevers!.naics).toEqual(["424480"]);
-    expect(leevers!.contacts.some(c => c.includes("@"))).toBe(true);
+    expect(leevers!.contacts).toContain("(303) 814-8646");
+    expect(leevers!.contacts.some(c => c.includes("@"))).toBe(false);
     expect(leevers!.officers.length).toBeGreaterThan(0);
     expect(leevers!.id).toMatch(/^paca:\d+$/);
     expect(leevers!.evidence.some(ev => ev.field === "registry" && ev.note === "NAICS 424480")).toBe(true);

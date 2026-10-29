@@ -2,7 +2,7 @@
  "source": "paca",
  "region": "US-CO",
  "generated": "2026-07-16",
- "protocol_note": "Recorded from apps.mrp.usda.gov ServiceNow widget API (no CORS; Node-only). See docs/data/paca.md.",
+ "protocol_note": "Recorded from apps.mrp.usda.gov ServiceNow widget API (no CORS; Node-only). See docs/data/paca.md. email_address removed before commit (bulk personal addresses); phone and website kept.",
  "records": [
   {
    "license_number": "20060307",
@@ -24,7 +24,6 @@
     "ESOTTR"
    ],
    "telephone_number": "(303) 814-8646",
-   "email_address": "debbiel@leevers.com",
    "website": ""
   },
   {
@@ -44,7 +43,6 @@
     "Carlos Galicia"
    ],
    "telephone_number": "(303) 618-4670",
-   "email_address": "GALICIAFARMS@COMCAST.NET",
    "website": ""
   },
   {
@@ -64,7 +62,6 @@
     "SEGUNDO DIAZ"
    ],
    "telephone_number": "(719) 379-3211",
-   "email_address": "RODNEY@BLANCAPOTATO.COM",
    "website": ""
   },
   {
@@ -85,7 +82,6 @@
     "David Demerling"
    ],
    "telephone_number": "(720) 722-3425",
-   "email_address": "David@eastdenverfoodhub.com",
    "website": "Eastdenverfoodhub.com"
   },
   {
@@ -105,7 +101,6 @@
     "VALERIE HILL"
    ],
    "telephone_number": "(970) 626-5811",
-   "email_address": "ap@mymarketstores.com",
    "website": "mymarketstores.com"
   },
   {
@@ -126,7 +121,6 @@
     "NEAL HAYS"
    ],
    "telephone_number": "(970) 587-4658",
-   "email_address": "russell@haysmarket.com",
    "website": ""
   },
   {
@@ -146,7 +140,6 @@
     "Bryan De La Torre"
    ],
    "telephone_number": "(719) 501-8176",
-   "email_address": "bennyfoodservice@gmail.com",
    "website": ""
   },
   {
@@ -163,7 +156,6 @@
     "JOHN HARRIS"
    ],
    "telephone_number": "(970) 775-2049",
-   "email_address": "JOHN@PARADIGMFRESH.COM",
    "website": ""
   },
   {
@@ -182,7 +174,6 @@
     "NEAL HAYS"
    ],
    "telephone_number": "(970) 532-0257",
-   "email_address": "neal@haysmarket.com",
    "website": ""
   },
   {
@@ -199,7 +190,6 @@
     "RUSSELL DIONISIO"
    ],
    "telephone_number": "(719) 948-3194",
-   "email_address": "RDIONISIO@DIONISIOPRODUCE.COM",
    "website": "www.dionisioproduce.com"
   },
   {
@@ -218,7 +208,6 @@
     "JACLYN HUBAN"
    ],
    "telephone_number": "(303) 842-7986",
-   "email_address": "jackie@freshstartproducetoo.com",
    "website": "WWW.FRESHSTARTPRODUCETOO.COM"
   },
   {
@@ -236,7 +225,6 @@
     "TINA MILNE"
    ],
    "telephone_number": "(719) 852-4727",
-   "email_address": "tom@milnesales.com",
    "website": ""
   },
   {
@@ -254,7 +242,6 @@
     "KATHERINE ROHN"
    ],
    "telephone_number": "(970) 454-1900",
-   "email_address": "heritagemarketeatonco@gmail.com",
    "website": "www.heritagemarket.net"
   },
   {
@@ -272,7 +259,6 @@
     "MICHAEL HIRAKATA"
    ],
    "telephone_number": "(719) 254-7614",
-   "email_address": "cmchirakata@hotmail.com",
    "website": "Hirakatafarms.com"
   },
   {
@@ -291,7 +277,6 @@
     "ADAM KLECKER"
    ],
    "telephone_number": "(719) 852-2076",
-   "email_address": "jpkleck@gmail.com",
    "website": ""
   },
   {
@@ -310,7 +295,6 @@
     "REID FISHERING"
    ],
    "telephone_number": "(970) 249-1633",
-   "email_address": "REID@MOUNTAINQUALITY.FARM",
    "website": ""
   },
   {
@@ -351,7 +335,6 @@
     "LINDA CLARK"
    ],
    "telephone_number": "(970) 925-5295",
-   "email_address": "vendor@clarksmarket.com",
    "website": ""
   },
   {
@@ -370,7 +353,6 @@
     "VICTOR SMITH"
    ],
    "telephone_number": "(719) 754-2681",
-   "email_address": "ap@southerncoloradofarms.com",
    "website": ""
   },
   {
@@ -388,7 +370,6 @@
     "BRAD JESTER"
    ],
    "telephone_number": "(303) 292-1303",
-   "email_address": "5280FICCO@GMAIL.COM",
    "website": "www.5280produce.com"
   },
   {
@@ -405,7 +386,6 @@
     "ALFRED MARTINEZ III"
    ],
    "telephone_number": "(661) 670-3719",
-   "email_address": "ajproducerguy@yahoo.com",
    "website": ""
   },
   {
@@ -427,7 +407,6 @@
     "Assaf Ronen"
    ],
    "telephone_number": "(720) 452-7430",
-   "email_address": "jolaade.aboaba@hellofresh.com",
    "website": "WWW.GREENCHEF.COM"
   },
   {
@@ -450,7 +429,6 @@
     "IDAHO PACIFIC HOLDING INC"
    ],
    "telephone_number": "(208) 538-6971",
-   "email_address": "Jennifer@IDAHOPACIFIC.COM",
    "website": "idahopacific.com"
   },
   {
@@ -467,7 +445,6 @@
     "Dixon Walne"
    ],
    "telephone_number": "(970) 402-4585",
-   "email_address": "highcountryproduce@gmail.com",
    "website": ""
   },
   {
@@ -485,7 +462,6 @@
     "RONALD BRYANT"
    ],
    "telephone_number": "(541) 447-6291",
-   "email_address": "ericksonsprine@gmail.com",
    "website": ""
   },
   {
@@ -504,7 +480,6 @@
     "KEITH NAGAI"
    ],
    "telephone_number": "(303) 295-0293",
-   "email_address": "alyssanoguchi@pmccolorado.com",
    "website": "www.pacificeastwest.com"
   },
   {
@@ -521,7 +496,6 @@
     "J SHAWN BARRIS"
    ],
    "telephone_number": "(970) 674-9641",
-   "email_address": "SHAWNBARRIS@HOTMAIL.COM",
    "website": "WWW.ROCKYMOUNTAINPRODUCE.NET"
   },
   {
@@ -547,7 +521,6 @@
     "Chad Rice"
    ],
    "telephone_number": "(303) 682-7500",
-   "email_address": "productlicense@mclaneco.com",
    "website": ""
   },
   {
@@ -565,7 +538,6 @@
     "PATRICK BROWNELL"
    ],
    "telephone_number": "(719) 754-9048",
-   "email_address": "SALES@ZAPATASEEDCOMPANY.COM",
    "website": "WWW.ZAPATASEEDCOMPANY.COM"
   },
   {
@@ -586,7 +558,6 @@
     "JAMES MACEK"
    ],
    "telephone_number": "(303) 371-3130",
-   "email_address": "JAMESM@COOSEMANSDENVER.COM",
    "website": ""
   },
   {
@@ -603,7 +574,6 @@
     "HEINZ SILZ"
    ],
    "telephone_number": "(303) 425-9955",
-   "email_address": "heiniesmarket303@gmail.com",
    "website": "HEINIESMARKET.COM/"
   },
   {
@@ -624,7 +594,6 @@
     "William Hayden"
    ],
    "telephone_number": "(970) 276-3922",
-   "email_address": "hyhybm@gmail.com",
    "website": ""
   },
   {
@@ -646,7 +615,6 @@
     "RDH Enterprises LLC"
    ],
    "telephone_number": "(970) 252-1057",
-   "email_address": "coalcreekproduce@gmail.com",
    "website": ""
   },
   {
@@ -667,7 +635,6 @@
     "CHRIS MINER"
    ],
    "telephone_number": "(719) 852-3569",
-   "email_address": "MRCHICKENDEACON@HOTMAIL.COM",
    "website": ""
   },
   {
@@ -690,7 +657,6 @@
     "DAVID TALBOTT"
    ],
    "telephone_number": "(970) 464-5656",
-   "email_address": "liz@talbottfarms.com",
    "website": ""
   },
   {
@@ -713,7 +679,6 @@
     "APRIL BERRY"
    ],
    "telephone_number": "(970) 848-5427",
-   "email_address": "ABERRY19@CENTURYTEL.NET",
    "website": ""
   },
   {
@@ -736,7 +701,6 @@
     "LM ACQUISITION CO LLC"
    ],
    "telephone_number": "(970) 482-0388",
-   "email_address": "storedir.ftc47@luckysmarket.com",
    "website": ""
   },
   {
@@ -753,7 +717,6 @@
     "REUBEN ESH"
    ],
    "telephone_number": "(970) 292-8387",
-   "email_address": "martha@eshsgrocery.com",
    "website": "www.eshsgrocery.com"
   },
   {
@@ -778,7 +741,6 @@
     "BLAKAL INC"
    ],
    "telephone_number": "(719) 852-2600",
-   "email_address": "racheal.werner@farmfreshdirect.com",
    "website": ""
   },
   {
@@ -799,7 +761,6 @@
     "THREE S RANCH INC"
    ],
    "telephone_number": "(719) 588-2227",
-   "email_address": "rodney@savvymgt.net",
    "website": ""
   },
   {
@@ -818,7 +779,6 @@
     "LYNN FAGERBERG"
    ],
    "telephone_number": "(970) 834-1353",
-   "email_address": "GREG@FAGERBERGPRODUCE.COM",
    "website": ""
   },
   {
@@ -836,7 +796,6 @@
     "JOHN GARIN"
    ],
    "telephone_number": "(303) 291-0155",
-   "email_address": "IanH@COLO-PAC.COM",
    "website": "colopac.com"
   },
   {
@@ -853,7 +812,6 @@
     "JEFFREY REID"
    ],
    "telephone_number": "(303) 292-2050",
-   "email_address": "JEFF@BIGSKYDENVER.COM",
    "website": ""
   },
   {
@@ -876,7 +834,6 @@
     "Joe Ricketts"
    ],
    "telephone_number": "(303) 962-0025",
-   "email_address": "schristensen@hugollc.com",
    "website": "www.villagepiemaker.com"
   },
   {
@@ -893,7 +850,6 @@
     "BLAKE BYNUM"
    ],
    "telephone_number": "(970) 856-3151",
-   "email_address": "FOODTOWN232@AOL.COM",
    "website": ""
   },
   {
@@ -912,7 +868,6 @@
     "SANDRA BAACK"
    ],
    "telephone_number": "(303) 278-8729",
-   "email_address": "baack.sandra@rm-ingredients.com",
    "website": ""
   },
   {
@@ -930,7 +885,6 @@
     "JEDEDIAH ELLITHORPE"
    ],
    "telephone_number": "(719) 754-3464",
-   "email_address": "jed@aspenllc.com",
    "website": ""
   },
   {
@@ -953,7 +907,6 @@
     "Homer Robinson"
    ],
    "telephone_number": "(507) 254-5117",
-   "email_address": "annie@THEJACKFRUITCOMPANY.COM",
    "website": "WWW.THEJACKFRUITCOMPANY.COM"
   },
   {
@@ -971,7 +924,6 @@
     "RICHARD HOLLAND"
    ],
    "telephone_number": "(719) 599-7661",
-   "email_address": "d.bloos@harvestdist.com",
    "website": ""
   },
   {
@@ -990,7 +942,6 @@
     "SARAH TUFT"
    ],
    "telephone_number": "(970) 872-2256",
-   "email_address": "sarah@lerouxcreek.com",
    "website": "https://lerouxcreek.com/"
   },
   {
@@ -1010,7 +961,6 @@
     "DAVID PETROCCO SR"
    ],
    "telephone_number": "(303) 659-6498",
-   "email_address": "DAVE@PETROCCOFARMS.COM",
    "website": "WWW.PETROCCOFARMS.COM"
   },
   {
@@ -1028,7 +978,6 @@
     "HARRY STROHAUER"
    ],
    "telephone_number": "(970) 284-6526",
-   "email_address": "katie@strohauerfarms.com",
    "website": "WWW.STROHAUERFARMS.COM"
   },
   {
@@ -1050,7 +999,6 @@
     "SHELDON ROCKEY"
    ],
    "telephone_number": "(719) 206-3184",
-   "email_address": "PAUL@WHITEROCKSPEC.COM",
    "website": ""
   },
   {
@@ -1068,7 +1016,6 @@
     "TAE HO KWON"
    ],
    "telephone_number": "(303) 745-4592",
-   "email_address": "DENVERHARMART@GMAIL.COM",
    "website": ""
   },
   {
@@ -1087,7 +1034,6 @@
     "POM MOON"
    ],
    "telephone_number": "(719) 597-3192",
-   "email_address": "pom.moon@gmail.com",
    "website": ""
   },
   {
@@ -1106,7 +1052,6 @@
     "Haynie Ryan"
    ],
    "telephone_number": "(719) 657-2604",
-   "email_address": "RYAN@719PRODUCE.COM",
    "website": "WWW.719PRODUCE.COM"
   },
   {
@@ -1123,7 +1068,6 @@
     "JOHN HYVONEN"
    ],
    "telephone_number": "(303) 840-2404",
-   "email_address": "jhyvonen@domenico.net",
    "website": ""
   },
   {
@@ -1142,7 +1086,6 @@
     "JULIO GARDUNO"
    ],
    "telephone_number": "(719) 200-8272",
-   "email_address": "COLORADOFRESHFOODPRODUCTS@YAHOO.COM",
    "website": ""
   },
   {
@@ -1159,7 +1102,6 @@
     "MACKIE O'NEAL JR"
    ],
    "telephone_number": "(719) 384-7700",
-   "email_address": "ONEALPRODUCE@AOL.COM",
    "website": ""
   },
   {
@@ -1183,7 +1125,6 @@
     "MEI JIN (MAY) ZHOU"
    ],
    "telephone_number": "(719) 596-5135",
-   "email_address": "LEEHINGaccount@GMAIL.COM",
    "website": ""
   },
   {
@@ -1202,7 +1143,6 @@
     "Kyler Brown"
    ],
    "telephone_number": "(719) 852-4701",
-   "email_address": "JASON.MVPG@GMAIL.COM",
    "website": ""
   },
   {
@@ -1221,7 +1161,6 @@
     "RP Financial Holdings INC"
    ],
    "telephone_number": "(720) 400-7035",
-   "email_address": "admin@peaktopeakfoods.com",
    "website": "www.peaktopeakfoods.com"
   },
   {
@@ -1243,7 +1182,6 @@
     "SUSAN SPENCER"
    ],
    "telephone_number": "(719) 632-2788",
-   "email_address": "spencers@spencersgardens.com",
    "website": ""
   },
   {
@@ -1267,7 +1205,6 @@
     "BRIAN FREEMAN"
    ],
    "telephone_number": "(303) 777-7113",
-   "email_address": "brian@SuperVeg.com",
    "website": "www.SuperVeg.com"
   },
   {
@@ -1288,7 +1225,6 @@
     "B & G Global Holding Inc."
    ],
    "telephone_number": "(303) 576-8288",
-   "email_address": "vickylin108@hotmail.com",
    "website": ""
   },
   {
@@ -1306,7 +1242,6 @@
     "MANUEL FLORES MARTINEZ"
    ],
    "telephone_number": "(720) 314-0426",
-   "email_address": "denverfreshproduce@gmail.com",
    "website": "www.denverfreshproduce.com"
   },
   {
@@ -1323,7 +1258,6 @@
     "MORGAN BEIRIGER"
    ],
    "telephone_number": "(303) 278-0812",
-   "email_address": "VENDOR@TATERTRADERS.COM",
    "website": "www.tatertraders.com"
   },
   {
@@ -1347,7 +1281,6 @@
     "GOTHAM GREENS HOLDINGS PBC"
    ],
    "telephone_number": "(718) 935-0600",
-   "email_address": "allie@gothamgreens.com",
    "website": ""
   },
   {
@@ -1364,7 +1297,6 @@
     "THOMAS ALVEY"
    ],
    "telephone_number": "(970) 872-2155",
-   "email_address": "OFFICE@ROGERSMESAFRUIT.COM",
    "website": ""
   },
   {
@@ -1384,7 +1316,6 @@
     "PEGGY METZ"
    ],
    "telephone_number": "(719) 852-3462",
-   "email_address": "jen@metzpotato.com",
    "website": "https://www.metzpotato.com/"
   },
   {
@@ -1404,7 +1335,6 @@
     "WILLIAM DEAL"
    ],
    "telephone_number": "(970) 867-5211",
-   "email_address": "edwardsmgr@edwardsmarket.com",
    "website": "www.edwardsmarket.com"
   },
   {
@@ -1421,7 +1351,6 @@
     "JAMES MCCULLOUGH"
    ],
    "telephone_number": "(719) 852-5136",
-   "email_address": "kogden@worley-mccullough.com",
    "website": "WWW.WORLEY-MCCULLOUGH.COM"
   },
   {
@@ -1438,7 +1367,6 @@
     "DAVID FAHRENBRUCH"
    ],
    "telephone_number": "(970) 567-1680",
-   "email_address": "dfahrenbruch@aol.com",
    "website": ""
   },
   {
@@ -1458,7 +1386,6 @@
     "DARIN HILL"
    ],
    "telephone_number": "(406) 482-3737",
-   "email_address": "AP@MYMARKETSTORES.COM",
    "website": "MYMARKETSTORES.COM"
   },
   {
@@ -1479,7 +1406,6 @@
     "Christopher Hallee"
    ],
    "telephone_number": "(719) 473-8251",
-   "email_address": "RCROSSEN@TAYLORFARMS.COM",
    "website": ""
   },
   {
@@ -1498,7 +1424,6 @@
     "RANDALL BROWN"
    ],
    "telephone_number": "(303) 756-6554",
-   "email_address": "RANDY@ALPINESUMMIT.COM",
    "website": ""
   },
   {
@@ -1521,7 +1446,6 @@
     "Mountain Vista Foods LLC"
    ],
    "telephone_number": "(303) 995-8625",
-   "email_address": "ethan@salamatoproduce.com",
    "website": "salamatoproduce.com"
   },
   {
@@ -1539,7 +1463,6 @@
     "George Lumm"
    ],
    "telephone_number": "(719) 301-7670",
-   "email_address": "CHRIS@FARMTOFORKCOLORADO.COM",
    "website": "www.farmtoforkcolorado.com"
   },
   {
@@ -1556,7 +1479,6 @@
     "Grant Savage"
    ],
    "telephone_number": "(303) 288-7830",
-   "email_address": "grant@daffyapple.com",
    "website": "www.daffyapple.com"
   },
   {
@@ -1575,7 +1497,6 @@
     "JACOB HOWES"
    ],
    "telephone_number": "(303) 621-4920",
-   "email_address": "jhowes@fresh1denver.com",
    "website": ""
   },
   {
@@ -1592,7 +1513,6 @@
     "REUBEN ESH"
    ],
    "telephone_number": "(970) 292-8387",
-   "email_address": "martha@eshsgrocery.com",
    "website": "www.eshsgrocery.com"
   },
   {
@@ -1615,7 +1535,6 @@
     "SETH SCHWARTZ"
    ],
    "telephone_number": "(970) 872-3065",
-   "email_address": "seth@bigbs.com",
    "website": "WWW.BIGBS.COM"
   },
   {
@@ -1633,7 +1552,6 @@
     "ERNEST MYERS"
    ],
    "telephone_number": "(719) 754-2139",
-   "email_address": "willie@mvproduce.com",
    "website": "mvproduce.com"
   },
   {
@@ -1653,7 +1571,6 @@
     "JOHNNY BUXMAN JR"
    ],
    "telephone_number": "(970) 945-1113",
-   "email_address": "village@sopris.net",
    "website": ""
   },
   {
@@ -1677,7 +1594,6 @@
     "STEPHEN CARLSON"
    ],
    "telephone_number": "(303) 321-5370",
-   "email_address": "S_Carlson123@yahoo.com",
    "website": "www.sproutsextraordinaire.com"
   },
   {
@@ -1699,7 +1615,6 @@
     "ENGTROM BEAN & SEED INC"
    ],
    "telephone_number": "(970) 405-7010",
-   "email_address": "JULIE@PWMONTGOMERY.COM",
    "website": ""
   },
   {
@@ -1716,7 +1631,6 @@
     "DAVID VILLASENOR"
    ],
    "telephone_number": "(303) 296-3776",
-   "email_address": "accounting@LATULENSEINC.COM",
    "website": ""
   },
   {
@@ -1733,7 +1647,6 @@
     "REUBEN ESH"
    ],
    "telephone_number": "(303) 833-5005",
-   "email_address": "martha@ESHSGROCERY.COM",
    "website": "www.eshsgrocery.com"
   },
   {
@@ -1751,7 +1664,6 @@
     "JOSE VILLANUEVA CUELLAR"
    ],
    "telephone_number": "(720) 978-0002",
-   "email_address": "MISSION-MARKET@HOTMAIL.COM",
    "website": ""
   },
   {
@@ -1774,7 +1686,6 @@
     "MARCO ABARCA"
    ],
    "telephone_number": "(303) 892-5861",
-   "email_address": "GREALE@READYFOODS.BIZ",
    "website": "www.readyfoods.biz"
   },
   {
@@ -1825,7 +1736,6 @@
     "MICHAEL DRAPER"
    ],
    "telephone_number": "(303) 530-0470",
-   "email_address": "accounting@thehoneststand.com",
    "website": "BOULDERORGANICFOODS.COM"
   },
   {
@@ -1843,7 +1753,6 @@
     "BRENT HINES"
    ],
    "telephone_number": "(970) 874-4173",
-   "email_address": "HINESBRENT@GMAIL.COM",
    "website": ""
   },
   {
@@ -1870,7 +1779,6 @@
     "LIPMAN CANADA HOLDINGS INC"
    ],
    "telephone_number": "(970) 377-2720",
-   "email_address": "ldiess@mccarronlaw.com",
    "website": "HURONPRODUCE.COM"
   },
   {
@@ -1939,7 +1847,6 @@
     "ALAN LEWIS"
    ],
    "telephone_number": "(303) 986-4600",
-   "email_address": "LICENSING@NATURALGROCERS.COM",
    "website": "www.naturalgrocers.com"
   },
   {
@@ -2004,7 +1911,6 @@
     "ALEX MILLER"
    ],
    "telephone_number": "(719) 852-2600",
-   "email_address": "RACHEAL.WERNER@FARMFRESHDIRECT.COM",
    "website": ""
   },
   {
@@ -2021,7 +1927,6 @@
     "Matthew Proctor"
    ],
    "telephone_number": "(719) 469-4291",
-   "email_address": "mtproctor6@gmail.com",
    "website": ""
   },
   {
@@ -2042,7 +1947,6 @@
     "MICHAEL SUDAK"
    ],
    "telephone_number": "(303) 778-0916",
-   "email_address": "MSUDAK@HOTLUNCHONLINE.COM",
    "website": "WWW.MYKIDSLUNCH.COM"
   },
   {
@@ -2063,7 +1967,6 @@
     "ROBERT BALL"
    ],
    "telephone_number": "(303) 258-3105",
-   "email_address": "DANDANNYBALL@AOL.COM",
    "website": ""
   },
   {
@@ -2080,7 +1983,6 @@
     "Jonathan Allen"
    ],
    "telephone_number": "(970) 209-8341",
-   "email_address": "jon@firstfruitsintl.com",
    "website": "www.firstfruitsintl.com"
   },
   {
@@ -2100,7 +2002,6 @@
     "KYONG MOO JUNG"
    ],
    "telephone_number": "(720) 287-5340",
-   "email_address": "GMARTWESTMINSTER@GMAIL.COM",
    "website": ""
   },
   {
@@ -2118,7 +2019,6 @@
     "AHAHID DIBA"
    ],
    "telephone_number": "(303) 752-9272",
-   "email_address": "arashmarket@gmail.com",
    "website": ""
   },
   {
@@ -2136,7 +2036,6 @@
     "KARLA VAVARRO"
    ],
    "telephone_number": "(720) 254-6742",
-   "email_address": "bibialvarom83@GMAIL.COM",
    "website": ""
   },
   {
@@ -2173,7 +2072,6 @@
     "CHRISTINE WHEATLY"
    ],
    "telephone_number": "(615) 232-9557",
-   "email_address": "BUSINESS.LICENSE@KROGER.COM",
    "website": "WWW.DILLONS.COM"
   },
   {
@@ -2198,7 +2096,6 @@
     "TOBY PURSE"
    ],
    "telephone_number": "(239) 657-4421",
-   "email_address": "ldiess@mccarronlaw.com",
    "website": ""
   },
   {
@@ -2218,7 +2115,6 @@
     "MICHAEL SCOFIELD"
    ],
    "telephone_number": "(970) 622-8228",
-   "email_address": "MIKE@SCOFIELDFRUITS.COM",
    "website": "WWW.SCOFIELDFRUITS.COM"
   },
   {
@@ -2236,7 +2132,6 @@
     "Laura Wright"
    ],
    "telephone_number": "(720) 863-1211",
-   "email_address": "laura@jjsalesinc.com",
    "website": ""
   },
   {
@@ -2255,7 +2150,6 @@
     "JAMES TERAN"
    ],
    "telephone_number": "(720) 390-6125",
-   "email_address": "abby@coloradofoodenterprises.com",
    "website": "www.coloradofoodenterprises.com"
   },
   {
@@ -2273,7 +2167,6 @@
     "THOMAS RUSLER"
    ],
    "telephone_number": "(719) 947-3361",
-   "email_address": "tommy@ruslerproduce.com",
    "website": ""
   },
   {
@@ -2291,7 +2184,6 @@
     "PAMELA TADDONIO"
    ],
    "telephone_number": "(303) 399-6066",
-   "email_address": "tladdonio@mhff.net",
    "website": ""
   },
   {
@@ -2310,7 +2202,6 @@
     "CMM INTERMEDIATE HOLDINGS INC"
    ],
    "telephone_number": "(303) 227-4993",
-   "email_address": "renae.ketterer@countryfreshinc.com",
    "website": "www.custommademeals.com"
   },
   {
@@ -2328,7 +2219,6 @@
     "SARA ROCHA PEDRAZA"
    ],
    "telephone_number": "(619) 575-4111",
-   "email_address": "JUANR@KRESCOSD.COM",
    "website": ""
   },
   {
@@ -2401,7 +2291,6 @@
     "KUNUGI FARMS"
    ],
    "telephone_number": "(719) 852-2600",
-   "email_address": "AlexM@farmfresh.com",
    "website": ""
   },
   {
@@ -2420,7 +2309,6 @@
     "WILLIAM MCCLELLAND"
    ],
    "telephone_number": "(602) 477-2500",
-   "email_address": "GEORGE-JACOB@SHAMROCKFOODS.COM",
    "website": "www.shamrockfoods.com"
   },
   {
@@ -2441,7 +2329,6 @@
     "JASON SHARON"
    ],
    "telephone_number": "(303) 444-0215",
-   "email_address": "STOREDIR.NBO1@LUCKYSMARKET.COM",
    "website": ""
   },
   {
@@ -2464,7 +2351,6 @@
     "GAIL MATTIVE"
    ],
    "telephone_number": "(719) 852-4096",
-   "email_address": "HILANDPOTATO@GMAIL.COM",
    "website": ""
   },
   {
@@ -2481,7 +2367,6 @@
     "BUFFY SCOTT"
    ],
    "telephone_number": "(720) 328-6096",
-   "email_address": "producemarketinggroup@yahoo.com",
    "website": ""
   },
   {
@@ -2501,7 +2386,6 @@
     "Teddy Ruckman"
    ],
    "telephone_number": "(970) 712-4244",
-   "email_address": "nruckman@gmail.com",
    "website": "www.ruckmanfamilypalisadepeaches.com"
   },
   {
@@ -2518,7 +2402,6 @@
     "PETER BRAIDMAN"
    ],
    "telephone_number": "(720) 519-5519",
-   "email_address": "PETER@THEFRESHGUYS.COM",
    "website": ""
   },
   {
@@ -2538,7 +2421,6 @@
     "Jonathan Archuleta"
    ],
    "telephone_number": "(719) 274-5896",
-   "email_address": "jenjacksmarket@gmail.com",
    "website": ""
   },
   {
@@ -2555,7 +2437,6 @@
     "Morgan McCormick"
    ],
    "telephone_number": "(719) 754-0114",
-   "email_address": "vendor@platinumpotato.com",
    "website": "www.platinumpotato.com"
   },
   {
@@ -2573,7 +2454,6 @@
     "SHIRLEY MCCULLOUGH"
    ],
    "telephone_number": "(719) 852-4737",
-   "email_address": "jennie@spudseller.com",
    "website": ""
   },
   {
@@ -2596,7 +2476,6 @@
     "FRESHPOINT INC"
    ],
    "telephone_number": "(281) 899-4281",
-   "email_address": "geeti.dhatigara@sysco.com",
    "website": ""
   },
   {
@@ -2614,7 +2493,6 @@
     "David Johnson"
    ],
    "telephone_number": "(719) 395-8434",
-   "email_address": "frx1200@gmail.com",
    "website": ""
   },
   {
@@ -2631,7 +2509,6 @@
     "VICTOR SMITH"
    ],
    "telephone_number": "(928) 783-4880",
-   "email_address": "TSTROME@SKYVIEWCOOLING.COM",
    "website": ""
   },
   {
@@ -2648,7 +2525,6 @@
     "LUIS DE LA TORRE"
    ],
    "telephone_number": "(970) 216-2145",
-   "email_address": "delatorrepadilla@hotmail.com",
    "website": ""
   },
   {
@@ -2666,7 +2542,6 @@
     "Shonell Crowther"
    ],
    "telephone_number": "(719) 992-1304",
-   "email_address": "superiorspudsales@gmail.com",
    "website": ""
   },
   {
@@ -2691,7 +2566,6 @@
     "JAIME CUEVA"
    ],
    "telephone_number": "(303) 531-2488",
-   "email_address": "tacorico@aol.com",
    "website": "WWW.MIPUEBLOMARKETCO.COM"
   },
   {
@@ -2712,7 +2586,6 @@
     "RANDAL BACHE"
    ],
    "telephone_number": "(719) 754-3484",
-   "email_address": "LES.ALDERETE@SKYLINEPOTATO.COM",
    "website": ""
   },
   {
@@ -2729,7 +2602,6 @@
     "WAYNE JR CROWTHER"
    ],
    "telephone_number": "(719) 589-6328",
-   "email_address": "valleymeat@ymail.com",
    "website": "www.valleymeatandfood.com"
   },
   {
@@ -2746,7 +2618,6 @@
     "Ian Lee"
    ],
    "telephone_number": "(847) 668-8657",
-   "email_address": "purchasing@pressery.com",
    "website": ""
   },
   {
@@ -2770,7 +2641,6 @@
     "PAUL MARCZYK"
    ],
    "telephone_number": "(303) 894-9499",
-   "email_address": "rob@marczyk.com",
    "website": "WWW.MARCZYK.COM"
   },
   {
@@ -2791,7 +2661,6 @@
     "PAUL HUNGENBERG"
    ],
    "telephone_number": "(970) 356-6616",
-   "email_address": "JASON@HUNGENBERGPRODUCE.COM",
    "website": ""
   },
   {
@@ -2811,7 +2680,6 @@
     "ETHAN LEHRBURGER"
    ],
    "telephone_number": "(303) 292-1994",
-   "email_address": "sales@tuccifresh.com",
    "website": ""
   }
  ]
