@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Registry Engine</title>
   <meta name="description" content="Find the local businesses search engines miss, from public records.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6f67'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='%23fff'%3ER%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="/app.css">
   <script type="module" src="/app.js"></script>
 </head>
@@ -23,32 +24,32 @@
         <form id="search-form" class="ask" novalidate aria-label="Search">
           <div class="ask-row">
             <div class="ask-field">
-              <label class="eyebrow" for="query">What you need, or what you sell</label>
+              <label class="label visually-hidden" for="query">What you need, or what you sell</label>
               <input id="query" class="ask-input q" type="text" maxlength="300" autocomplete="off"
-                     placeholder="Someone to sew 500 custom tote bags" aria-describedby="query-error">
+                     placeholder="What you need, or what you sell" aria-describedby="query-error">
             </div>
             <div class="ask-field">
-              <label class="eyebrow" for="near">Near</label>
+              <label class="label" for="near">Near</label>
               <input id="near" class="ask-input" type="text" maxlength="60" autocomplete="postal-code" placeholder="ZIP or town">
             </div>
           </div>
           <p id="query-error" class="ask-error" role="alert" hidden></p>
           <div class="ask-actions">
             <button type="submit" id="go" class="btn primary">Find businesses</button>
-            <button type="button" id="more-toggle" class="linkish tap" aria-expanded="false" aria-controls="options">More options</button>
+            <button type="button" id="more-toggle" class="btn sm" aria-expanded="false" aria-controls="options">More options</button>
             <span class="quiet fine">Public records only. Your call notes stay on this computer.</span>
           </div>
           <p class="examples-line" id="examples">
             <span>Try:</span>
-            <button type="button" class="linkish example">Someone to sew 500 custom tote bags</button>
-            <button type="button" class="linkish example">Who would buy my small-batch hot sauce?</button>
-            <button type="button" class="linkish example">Metal fabrication shop for brackets</button>
+            <button type="button" class="btn sm example">Who would buy my small-batch hot sauce near Boulder</button>
+            <button type="button" class="btn sm example">A shop that can powder-coat 200 steel brackets</button>
+            <button type="button" class="btn sm example">A wholesale buyer for 40 acres of pinto beans</button>
           </p>
 
           <div id="options" class="options-panel" hidden>
             <div class="opt-grid">
               <div class="opt-field">
-                <span class="eyebrow" id="direction-label">Looking for</span>
+                <span class="label" id="direction-label">Looking for</span>
                 <div class="seg" role="group" aria-labelledby="direction-label" id="direction">
                   <button type="button" data-direction="auto" aria-pressed="true">Let us guess</button>
                   <button type="button" data-direction="buy" aria-pressed="false">Suppliers</button>
@@ -56,7 +57,7 @@
                 </div>
               </div>
               <div class="opt-field">
-                <label class="eyebrow" for="radius">How far</label>
+                <label class="label" for="radius">How far</label>
                 <select id="radius" class="opt-select">
                   <option value="">Anywhere in the state</option>
                   <option value="10">Within 10 miles</option>
@@ -66,7 +67,7 @@
                 </select>
               </div>
               <div class="opt-field">
-                <label class="eyebrow" for="leads">Call notes for</label>
+                <label class="label" for="leads">Call notes for</label>
                 <select id="leads" class="opt-select">
                   <option value="12">Top 12 (fastest)</option>
                   <option value="25">Top 25</option>
@@ -74,7 +75,7 @@
                 </select>
               </div>
               <div class="opt-field" id="region-field" hidden>
-                <label class="eyebrow" for="region">State</label>
+                <label class="label" for="region">State</label>
                 <select id="region" class="opt-select"></select>
               </div>
             </div>
@@ -91,7 +92,7 @@
           <div id="code-box" class="code-box" hidden>
             <p id="code-why" class="fine" hidden></p>
             <div class="ask-field">
-              <label class="eyebrow" for="naics">Industry codes (optional)</label>
+              <label class="label" for="naics">Industry codes (optional)</label>
               <input id="naics" class="ask-input" type="text" maxlength="100" autocomplete="off" placeholder="e.g. 314910, 315210">
             </div>
             <div class="code-row">
@@ -104,12 +105,12 @@
           </div>
 
           <div id="saved" class="saved-box" hidden>
-            <h2 class="eyebrow">Saved searches</h2>
+            <h2 class="label">Saved searches</h2>
             <ul id="saved-list" class="saved-list"></ul>
           </div>
 
           <div id="recent" class="saved-box" hidden>
-            <h2 class="eyebrow">Recent searches</h2>
+            <h2 class="label">Recent searches</h2>
             <ul id="recent-list" class="saved-list"></ul>
           </div>
         </form>
@@ -159,7 +160,7 @@
 
       <section id="panel-calls" role="tabpanel" aria-labelledby="tab-calls" hidden>
         <div class="calls-head">
-          <h2 class="eyebrow" id="calls-title">My calls</h2>
+          <h2 class="label" id="calls-title">My calls</h2>
           <button type="button" id="calls-csv" class="btn sm">Download CSV</button>
         </div>
         <p id="calls-empty" class="state-box quiet" hidden>No calls yet. Open a business on the Find tab, mark how the call went, or add a note, and it shows up here.</p>

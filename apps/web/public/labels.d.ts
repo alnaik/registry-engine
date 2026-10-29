@@ -42,6 +42,8 @@ export const SECONDS_PER_NAME: number;
 export function checkAllEstimate(names: number): string;
 export function registryProgressText(checked: number, total: number): string;
 export function registryLine(lookup: Record<string, unknown> | null | undefined): { text: string; button: string | null } | null;
+export function displayName(name: string): string;
+export function displayCity(city: string): string;
 export function tokensText(n: number): string;
 export function llmFailedHint(billing: string | null | undefined): string;
 export function coverageLine(regions: unknown): string;

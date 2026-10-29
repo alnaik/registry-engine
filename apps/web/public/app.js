@@ -9,7 +9,7 @@ import {
   trustLabel, trustAtCall, webTag, fetchedText, whatLine,
   OUTCOMES, OUTCOME_LABEL, migrateTracker, isTracked, shortDate, callStatusText,
   FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost, summaryParts, aboutRows,
-  registryLine, registryProgressText, llmFailedHint, coverageLine,
+  registryLine, registryProgressText, llmFailedHint, coverageLine, displayName, displayCity,
 } from "/labels.js";
 
 const $ = id => document.getElementById(id);
@@ -257,6 +257,7 @@ const app = {
   newKeys: new Set(),
   newSince: null,
   codeBoxReason: "",
+  skipBuyerCaveat: false,
 };
 
 let toastTimer = 0;
@@ -438,6 +439,8 @@ function setupForm() {
   for (const b of document.querySelectorAll(".example")) {
     b.addEventListener("click", () => {
       $("query").value = b.textContent;
+      // The example names its own town (or none): it is the centre, not a stale Near.
+      $("near").value = "";
       showQueryError("");
       $("query").focus();
     });
@@ -619,13 +622,13 @@ function renderReading() {
   $("reading").hidden = false;
 
   const side = map.direction === "sell" ? "buyers" : "suppliers";
-  const line = h("div", { class: "line" }, h("span", { class: "eyebrow", text: "We read this as" }));
+  const line = h("div", { class: "line" }, h("span", { class: "label", text: "We read this as" }));
   const dir = h("span", null, "looking for ", h("strong", { text: side }));
   if (!map.directionFixed) {
     const other = map.direction === "sell" ? "buy" : "sell";
     dir.append(" ", h("span", { class: "quiet", text: "(guessed)" }), " · ", h("button", {
       type: "button",
-      class: "linkish",
+      class: "btn sm",
       onclick: () => {
         setDirection(other);
         if (app.running || !app.lastParams) return;
@@ -660,20 +663,22 @@ function renderReading() {
     h("span", { text: map.naics.length > 0 ? `Industries: ${map.naics.map(n => n.title || n.code).join(" · ")}` : "Industries: none matched yet" }),
     h("button", {
       type: "button",
-      class: "linkish",
+      class: "btn sm",
       onclick: () => {
         if (map.naics.length > 0) $("naics").value = map.naics.map(n => n.code).join(", ");
         setOptionsOpen(true);
         $("naics").focus();
         scrollTo($("code-box"));
       },
-    }, "adjust"));
+    }, "Change codes"));
   box.append(codes);
   // The AI's caveats get a label so they don't float; they print with the sheet.
-  if (map.caveats.length > 0) {
+  // On the empty page the buyer tip already says the map.ts "finding buyers needs the AI step" caveat.
+  const caveats = app.skipBuyerCaveat ? map.caveats.filter(c => !c.startsWith("finding buyers needs the AI step")) : map.caveats;
+  if (caveats.length > 0) {
     box.append(h("div", { class: "caveats" },
-      h("h2", { class: "eyebrow", text: "Before you call" }),
-      map.caveats.map(c => h("p", { class: "caveat", text: c }))));
+      h("h2", { class: "label", text: "Before you call" }),
+      caveats.map(c => h("p", { class: "caveat", text: c }))));
   }
 }
 
@@ -691,6 +696,7 @@ function resetForRun(params) {
   app.newSince = null;
   app.filter = "all";
   app.codeBoxReason = "";
+  app.skipBuyerCaveat = false;
   app.contactsEnabled = params.findContacts === true;
   app.sources = new Map();
   app.startedAt = Date.now();
@@ -797,6 +803,7 @@ function mainLeads(result) {
 function showResult(result, opts = {}) {
   const stored = opts.stored || null;
   app.result = result;
+  app.skipBuyerCaveat = false;
   if (result.origin !== undefined) app.origin = result.origin;
   renderReading();
 
@@ -830,16 +837,18 @@ function renderEmpty() {
   const tips = $("empty-tips");
   clear(tips);
   const p = app.lastParams || {};
-  if (p.noLlm && app.map && app.map.direction === "sell" && !p.naics) {
-    tips.append(h("li", {
-      text: app.status && app.status.llm === false
-        ? "Finding buyers needs industry codes when the AI step is off. Look them up with the code finder above."
-        : "Finding buyers needs the AI step (it decides which industries use your product). Turn off \"Skip AI\", or add industry codes with the code finder above.",
-    }));
+  const items = [];
+  const needsCodes = Boolean(app.map && app.map.direction === "sell" && app.map.naics.length === 0);
+  if (needsCodes) {
+    items.push("Finding buyers needs industry codes: turn on the AI step, or add codes with the code finder under More options.");
+    // The tip says it; the reading line's "Before you call" doesn't repeat it.
+    app.skipBuyerCaveat = true;
+    renderReading();
   }
-  if (p.radiusMi) tips.append(h("li", { text: "Remove the distance limit, or choose a larger radius under More options." }));
-  tips.append(h("li", { text: "Try different words. Describe the kind of business, like \"metal fabrication shop\"." }));
-  tips.append(h("li", { text: "Add industry codes. The code finder under More options looks them up." }));
+  if (p.radiusMi) items.push("Remove the distance limit, or choose a larger radius under More options.");
+  if (!app.map || app.map.direction !== "sell") items.push("Try different words, like \"metal fabrication shop\".");
+  if (!needsCodes) items.push("Add industry codes with the code finder under More options.");
+  for (const text of items.slice(0, 3)) tips.append(h("li", { text }));
   $("empty").hidden = false;
   scrollTo($("empty"));
 }
@@ -1162,7 +1171,7 @@ function renderGroups(result) {
     if (count === 0) return;
     // Collapsed by default (no "open"); a minor group reads quieter than the bands.
     box.append(h("details", { class: minor ? "group minor" : "group" },
-      h("summary", null, h("span", { class: "eyebrow", text: `${title} · ${count.toLocaleString()}` }), h("span", { class: "why", text: why })),
+      h("summary", null, h("span", { class: "label", text: `${title} · ${count.toLocaleString()}` }), h("span", { class: "why", text: why })),
       h("div", { class: "inner" },
         note ? h("p", { class: "group-note", text: note }) : null,
         leads.map(l => leadRow(l, rowOpts)))));
@@ -1197,9 +1206,15 @@ function renderAbout(result, stored) {
 
 // ---- lead rows ------------------------------------------------------------------------------------
 
+// The name as shown on the sheet: display case for businesses, as filed for
+// individuals' records (ADR 0017). CSV, history and clipboard keep lead.name.
+function shownName(lead) {
+  return lead.individual === true ? lead.name : displayName(lead.name);
+}
+
 function distanceCell(lead) {
   const a = lead.address;
-  const place = [a.city, a.zip].filter(Boolean).join(" ");
+  const place = [displayCity(a.city), a.zip].filter(Boolean).join(" ");
   return h("span", { class: "lr-dist" },
     typeof lead.distanceMi === "number" ? h("b", { text: `${lead.distanceMi} mi` }) : null,
     place);
@@ -1238,7 +1253,7 @@ function leadRow(lead, opts = {}) {
       ? `Name match · registered ${fmtDate(lead.formedDate) || "recently"}`
       : whatLine(lead);
     head.append(
-      h("span", { class: "lr-name", text: lead.name }),
+      h("span", { class: "lr-name", text: shownName(lead) }),
       distanceCell(lead),
       h("span", { class: "lr-what", text: what }),
       trustLine(lead, leadTracker(lead), opts),
@@ -1282,7 +1297,7 @@ function repaintRows(key) {
 
 function buildDetail(ctrl) {
   const lead = ctrl.lead;
-  const left = h("section", null, h("h3", { class: "eyebrow", text: "Why it fits" }));
+  const left = h("section", null, h("h3", { class: "label", text: "Why it fits" }));
   if (lead.brief) left.append(h("p", { text: lead.brief }));
   if (lead.naics.length > 0) {
     const per = (lead.codeSources || []).map(s => s.name).join(", ");
@@ -1291,12 +1306,12 @@ function buildDetail(ctrl) {
   if (lead.opener) {
     const quote = h("blockquote", { class: "opener-quote", text: lead.opener });
     const status = h("span", { class: "copied", "aria-live": "polite" });
-    const copy = h("button", { type: "button", class: "btn sm", text: "Copy", "aria-label": `Copy what to say to ${lead.name}` });
+    const copy = h("button", { type: "button", class: "btn sm", text: "Copy", "aria-label": `Copy what to say to ${shownName(lead)}` });
     copy.addEventListener("click", () => copyText(lead.opener, quote, status));
-    left.append(h("h3", { class: "eyebrow", text: "What to say" }), quote, h("div", null, copy, " ", status));
+    left.append(h("h3", { class: "label", text: "What to say" }), quote, h("div", null, copy, " ", status));
   }
 
-  const right = h("section", null, h("h3", { class: "eyebrow", text: "Reach" }), reachList(lead), callBox(ctrl));
+  const right = h("section", null, h("h3", { class: "label", text: "Reach" }), reachList(lead), callBox(ctrl));
   const evidence = Array.isArray(lead.evidence) && lead.evidence.length > 0
     ? lead.evidence.map(ev => `[${ev.source}] ${ev.field}=${ev.value}${ev.note ? ` (${ev.note})` : ""}`)
     : lead.sources.map(s => `[${s.id}] ${s.name}`);
@@ -1312,6 +1327,7 @@ function reachList(lead) {
   const row = (k, ...v) => dl.append(h("dt", { text: k }), h("dd", null, ...v));
   const f = lead.found && lead.found.status !== "skipped" ? lead.found : null;
   const verify = () => h("span", { class: "verify", text: ` · found via ${(f && f.provider) || "web search"}, verify` });
+  if (shownName(lead) !== lead.name) row("Filed as", lead.name);
   const phones = new Set();
   const other = [];
   for (const raw of lead.contacts) {
@@ -1410,7 +1426,7 @@ function callBox(ctrl) {
     rows: "3",
     maxlength: "1000",
     placeholder: "Who you spoke to, what they said, when to follow up",
-    "aria-label": `Notes about ${lead.name}`,
+    "aria-label": `Notes about ${shownName(lead)}`,
   });
   note.value = saved && typeof saved.note === "string" ? saved.note : "";
   const savedAt = h("span", { class: "fine quiet", "aria-live": "polite" });
@@ -1426,6 +1442,7 @@ function callBox(ctrl) {
       status,
       note: note.value.trim(),
       name: lead.name,
+      individual: lead.individual === true,
       city: a.city || "",
       phone: contacts.phone,
       email: contacts.email,
@@ -1465,8 +1482,8 @@ function callBox(ctrl) {
   });
 
   return h("div", { class: "call-box" },
-    h("h3", { class: "eyebrow", text: "Your call" }),
-    h("div", { class: "seg", role: "group", "aria-label": `Call outcome for ${lead.name}` }, buttons),
+    h("h3", { class: "label", text: "Your call" }),
+    h("div", { class: "seg", role: "group", "aria-label": `Call outcome for ${shownName(lead)}` }, buttons),
     note, savedAt);
 }
 
@@ -1481,10 +1498,10 @@ function renderCalls() {
   $("calls-wrap").hidden = rows.length === 0;
   $("calls-csv").disabled = rows.length === 0;
   for (const r of rows) {
-    const sub = [r.city, r.phone || "no phone on record"].filter(Boolean).join(" · ");
+    const sub = [displayCity(r.city), r.phone || "no phone on record"].filter(Boolean).join(" · ");
     const from = r.search ? [r.search.query, r.search.near].filter(Boolean).join(" · ") : "";
     body.append(h("tr", null,
-      h("td", null, h("b", { text: r.name || "" }), h("br"), h("span", { class: "fine quiet", text: sub })),
+      h("td", null, h("b", { text: r.individual === false ? displayName(r.name || "") : r.name || "" }), h("br"), h("span", { class: "fine quiet", text: sub })),
       h("td", { class: "fine", text: from || "an earlier search" }),
       h("td", { class: "outcome", text: OUTCOME_LABEL[r.status] || "" }),
       h("td", { text: r.note || "" }),

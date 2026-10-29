@@ -26,28 +26,17 @@ npm run a11y                                                     # axe-core over
 # Web app (localhost:4317; vite-node, no build) — the customer-facing surface
 npm start
 
-# CLI (no build step — vite-node)
-npm run --workspace apps/cli start -- search "I need someone to sew tote bags near Denver"
-npm run --workspace apps/cli start -- search "metal fabrication in denver" --no-llm --naics=332
-npm run --workspace apps/cli start -- codes canvas bag           # look up NAICS codes
-
 # Data rebuilds (Python 3 stdlib, always run with -I)
 python3 -I scripts/data/build_naics.py
 python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csvs…>
 ```
 
-CLI flags: `--near=<ZIP|town>` distance center · `--radius=<mi>` ·
-`--no-contacts` · `--naics=<codes>` override ·
-`--direction=buy|sell` (buy = find suppliers, sell = find buyers; overrides the guess) · `--check-all` check every
-coded lead's name against the state registry · `--csv=<path>` all ranked leads · `--leads=<n>` (default 12)
-· `--verbose` evidence · `--region=<US-XX>` · `--limit=<n>` · `--model=<m>`
-· `--shards=<url>`. The default path makes 2 LLM calls via `ANTHROPIC_API_KEY`
-when set, otherwise the Claude Code CLI (`claude -p`). `--no-llm` uses a static table for supplier searches;
-buyer searches then need `--naics`.
+The web app's Check all button sends `checkAll: true`, which the server
+passes as `backfillAll`. A search makes 2 LLM calls via `ANTHROPIC_API_KEY`
+when set, otherwise the Claude Code CLI (`claude -p`).
 
-`node --experimental-strip-types apps/cli/src/index.ts` does **not** work —
-`.js`-suffixed ESM imports (NodeNext) can't be resolved by strip-types. Always
-use `vite-node` (the npm script).
+`node --experimental-strip-types` does not work on this repo (NodeNext `.js`
+imports); use vite-node.
 
 ## Architecture
 
@@ -78,7 +67,7 @@ with name-only matches in one trailing group.
 Hard budget: **≤2 LLM calls per search, zero per-candidate calls**
 (`MAX_LLM_CALLS_PER_SEARCH` in `engine.ts`), enforced by the adapter's call
 counter and by tests. Token usage per search is reported
-(`SearchOutcome.llmUsage`, the web summary and the CLI).
+(`SearchOutcome.llmUsage` and the web summary).
 
 **Ranking** (`scoreEntity` in `brief.ts`) = code fit (respects the map's
 best-first order) + keyword match + independent sources + state standing +
@@ -93,7 +82,6 @@ Package layout:
 packages/registry-core/   Entity, NAICS lookup (naics.ts + naics2017.json), drivers, manifest, route().
 packages/qualify/         LLM adapter (tiered), map/probe/brief verbs, engine.
 apps/web/                 Local web app: server.ts (localhost, Host check, NDJSON stream) + public/ vanilla UI.
-apps/cli/                 CLI: lead cards, CSV export, codes lookup.
 shards/                   ppp/US-CO/<sector>.json (153k businesses), paca/<region>.json.
 scripts/data/             Rebuild NAICS and PPP data from public sources.
 ```
@@ -124,7 +112,7 @@ a `mergeEntities` bug.
 
 ### Delivery surface
 
-The local web app (`apps/web`) plus the CLI. The chat-artifact app was
+The local web app (`apps/web`), plus its HTTP API and the library. The chat-artifact app was
 removed (ADR 0012) because the claude.ai artifact sandbox blocks outbound
 fetch (ADR 0011). The web app works because its server runs locally. UI rule:
 never put data into `innerHTML`; build DOM with `textContent`. The UI is a

@@ -141,6 +141,7 @@ describe("web app server", () => {
       expect(r.status).toBe(200);
       expect(String(r.headers["content-security-policy"])).toContain("default-src 'self'");
       expect(String(r.headers["content-security-policy"])).toContain("script-src 'self'");
+      expect(String(r.headers["content-security-policy"])).toContain("img-src 'self' data:");
       expect(r.headers["x-content-type-options"]).toBe("nosniff");
       expect(r.headers["referrer-policy"]).toBe("no-referrer");
       expect(r.headers["x-frame-options"]).toBe("DENY");
@@ -154,6 +155,7 @@ describe("web app server", () => {
       expect(String(r.headers["content-type"])).toContain("text/html");
       expect(String(r.headers["content-security-policy"])).toContain("default-src 'self'");
       expect(String(r.headers["content-security-policy"])).toContain("script-src 'self'");
+      expect(String(r.headers["content-security-policy"])).toContain("img-src 'self' data:");
       expect((await send({ path: "/design.js" })).status).toBe(200);
       expect((await send({ path: "/design", headers: { Host: "evil.example.com" } })).status).toBe(403);
       expect((await send({ path: "/design/../app.js" })).status).not.toBe(500);

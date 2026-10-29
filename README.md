@@ -141,15 +141,13 @@ places: `python3 -I scripts/data/build_geo.py --states CO,CT,NY,XX`.
 Every search makes at most 2 AI calls, never one per business. Both go
 to the Anthropic API (with `ANTHROPIC_API_KEY`) or through `claude -p` with
 no tools loaded, so the prompt is only the request and the record facts. **About this search** at the bottom of the results
-shows the tokens each search used, and the CLI prints them after the results.
+shows the tokens each search used.
 
 Measured on 2026-10-28 through `claude -p`:
 
 | Search | Map call (Claude Haiku 5.5) | Notes call (Claude Sonnet 5.5) | Total | API-price equivalent |
 |---|---|---|---|---|
 | Tote bags near Denver (web app) | 4,799 in / 732 out | 6,245 in / 2,344 out | 14,120 | $0.050 |
-| Tote bags near Denver (CLI) | 5,269 | 8,587 | 13,856 | $0.050 |
-| Who would buy my hot sauce, 80302 (CLI) | 6,003 | 8,348 | 14,351 | $0.047 |
 
 The run that produced the screenshots above used 12.9k tokens (about $0.05).
 About 14k tokens per search. The notes call costs more because it reads the
@@ -161,14 +159,60 @@ With `ANTHROPIC_API_KEY` the sheet shows tokens only (the API returns no
 price); the bill is on your Anthropic console.
 **Skip AI** uses 0 tokens.
 
-## CLI
+## HTTP API and library
+
+The local server is the API. Start it with `npm start`, then:
 
 ```bash
-npm run --workspace apps/cli start -- search "someone to sew 500 tote bags near Denver"
-npm run --workspace apps/cli start -- search "who would buy my hot sauce" --near=80302 --csv=leads.csv
-npm run --workspace apps/cli start -- codes metal fabrication     # look up industry codes
-npm run --workspace apps/cli start -- help                       # all flags
+curl -N -X POST http://localhost:4317/api/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"who would buy my hot sauce","near":"80302"}'
 ```
+
+Any other Host header gets 403: the API is local-only by design. One search
+runs at a time (a second gets 429), bad fields get 400, and a body that isn't
+JSON gets 415. The body fields are `query`, `near`, `radiusMi`, `naics`,
+`leads`, `region`, `direction`, `checkAll`, `findContacts` and `noLlm` (see
+`parseSearchParams` in `apps/web/src/server.ts`).
+
+The response is newline-delimited JSON, one event per line:
+
+- `map`: the industry codes the request was read as
+- `origin`: the resolved search center, if any
+- `routed`: the sources that cover the region and codes
+- `fetched`: records fetched from one source
+- `source_error`: a source that failed (the search continues)
+- `merged`: records merged across sources
+- `backfilled`: names matched in the state registry
+- `backfill_progress`: progress of the registry name check
+- `probed`: websites checked
+- `recent`: recent filings near the center
+- `contacts`: web contact lookups made
+- then exactly one of `result` (the call sheet) or `error`
+
+Other routes:
+
+- `GET /api/status` (also `HEAD`): which AI and contact paths are active, and the regions
+- `GET /api/codes?q=`: the code finder
+- `GET /api/history`: past searches
+- `GET /api/history/:id`: one past search
+- `GET /api/csv`: the last search as CSV
+- `GET /api/csv?id=`: a past search as CSV
+
+The engine is also a library. Inside this repo, run with
+`npx vite-node your-script.ts`; the packages aren't published.
+
+```ts
+import { search } from "@registry-engine/qualify";
+
+const out = await search("metal fabrication", { region: "US-CO", contacts: null });
+console.log(out.ranked.slice(0, 10).map(l => l.entity.name));
+```
+
+Leaving out `llm` means the static table (supplier searches only); pass
+`llm: { backend: llmBackendFromEnv().backend }` for the at most 2 AI calls
+per search. `contacts: null` keeps paid lookups off even when a key is in
+the env.
 
 ## Know before you call
 
@@ -194,4 +238,4 @@ Threat model: [`SECURITY.md`](SECURITY.md). Decisions: [`docs/decisions/`](docs/
 README media is captured from the running app with
 [`scripts/docs/capture.mjs`](scripts/docs/capture.mjs).
 
-MIT, see [`LICENSE-MIT`](LICENSE-MIT).
+MIT, see [`LICENSE`](LICENSE).

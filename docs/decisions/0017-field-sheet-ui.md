@@ -22,6 +22,7 @@ confirmed (green), unchecked (grey), not found (amber). Dark mode comes from
 `prefers-color-scheme`, with `[data-theme]` re-scoping so `/design` can show
 both themes. The only card is an expanded row. Tokens and every component
 live on `GET /design`, which uses fictional data.
+Uppercase spaced eyebrows only for distance bands; other headings and labels use `.label`.
 
 **Lead row.** Name; a plain "what" (`naicsPhrase`: "Makes textile bag and
 canvas products", never the raw title) and "about N jobs"; a trust line

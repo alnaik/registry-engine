@@ -5,7 +5,7 @@ decisions 2026-10-28: one phase, no sub-phases. Email in git history stays
 (owner's call; no history rewrite). No sample result row on the empty page.
 `.claude/agents/` stays. Everything below ships in one PR with v8.
 
-## J1 — remove the CLI; the HTTP endpoints and the library are the API
+## J1 — remove the CLI; the HTTP endpoints and the library are the API ✅ (2026-10-28; apps/cli deleted, lockfile refreshed; README "HTTP API and library"; CLAUDE.md, SECURITY v3.11 and K5 comments reworded)
 
 - Delete `apps/cli/` entirely. Remove `"apps/cli/src/**/*.ts"` from
   `tsconfig.json` include. Run `npm install` so `package-lock.json` drops
@@ -40,7 +40,7 @@ decisions 2026-10-28: one phase, no sub-phases. Email in git history stays
   v3.11: "CLI removed; HTTP API documented."
 - `PLAN.md` older sections may keep CLI wording (history).
 
-## J2 — code finder: "canvas bag" must not return bakeries or bagasse
+## J2 — code finder: "canvas bag" must not return bakeries or bagasse ✅ (2026-10-28; K6 rule incl. `ies` and the `y` rule, no existing test broke; K7 assertions added)
 
 `packages/registry-core/src/naics.ts`, `lookupCodes` + `stem`:
 - Today a stem matches at a word start with the right side open, so `bag`
@@ -57,7 +57,7 @@ decisions 2026-10-28: one phase, no sub-phases. Email in git history stays
   still hit their codes and add those four as assertions, adjusting the
   suffix list only if one of them fails).
 
-## J3 — UI clarity pass (`apps/web/public/*`, `design.html` samples updated)
+## J3 — UI clarity pass (`apps/web/public/*`, `design.html` samples updated) ✅ (2026-10-28; `.label`, displayName/displayCity pinned, placeholder weight, examples, buttons, favicon/wordmark, renderEmpty tips; a11y 0 serious)
 
 1. **Spaced small caps only for distance headings.** `.eyebrow` keeps its
    style but is used only by `.band-head` headings ("Within 10 miles", …).
@@ -112,7 +112,9 @@ decisions 2026-10-28: one phase, no sub-phases. Email in git history stays
    `displayName` cases (all caps → title, mixed stays, LLC/HVAC), and the
    favicon/wordmark; `/design` remains free of serious a11y violations.
 
-## J4 — hygiene (coder does the file moves; the orchestrator runs gitleaks)
+## J4 — hygiene (coder does the file moves; the orchestrator runs gitleaks) ✅ (2026-10-28; docs/handoffs and LEARNING.md deleted, LICENSE-MIT → LICENSE; screenshots NOT re-captured: the capture includes the owner's Recent searches list, old images kept)
+
+Gitleaks (K18): "gitleaks 8.30.1 scanned all 71 commits on 2026-10-28: no leaks found. The PACA shard's filed gmail addresses are public records (Threat 5) and did not trip it."
 
 - Delete `docs/handoffs/` (four files). `original-kickoff.md` is the only
   reference to `LICENSE-MIT`'s old scope and goes with it.
@@ -455,9 +457,9 @@ A12. **Public-release hygiene (same phase, same PR):**
     - `docs/handoffs/v2-handoff.md` lines 3 and 8, `docs/handoffs/v5-handoff.md`
       lines 3 and 5: replace absolute `/Users/...` paths and the remote URL
       with repo-relative wording.
-    - License: the root `LICENSE-MIT` covers the whole repo. Add
+    - License: the root `LICENSE` (`LICENSE-MIT` until v9) covers the whole repo. Add
       `"license": "MIT"` to the root `package.json` and to qualify, cli and
-      web package.json; one README line "MIT, see LICENSE-MIT"; CLAUDE.md
+      web package.json; one README line "MIT, see LICENSE"; CLAUDE.md
       package layout drops the "MIT." from registry-core's line (it is the
       whole repo now).
     - ADR 0018 adds one line: the PPP and PACA shards are public federal

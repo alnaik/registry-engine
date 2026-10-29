@@ -38,11 +38,13 @@ export function naicsRelated(a: string, b: string): boolean {
 }
 
 // Lowercase a query word and strip a common suffix when >= 4 letters remain,
-// so "fabrication" finds "fabricating" and "bags" finds "bag".
+// so "fabrication" finds "fabricating" and "bags" finds "bag". Otherwise a
+// trailing "y" goes when 5+ letters remain ("bakery" -> "baker").
 function stem(word: string): string {
   const w = word.toLowerCase();
-  const m = /(ication|ation|ing|ers|er|ed|es|s)$/.exec(w);
-  return m !== null && w.length - m[0].length >= 4 ? w.slice(0, -m[0].length) : w;
+  const m = /(ication|ation|ing|ers|er|ed|ies|es|s)$/.exec(w);
+  if (m !== null && w.length - m[0].length >= 4) return w.slice(0, -m[0].length);
+  return w.endsWith("y") && w.length - 1 >= 5 ? w.slice(0, -1) : w;
 }
 
 // 6-digit codes ranked by how many distinct query stems their index
@@ -52,8 +54,11 @@ function stem(word: string): string {
 export function lookupCodes(words: string[], max = 15): { code: string; title: string; description: string }[] {
   const stems = [...new Set(words.map(stem).filter(w => w.length > 0))];
   if (stems.length === 0) return [];
-  // A stem counts only at a word start; the right side stays open (stems are prefixes).
-  const patterns = stems.map(s => ({ s, re: new RegExp("(^|[^a-z0-9])" + s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }));
+  // A stem counts only at a word start. Stems of 4+ letters keep the right side
+  // open (stems are prefixes); a shorter stem must end the word, allowing only
+  // s/es/ed/ing, so "bag" no longer reaches "bagels" or "bagasse".
+  // Known trade-off: 'gas' no longer reaches 'gasoline'; type the full word.
+  const patterns = stems.map(s => ({ s, re: new RegExp("(^|[^a-z0-9])" + s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + (s.length < 4 ? "(?:s|es|ed|ing)?(?![a-z0-9])" : "")) }));
   const matched = (text: string): string[] => {
     const t = text.toLowerCase();
     return patterns.filter(p => p.re.test(t)).map(p => p.s);

@@ -276,7 +276,7 @@ export function summaryParts(result, opts = {}) {
 
 // Seconds per name pattern sent to the state registry, measured 2026-10-27 on
 // CO SoS (~0.25 s each whatever the chunk size). Equal to SECONDS_PER_NAME in
-// packages/qualify/src/summary.ts (the CLI's copy); a test pins the two.
+// packages/qualify/src/summary.ts (summary.ts's copy); a test pins the two.
 export const SECONDS_PER_NAME = 0.25;
 
 // "about 2 min" / "under a minute" for checking `names` names.
@@ -302,6 +302,54 @@ export function registryLine(lookup) {
     text: `Checked ${Number(l.namesChecked).toLocaleString("en-US")} of ${total} names against the state registry.`,
     button: `Check all ${total} names (${checkAllEstimate(l.totalNames)})`,
   };
+}
+
+// ---- display case ------------------------------------------------------------------
+// All-caps registry names and cities read as shouting. These change only how a
+// name or city is shown; CSV, history, stored entries and clipboard text stay
+// as filed. Any lowercase letter means the filer chose the case: unchanged.
+
+const KEEP_UPPER = new Set(["INC", "CO", "LP", "PLLC", "DBA", "USA", "HVAC", "II", "III", "IV"]);
+const PARTICLES = new Set(["OF", "AND", "THE", "FOR", "AT", "IN", "ON", "DE", "LA", "DEL", "Y"]);
+
+// "O'BRIEN" -> "O'Brien", "JOE'S" -> "Joe's", "LA-JUNTA" -> "La-Junta".
+function titlePart(part) {
+  const low = part.toLowerCase();
+  let out = "";
+  let first = true;
+  for (let i = 0; i < low.length; i++) {
+    const c = low[i];
+    if (/[a-z]/.test(c)) {
+      const afterApos = i > 0 && (low[i - 1] === "'" || low[i - 1] === "\u2019");
+      const loneFinalS = afterApos && c === "s" && !/[a-z]/.test(low[i + 1] || "");
+      out += first || (afterApos && !loneFinalS) ? c.toUpperCase() : c;
+      first = false;
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
+function titleWord(word) {
+  return word.split("-").map(titlePart).join("-");
+}
+
+export function displayName(name) {
+  if (typeof name !== "string" || /[a-z]/.test(name)) return name;
+  return name.split(" ").map((w, i) => {
+    if (w === "") return w;
+    if (/[0-9&/]/.test(w) || /\.(?!$)/.test(w)) return w;
+    if (!/[AEIOUY]/.test(w)) return w;
+    if (KEEP_UPPER.has(w.replace(/[.,]$/, ""))) return w;
+    if (PARTICLES.has(w) && i > 0) return w.toLowerCase();
+    return titleWord(w);
+  }).join(" ");
+}
+
+export function displayCity(city) {
+  if (typeof city !== "string" || /[a-z]/.test(city)) return city;
+  return city.split(" ").map(titleWord).join(" ");
 }
 
 // ---- about this search ------------------------------------------------------------
