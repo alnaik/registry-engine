@@ -370,7 +370,7 @@ export function coverageLine(regions) {
   const codes = (Array.isArray(regions) ? regions : []).map(r => String(r).replace(/^US-/, ""));
   if (codes.length === 0) return "";
   const list = codes.length === 1 ? codes[0] : `${codes.slice(0, -1).join(", ")} and ${codes[codes.length - 1]}`;
-  return `Public records for ${list}.`;
+  return `Covers ${list}.`;
 }
 
 // [label, value] rows for "About this search". status = /api/status.

@@ -149,7 +149,7 @@ Measured on 2026-10-28 through `claude -p`:
 |---|---|---|---|---|
 | Tote bags near Denver (web app) | 4,799 in / 732 out | 6,245 in / 2,344 out | 14,120 | $0.050 |
 
-The run that produced the screenshots above used 12.9k tokens (about $0.05).
+The run that produced the screenshots above used 13.1k tokens (about $0.04).
 About 14k tokens per search. The notes call costs more because it reads the
 facts of the top 12 businesses.
 

@@ -233,9 +233,9 @@ describe("summary sentence and About this search", () => {
 
   it("the coverage line lists the regions from /api/status", async () => {
     const { coverageLine } = await import("../../apps/web/public/labels.js");
-    expect(coverageLine(["US-CO", "US-CT", "US-NY"])).toBe("Public records for CO, CT and NY.");
-    expect(coverageLine(["US-CO", "US-NY"])).toBe("Public records for CO and NY.");
-    expect(coverageLine(["US-CO"])).toBe("Public records for CO.");
+    expect(coverageLine(["US-CO", "US-CT", "US-NY"])).toBe("Covers CO, CT and NY.");
+    expect(coverageLine(["US-CO", "US-NY"])).toBe("Covers CO and NY.");
+    expect(coverageLine(["US-CO"])).toBe("Covers CO.");
     expect(coverageLine([])).toBe("");
     expect(coverageLine(undefined)).toBe("");
   });
