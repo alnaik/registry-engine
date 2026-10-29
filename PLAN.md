@@ -1,3 +1,135 @@
+# v8 — bring your own keys, env only (before the repo goes public)
+
+Working branch: `v8-byok` (off `main` after PR #11). Owner decision
+2026-10-28: open-source the repo as a **run-it-yourself** tool. Every user
+runs it on their own machine with their own credentials, read from the
+environment only. No key field in the page, no hosted version. The server
+stays single-user and localhost-bound (SECURITY Threat 8 unchanged).
+
+What is true today, checked 2026-10-28: no secret has ever been committed
+(history scanned), there are no `.env` files, the only secrets are
+`EXA_API_KEY` / `PARALLEL_API_KEY` read at start, and the AI step works only
+through `claude -p`. The adapter already has an Anthropic Messages backend
+(`anthropicApiBackend`, not exported) that nothing wires up.
+
+Scope rule: fix the mechanism (one place decides the LLM backend, and the
+page/CLI tell the truth about who gets billed), document the keys, say what
+is covered. Nothing else.
+
+## Phase I1 — one place picks the LLM backend from the environment
+
+`packages/qualify/src/llm/adapter.ts`
+- Add `export type LlmBilling = "subscription" | "api"`.
+- `RawLlm` gets an optional readonly `billing?: LlmBilling`. The Anthropic
+  backend sets `"api"`; `ClaudeCodeBackend` sets `"subscription"`.
+- `Llm.usage()` (the object the engine copies into `SearchOutcome.llmUsage`)
+  gains `billing: LlmBilling | null` (the raw backend's value, null when the
+  backend declares none). Update the `LlmUsage`-summary type accordingly and
+  the engine's copy, so the web stream and the CLI see it.
+- `anthropicApiBackend(apiKey, modelOverride?)`: export it; when
+  `modelOverride` is set it replaces `opts.model` (same contract as
+  `ClaudeCodeBackend`). Nothing else in it changes. `costUsd` stays `null`
+  on this path (the Messages API returns no price).
+- New `export function llmBackendFromEnv(env: Record<string, string | undefined> = process.env, modelOverride?: string): { backend: RawLlm; billing: LlmBilling }`
+  (put it in `claudeCodeBackend.ts` or a new `fromEnv.ts`, coder's choice,
+  exported from the qualify index):
+  - `ANTHROPIC_API_KEY` set and non-empty → `{ backend: anthropicApiBackend(key, modelOverride), billing: "api" }`.
+  - otherwise → `{ backend: new ClaudeCodeBackend(modelOverride), billing: "subscription" }`
+    (fails at call time if `claude` is missing, exactly as today).
+  The key is read once here and lives only inside the backend closure. It
+  is never logged, never put in an event, never written to history.
+
+`apps/cli/src/index.ts`
+- Replace `new ClaudeCodeBackend(flags["model"])` with
+  `llmBackendFromEnv(process.env, flags["model"]).backend`.
+- The usage line: keep tokens; the cost/billing tail becomes
+  - billing `subscription`: `· about $X at API prices — billed to your Claude subscription via claude -p` (today's text)
+  - billing `api`: `— billed to your Anthropic API key` (no dollar figure: the API returns none; the README table gives the order of magnitude)
+- Help text: "LLM calls (max N/search) use ANTHROPIC_API_KEY when set,
+  otherwise the Claude Code CLI (claude -p) on your subscription. --model
+  is passed through as given (API model id, or a CLI alias like sonnet)."
+
+`apps/web/src/server.ts`, `apps/web/src/main.ts`
+- `AppDeps.llmAvailable: () => Promise<boolean>` becomes
+  `llm: () => Promise<{ backend: RawLlm; billing: LlmBilling } | null>`.
+  `main.ts` implements it: `ANTHROPIC_API_KEY` set → `llmBackendFromEnv()`
+  result; else `claude --version` succeeds → `llmBackendFromEnv()` result;
+  else null. (Same probe as today's `llmAvailable`, moved.)
+- `/api/status` returns `llm: boolean` as before **plus**
+  `llmBilling: "subscription" | "api" | null`. Nothing about the key itself
+  reaches the browser.
+- The search handler uses `(await deps.llm())?.backend`; when `noLlm` or
+  null, omit `llm` as today.
+
+`apps/web/public/labels.js`, `app.js`, `index.html`, `labels.d.ts`, `design.html`
+- "AI calls" row: `billing === "api"` → `2 · 13.5k tokens · billed to your Anthropic API key`;
+  otherwise today's text (`about $0.06 at API prices` when a cost exists).
+  The predicate lives in `labels.js`.
+- `#llm-hint` when `status.llm` is false: "AI is off: set ANTHROPIC_API_KEY,
+  or install Claude Code and log in, then restart." (static text in the HTML, no data).
+- The AI-failure note (app.js, `event.llmError`) becomes
+  "The AI step failed (…). Check your ANTHROPIC_API_KEY, or if you use
+  Claude Code run claude in a terminal and log in. Call notes below are templates."
+- `design.html` sample: add the API-billing variant of the row.
+
+Tests
+- `tests/qualify/adapter.test.ts`: `llmBackendFromEnv` picks the API
+  backend with the key, Claude Code without; empty-string key counts as
+  unset; `modelOverride` reaches the API request body; `usage().billing`
+  reflects the backend; a stub backend with no `billing` yields null.
+- `tests/web/server.test.ts`: `/api/status` carries `llmBilling`; search
+  uses the backend from `deps.llm`; `deps.llm` returning null means no LLM
+  config reaches `search` (assert on the stub's received config).
+- `tests/web/labels.test.ts`: the "AI calls" row for both billings.
+- Existing fixtures that stub `llmAvailable` move to `llm`.
+
+## Phase I2 — say what is covered
+
+- `/api/status` already returns `regions`. `app.js` renders one quiet line
+  under the State select (or under the ask bar when there is one region):
+  "Public records for CO, CT and NY. Other states: add a source to the
+  manifest (see README)." built from `status.regions` with `textContent`.
+  Text builder in `labels.js` (`coverageLine(regions)`), pinned by a test.
+- README: a **Coverage** paragraph right under the title paragraph: Colorado
+  has every source; Connecticut and New York have their state registry plus
+  PACA; EPA facilities are nationwide; other states are a manifest entry
+  (link to the section in CLAUDE.md). Keep the sources table as is.
+
+## Phase I3 — keys and data-flow documentation
+
+- `.env.example` at the repo root: the three optional variables with a
+  one-line comment each (`ANTHROPIC_API_KEY`, `EXA_API_KEY`,
+  `PARALLEL_API_KEY`) and a header saying the app reads the shell
+  environment, nothing loads this file automatically (`export` or `source`
+  it). `.gitignore` adds `.env` and `.env.*` with `!.env.example`.
+- README "Run" section: rename the bullets to **Bring your own keys**:
+  AI via `ANTHROPIC_API_KEY` or Claude Code login; contacts via Exa or
+  Parallel; nothing is required. Add a short **Where your data goes** list:
+  the server listens on localhost only; a search calls the public registries
+  listed in the table, Anthropic (or your Claude Code login) for the two AI
+  calls, and Exa/Parallel only if you set a key; finished searches are kept
+  under `~/.cache/registry-engine`; keys are read from the environment, never
+  stored or shown in the page.
+- README cost section: note that with an API key the sheet shows tokens only
+  and the bill is on your Anthropic console.
+- `CLAUDE.md`: the "default path makes 2 LLM calls via the Claude Code CLI"
+  sentences (Commands section, CLI flags) say "via `ANTHROPIC_API_KEY` when
+  set, otherwise the Claude Code CLI". Nothing else.
+- `SECURITY.md` Threat 8: new item 7 "Credentials": keys are read from the
+  process environment at start, held only inside the backend closures,
+  never written to history files or logs, and `/api/status` exposes only
+  which billing path is active. Changelog entry v3.10.
+- ADR 0018 (short): public repo as a run-it-yourself tool; env-only
+  credentials; no key field and no hosted mode, with the reasons (keys never
+  touch the page or disk; the server's threat model assumes one local user;
+  hosting other people's keys is a different product).
+
+## Out of scope (owner decisions)
+- A key field in the page or browser storage of keys. Env only.
+- Hosting, multi-user history, rate limiting for strangers.
+- Pricing tokens on the API path.
+- Flipping the GitHub visibility: the owner does that after merge.
+
 # v7b — web label only from a lookup; check every name against the registry
 
 Working branch: `v7b-web-label-check-all` (off `main` after PR #10). Owner
