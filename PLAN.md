@@ -1,3 +1,134 @@
+# v9 — public release: drop the CLI, document the API, code-finder fix, UI clarity pass, hygiene
+
+Working branch: `v8-byok` (continues after the v8 commit 8db2cf3). Owner
+decisions 2026-10-28: one phase, no sub-phases. Email in git history stays
+(owner's call; no history rewrite). No sample result row on the empty page.
+`.claude/agents/` stays. Everything below ships in one PR with v8.
+
+## J1 — remove the CLI; the HTTP endpoints and the library are the API
+
+- Delete `apps/cli/` entirely. Remove `"apps/cli/src/**/*.ts"` from
+  `tsconfig.json` include. Run `npm install` so `package-lock.json` drops
+  the workspace. No tests reference it (checked).
+- `README.md`: replace the "## CLI" section with "## HTTP API and library":
+  - The local server is the API. One curl example against
+    `POST /api/search` with `Content-Type: application/json` and
+    `Host: localhost:4317` (the Host check is deliberate: the API is
+    local-only), body `{"query": "...", "near": "..."}`; the response is
+    newline-delimited JSON, one event per line, ending with a `result`
+    line. List the event types in one line each: `map`, `routed`, `origin`,
+    `fetched`, `source_error`, `backfill_progress`, `recent`, `error`,
+    `result`. Point at `apps/web/src/server.ts` (`parseSearchParams`) for
+    the accepted fields, and list the other routes in one line each:
+    `GET /api/status`, `GET /api/codes?q=`, `GET /api/history`,
+    `GET /api/history/:id`, `GET /api/csv?id=`.
+  - The library: `import { search } from "@registry-engine/qualify"` with a
+    five-line example (query, region, no LLM, print names). Note the ≤2
+    LLM calls budget and that `llm` is optional.
+  - Token table: drop the two CLI rows; keep the web row; drop "and the CLI
+    prints them after the results"; "measured through claude -p" stays.
+- `CLAUDE.md`: Commands section drops the CLI block and the "CLI flags"
+  paragraph; the `--check-all` mention moves to one sentence under the web
+  app ("the web app's Check all button sets `backfillAll`"); the
+  strip-types note becomes "`node --experimental-strip-types` does not work
+  on this repo (NodeNext `.js` imports); use vite-node"; package layout
+  drops `apps/cli`; "Delivery surface" is the web app only (plus the HTTP
+  API and the library). Keep the ADR references.
+- `SECURITY.md`: every "CLI" mention (lines ~42, 74, 85, 108, 132, 167,
+  238) is reworded to the web app / API or removed where it only described
+  the CLI (Threat 3: the CSV export is the web app's `/api/csv`). Changelog
+  v3.11: "CLI removed; HTTP API documented."
+- `PLAN.md` older sections may keep CLI wording (history).
+
+## J2 — code finder: "canvas bag" must not return bakeries or bagasse
+
+`packages/registry-core/src/naics.ts`, `lookupCodes` + `stem`:
+- Today a stem matches at a word start with the right side open, so `bag`
+  matches `bagels` and `bagasse`. New rule: the stem must be followed by
+  the end of the word or by one of the stemmer's own suffixes
+  (`s|es|ed|er|ers|ing|ation|ication`), then a non-alphanumeric or end.
+  Build the regex once per stem as today.
+- Tests (`tests/registry-core/naics.test.ts` or wherever `lookupCodes` is
+  tested): `canvas bag` returns 314910 (textile bag and canvas mills) in
+  the top results and no code whose title contains "baker" or "pulp";
+  `bakery` still returns bakeries (stem `baker` → `bakeries` matches via
+  `ies`? No: `bakery` stems to `bakery` (no suffix rule hits, length rule);
+  the coder must verify `bakery`, `bakeries`, `welding`, `welders` all
+  still hit their codes and add those four as assertions, adjusting the
+  suffix list only if one of them fails).
+
+## J3 — UI clarity pass (`apps/web/public/*`, `design.html` samples updated)
+
+1. **Spaced small caps only for distance headings.** `.eyebrow` keeps its
+   style but is used only by `.band-head` headings ("Within 10 miles", …).
+   Every other `eyebrow` (form labels, "We read this as", "Before you
+   call", "About this search", group headings, the My calls headings)
+   becomes a plain label class `.label` (same size `--t1`, weight `--wb`,
+   no letter-spacing, no uppercase, color `--ink-2`). The test
+   `tests/web/public-assets.test.ts:32` is updated to the new class.
+2. **Display case for names and cities.** `labels.js` gets
+   `displayName(name)` and `displayCity(city)`, pure, pinned by tests:
+   - If the string has any lowercase letter, return it unchanged (as filed).
+   - Otherwise title-case each word, except: words of ≤3 letters stay upper
+     when they are in a small allow-list (`LLC`, `INC`, `CO`, `LP`, `LLP`,
+     `PC`, `DBA`, `USA`, and two-letter state codes), words with a digit
+     stay as filed, `HVAC` stays upper, and the particles `of`, `and`,
+     `the`, `&` are lower unless first. Apostrophe-S stays lower (`JOE'S` → `Joe's`).
+   - Applied at render only: lead rows, the open row, My calls rows,
+     openers that quote the name, the trust/registry lines that show the
+     filed name. CSV, history files, aria-labels and `textContent` of
+     copy-to-clipboard stay as filed (the owner says the name as filed on
+     the phone; the sheet also keeps a "filed as" line in the open row when
+     display differs from filed).
+3. **Placeholder looks like a placeholder.** `.ask-input::placeholder`
+   color `--rule-2`, weight `--w`, and the query placeholder text becomes
+   `What you need, or what you sell` (the label text above it goes; the
+   label stays visually hidden for screen readers via an existing
+   `.sr-only` class or a new one).
+4. **Examples** replaced with three that show the range, still `.example`
+   buttons but styled as small outline buttons (`btn sm`), not links:
+   `Who would buy my small-batch hot sauce near Boulder`,
+   `A shop that can powder-coat 200 steel brackets`,
+   `A wholesale buyer for 40 acres of pinto beans`. The "Try:" prefix stays.
+5. **Buttons instead of inline links for actions.** `linkish` is kept only
+   for the "Show them" link inside a band's "N more" line. These become
+   `btn sm`: `#more-toggle` ("More options"), "find buyers instead" /
+   "find suppliers instead" in the reading line, "adjust" next to
+   Industries (relabel "Change codes"), and the Check all button already
+   is a button. The filters stay a segmented group (`.seg`), unchanged.
+6. **Favicon and wordmark.** Inline SVG favicon as a `data:` URI in
+   `<link rel="icon">`: a 32×32 teal (`#0d6f67`) rounded square with a
+   white "R" in the system sans, nothing else. The `h1.brand-mark` gets a
+   12×12 teal square (CSS `::before`, `--act`) before the text, no image
+   file. CSP: `img-src 'self' data:` must be allowed for the icon; check
+   `server.ts` CSP header and `tests/web/server.test.ts` CSP assertions.
+7. **"Before you call" on the empty buyer page.** When `renderEmpty` runs
+   for a buyer search and `app.map.caveats` exist, the caveats already
+   print in the reading line; `renderEmpty` must not repeat them as tips.
+   The empty-tips list is at most three items, each one sentence, and the
+   first tip for a buyer search with no codes is the one that explains
+   codes; drop "Try different words" when the direction is sell.
+8. `design.html` gains samples for `.label`, the new examples row, the
+   `displayName` cases (all caps → title, mixed stays, LLC/HVAC), and the
+   favicon/wordmark; `/design` remains free of serious a11y violations.
+
+## J4 — hygiene (coder does the file moves; the orchestrator runs gitleaks)
+
+- Delete `docs/handoffs/` (four files). `original-kickoff.md` is the only
+  reference to `LICENSE-MIT`'s old scope and goes with it.
+- Rename `LICENSE-MIT` → `LICENSE` (content unchanged) and update the
+  README line and PLAN v8 A12 wording.
+- `.claude/agents/coder.md` stays. `registry-engine-audit.md` stays untracked.
+- Orchestrator after the coder: `brew install gitleaks` (or `npx`-free
+  binary) and `gitleaks detect --source . --log-opts="--all"`; record the
+  result in PLAN.
+
+## Acceptance
+`npm test`, `npm run typecheck`, `npm run a11y` pass; one live web search
+on the Claude Code path with the server on `PORT=4399` then stopped;
+screenshots are NOT re-captured in this phase (the capture script keeps
+working: it drives the web app, not the CLI).
+
 # v8 — bring your own keys, env only (before the repo goes public)
 
 Working branch: `v8-byok` (off `main` after PR #11). Owner decision
