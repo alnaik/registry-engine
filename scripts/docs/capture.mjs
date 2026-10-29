@@ -65,6 +65,8 @@ await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-sch
 await send("Page.navigate", { url: APP });
 await sleep(1500);
 await js("localStorage.clear(), true");
+// The README images must not show this machine's search history or saved searches.
+await js('for (const id of ["recent", "saved"]) { const el = document.getElementById(id); if (el) el.remove(); } true');
 await frame(1200);
 
 // Type the request and the location like a person would.
