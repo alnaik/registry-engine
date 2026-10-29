@@ -276,7 +276,7 @@ export function summaryParts(result, opts = {}) {
 
 // Seconds per name pattern sent to the state registry, measured 2026-10-27 on
 // CO SoS (~0.25 s each whatever the chunk size). Equal to SECONDS_PER_NAME in
-// packages/qualify/src/summary.ts (the CLI's copy); a test pins the two.
+// packages/qualify/src/summary.ts (summary.ts's copy); a test pins the two.
 export const SECONDS_PER_NAME = 0.25;
 
 // "about 2 min" / "under a minute" for checking `names` names.
@@ -304,10 +304,73 @@ export function registryLine(lookup) {
   };
 }
 
+// ---- display case ------------------------------------------------------------------
+// All-caps registry names and cities read as shouting. These change only how a
+// name or city is shown; CSV, history, stored entries and clipboard text stay
+// as filed. Any lowercase letter means the filer chose the case: unchanged.
+
+const KEEP_UPPER = new Set(["INC", "CO", "LP", "PLLC", "DBA", "USA", "HVAC", "II", "III", "IV"]);
+const PARTICLES = new Set(["OF", "AND", "THE", "FOR", "AT", "IN", "ON", "DE", "LA", "DEL", "Y"]);
+
+// "O'BRIEN" -> "O'Brien", "JOE'S" -> "Joe's", "LA-JUNTA" -> "La-Junta".
+function titlePart(part) {
+  const low = part.toLowerCase();
+  let out = "";
+  let first = true;
+  for (let i = 0; i < low.length; i++) {
+    const c = low[i];
+    if (/[a-z]/.test(c)) {
+      const afterApos = i > 0 && (low[i - 1] === "'" || low[i - 1] === "\u2019");
+      const loneFinalS = afterApos && c === "s" && !/[a-z]/.test(low[i + 1] || "");
+      out += first || (afterApos && !loneFinalS) ? c.toUpperCase() : c;
+      first = false;
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
+function titleWord(word) {
+  return word.split("-").map(titlePart).join("-");
+}
+
+export function displayName(name) {
+  if (typeof name !== "string" || /[a-z]/.test(name)) return name;
+  return name.split(" ").map((w, i) => {
+    if (w === "") return w;
+    if (/[0-9&/]/.test(w) || /\.(?!$)/.test(w)) return w;
+    if (!/[AEIOUY]/.test(w)) return w;
+    if (KEEP_UPPER.has(w.replace(/[.,]$/, ""))) return w;
+    if (PARTICLES.has(w) && i > 0) return w.toLowerCase();
+    return titleWord(w);
+  }).join(" ");
+}
+
+export function displayCity(city) {
+  if (typeof city !== "string" || /[a-z]/.test(city)) return city;
+  return city.split(" ").map(titleWord).join(" ");
+}
+
 // ---- about this search ------------------------------------------------------------
 
 export function tokensText(n) {
   return n < 1000 ? String(n) : `${(n / 1000).toFixed(1)}k`;
+}
+
+// What to do when the AI step failed, by /api/status llmBilling.
+export function llmFailedHint(billing) {
+  const fix = billing === "api-key" ? "Check ANTHROPIC_API_KEY." : "Run claude in a terminal and log in.";
+  return `${fix} Call notes below are templates.`;
+}
+
+// The states the manifest covers, from /api/status regions: "Public records
+// for CO, CT and NY." Empty string when there are none.
+export function coverageLine(regions) {
+  const codes = (Array.isArray(regions) ? regions : []).map(r => String(r).replace(/^US-/, ""));
+  if (codes.length === 0) return "";
+  const list = codes.length === 1 ? codes[0] : `${codes.slice(0, -1).join(", ")} and ${codes[codes.length - 1]}`;
+  return `Covers ${list}.`;
 }
 
 // [label, value] rows for "About this search". status = /api/status.
@@ -326,7 +389,10 @@ export function aboutRows(result, status = {}, seconds = null) {
   rows.push(["Name matches only (kept out of the list)", Number(result.sheet ? result.sheet.nameOnly : 0).toLocaleString("en-US")]);
   const u = result.llmUsage;
   if (u) {
-    const cost = u.costUsd !== null && u.costUsd !== undefined ? ` · about $${u.costUsd.toFixed(2)} at API prices` : "";
+    // result.llmBilling: "api-key" bills the user's key (the API returns no
+    // price); "claude-code" or missing (pre-v8 history) keeps the price line.
+    const cost = result.llmBilling === "api-key" ? " · billed to your Anthropic API key"
+      : u.costUsd !== null && u.costUsd !== undefined ? ` · about $${u.costUsd.toFixed(2)} at API prices` : "";
     rows.push(["AI calls", `${u.calls.length} · ${tokensText(u.inputTokens + u.outputTokens)} tokens${cost}`]);
   } else {
     rows.push(["AI calls", result.llmCalls > 0 ? String(result.llmCalls) : "None (AI step skipped)"]);

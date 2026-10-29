@@ -214,6 +214,31 @@ describe("summary sentence and About this search", () => {
     const capped = aboutRows({ ...base, sources: [], registryLookup: { status: "ran", namesChecked: 80, nameCap: 80, candidates: 150, totalNames: 384 }, llmUsage: null, llmCalls: 0 });
     expect(capped).toContainEqual(["Names checked against the state registry", "80 of 384 not already matched (at most 80 per search unless you check all)"]);
   });
+
+  it("the AI calls row follows result.llmBilling: API key, Claude Code, or missing (pre-v8 history)", async () => {
+    const { aboutRows } = await import("../../apps/web/public/labels.js");
+    const usage = { inputTokens: 9000, outputTokens: 4500, costUsd: 0.059, calls: [{}, {}] };
+    const ai = (extra: Record<string, unknown>) =>
+      aboutRows({ ...base, sources: [], llmUsage: usage, llmCalls: 2, ...extra }).find(r => r[0] === "AI calls");
+    expect(ai({ llmBilling: "api-key", llmUsage: { ...usage, costUsd: null } })).toEqual(["AI calls", "2 · 13.5k tokens · billed to your Anthropic API key"]);
+    expect(ai({ llmBilling: "claude-code" })).toEqual(["AI calls", "2 · 13.5k tokens · about $0.06 at API prices"]);
+    expect(ai({})).toEqual(["AI calls", "2 · 13.5k tokens · about $0.06 at API prices"]);
+  });
+
+  it("the AI-failure hint follows the billing path in /api/status", async () => {
+    const { llmFailedHint } = await import("../../apps/web/public/labels.js");
+    expect(llmFailedHint("api-key")).toBe("Check ANTHROPIC_API_KEY. Call notes below are templates.");
+    expect(llmFailedHint("claude-code")).toBe("Run claude in a terminal and log in. Call notes below are templates.");
+  });
+
+  it("the coverage line lists the regions from /api/status", async () => {
+    const { coverageLine } = await import("../../apps/web/public/labels.js");
+    expect(coverageLine(["US-CO", "US-CT", "US-NY"])).toBe("Covers CO, CT and NY.");
+    expect(coverageLine(["US-CO", "US-NY"])).toBe("Covers CO and NY.");
+    expect(coverageLine(["US-CO"])).toBe("Covers CO.");
+    expect(coverageLine([])).toBe("");
+    expect(coverageLine(undefined)).toBe("");
+  });
 });
 
 describe("registry name check line", () => {
@@ -235,7 +260,7 @@ describe("registry name check line", () => {
     expect(registryProgressText(200, 384)).toBe("200 of 384 names");
   });
 
-  it("the page's seconds-per-name estimate equals the CLI's", async () => {
+  it("the page's seconds-per-name estimate equals summary.ts's", async () => {
     const { SECONDS_PER_NAME } = await import("../../apps/web/public/labels.js");
     const { SECONDS_PER_NAME: cli } = await import("../../packages/qualify/src/summary.js");
     expect(SECONDS_PER_NAME).toBe(cli);
@@ -269,5 +294,23 @@ describe("trust label at the time of a call (validation log)", () => {
   it("the My calls export carries the label columns", () => {
     const app = readFileSync(join(import.meta.dirname, "../../apps/web/public/app.js"), "utf8");
     expect(app).toMatch(/"outcome", "trust_at_call", "trust_tone_at_call"/);
+  });
+});
+
+describe("display case for names and cities (v9 J3.2)", () => {
+  it("title-cases all-caps names, keeping legal forms, codes and filed mixed case", async () => {
+    const { displayName } = await import("../../apps/web/public/labels.js");
+    expect(displayName("ACME WELDING LLC")).toBe("Acme Welding LLC");
+    expect(displayName("JOE'S HVAC INC.")).toBe("Joe's HVAC INC.");
+    expect(displayName("O'BRIEN CNC")).toBe("O'Brien CNC");
+    expect(displayName("MADE IN USA CO")).toBe("Made in USA CO");
+    expect(displayName("A-1 SIGNS")).toBe("A-1 Signs");
+    expect(displayName("B&B FARMS")).toBe("B&B Farms");
+    expect(displayName("Mixed Case Inc")).toBe("Mixed Case Inc");
+  });
+
+  it("title-cases all-caps cities", async () => {
+    const { displayCity } = await import("../../apps/web/public/labels.js");
+    expect(displayCity("LA JUNTA")).toBe("La Junta");
   });
 });

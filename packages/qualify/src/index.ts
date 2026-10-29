@@ -1,6 +1,6 @@
 export { search, MAX_LLM_CALLS_PER_SEARCH, planBackfill, nameHasWord, recentNameMatch, RECENT_COLLISIONS } from "./engine.js";
 export type { SearchConfig, SearchOutcome, EngineEvent, Origin, RegistryLookup } from "./engine.js";
-export { createLlm, Llm, LlmCallBudgetError, TIER_MODELS } from "./llm/adapter.js";
+export { createLlm, Llm, LlmCallBudgetError, TIER_MODELS, anthropicApiBackend } from "./llm/adapter.js";
 export type { Tier, RawLlm, RawCompleteOptions, LlmConfig, LlmCallOptions } from "./llm/adapter.js";
 export { mapQuery, parseMapResponse, MAP_SYSTEM } from "./verbs/map.js";
 export type { MapResult } from "./verbs/map.js";
@@ -11,6 +11,8 @@ export type { Lead, WebPresence, RankContext, BriefContext, RegistryCheck, Regis
 export { exaProvider, parallelProvider, providerFromEnv, extractContact, isLikelyIndividual, fileContactCache, memoryContactCache, findContacts } from "./verbs/contacts.js";
 export type { WebResult, WebSearchProvider, FoundContact, ContactCache } from "./verbs/contacts.js";
 export { ClaudeCodeBackend } from "./llm/claudeCodeBackend.js";
+export { llmBackendFromEnv } from "./llm/fromEnv.js";
+export type { LlmBilling } from "./llm/fromEnv.js";
 export { CSV_HEADER, csvCell, leadsToCsv } from "./csv.js";
 export { summaryLines, summaryCounts, sheetCounts, partitionLeads, hasPhone, SECONDS_PER_NAME } from "./summary.js";
 export type { SheetCounts } from "./summary.js";

@@ -2,8 +2,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ClaudeCodeBackend, leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
-import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck } from "@registry-engine/qualify";
+import { leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
+import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck, RawLlm, LlmBilling } from "@registry-engine/qualify";
 import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhrase, naicsRelated, normalizeName } from "@registry-engine/registry-core";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
@@ -13,7 +13,8 @@ import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhr
 
 export interface AppDeps {
   search: typeof search;
-  llmAvailable: () => Promise<boolean>;
+  // The LLM backend picked from the environment, or null when there is none.
+  llm: () => Promise<{ backend: RawLlm; billing: LlmBilling } | null>;
   contactsProvider: () => string | null;
   port: number;
   publicDir: string;
@@ -135,8 +136,11 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
     }
 
     if ((method === "GET" || head) && path === "/api/status") {
+      // Only which billing path is active; nothing about the key itself.
+      const picked = await deps.llm();
       sendJson(res, 200, {
-        llm: await deps.llmAvailable(),
+        llm: picked !== null,
+        llmBilling: picked?.billing ?? null,
         contactsProvider: deps.contactsProvider(),
         regions: knownRegions(SOURCES),
         defaultRegion: defaultRegion(SOURCES),
@@ -255,8 +259,9 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       // The map event's line is kept with the stored result: the reading line
       // and the "Before you call" caveats live there.
       let mapLine: Record<string, unknown> | null = null;
+      const picked = params.noLlm ? null : await deps.llm();
       const outcome = await deps.search(params.query, {
-        llm: params.noLlm ? undefined : { backend: new ClaudeCodeBackend() },
+        llm: picked === null ? undefined : { backend: picked.backend },
         near: params.near,
         radiusMi: params.radiusMi,
         naics: params.naics,
@@ -281,7 +286,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       }
       const existenceIds = outcome.routed.filter(s => s.plane === "existence").map(s => s.id);
       last = { ranked: outcome.ranked, existenceIds };
-      const result = buildResult(outcome, existenceIds, params, sourceNames, fetchedBy);
+      const result = buildResult(outcome, existenceIds, params, sourceNames, fetchedBy, picked?.billing ?? null);
       if (deps.historyDir !== undefined) {
         await saveHistory(deps.historyDir, params, mapLine, result, leadsToCsv(outcome.ranked, existenceIds));
       }
@@ -531,7 +536,8 @@ function buildResult(
   existenceIds: string[],
   params: SearchParams,
   sourceNames: Map<string, string>,
-  fetchedBy: Map<string, { count: number; capped: boolean; error: boolean }>
+  fetchedBy: Map<string, { count: number; capped: boolean; error: boolean }>,
+  llmBilling: LlmBilling | null
 ): Record<string, unknown> {
   const names = new Map(sourceNames);
   for (const s of outcome.routed) names.set(s.id, s.name);
@@ -561,6 +567,7 @@ function buildResult(
     contactLookups: outcome.contactLookups,
     llmCalls: outcome.llmCalls,
     llmUsage: outcome.llmUsage,
+    llmBilling,
     leads: main.slice(0, topN).map(l => view(l, ranks.get(l) ?? 0, true)),
     more: main.slice(topN, topN + MORE_LEADS).map(l => view(l, ranks.get(l) ?? 0, true)),
     individuals: individuals.slice(0, GROUP_LEADS).map(l => view(l, ranks.get(l) ?? 0, true)),

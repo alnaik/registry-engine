@@ -39,8 +39,7 @@ user's request, in `map` and `brief`. The other is registry text inside
    rejects the model's answer, the raw text is clipped to 2,000 chars with
    control characters (terminal escapes) replaced (`rawAnswerForLog`) and
    travels only as `SearchOutcome.mapRawAnswer`: the engine strips it from
-   the map result before the brief call, the CLI prints it under
-   `--verbose`, and the web server writes it to stderr, never into the
+   the map result before the brief call, and the web server writes it to stderr, never into the
    NDJSON stream or the page. It never feeds a prompt or a query.
    - `mapQuery` in `map.ts`, `search` in `engine.ts`, `handleSearch` in `apps/web/src/server.ts`
 7. **No tools for the headless model.** `claude -p` runs with `--tools ""`
@@ -71,8 +70,8 @@ queries.
 - **Shard paths.** `repo:` shard files are read from disk at
   `<endpoint>/<region>[/<sector>].json`. Sector is two digits taken from
   validated codes. Region must match a strict region-code pattern, so a
-  caller can't traverse out of the shard directory. The CLI also checks
-  `--region` against the manifest.
+  caller can't traverse out of the shard directory. The web server checks
+  `region` against the manifest (`parseSearchParams`).
   - `packages/registry-core/src/drivers/staticShard.ts`
 
 All endpoints are read-only, so the worst case is a malformed query, not
@@ -82,7 +81,7 @@ data damage.
 
 ## Threat 3: CSV injection
 
-**Severity:** Low. The CLI's `--csv` and the web app's exports write
+**Severity:** Low. The web app's `/api/csv` and My calls export write
 registry-derived text that users open in spreadsheets.
 
 **Mitigation:** every cell is double-quoted with embedded quotes doubled. A
@@ -105,7 +104,7 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 4. Bulk-only sources (PPP) are served from local shards, never queried per
    search.
 5. The registry name lookup sends at most 80 name patterns per search by
-   default. "Check all" (web button, CLI `--check-all`) lifts that cap: it
+   default. "Check all" (web button) lifts that cap: it
    sends `ceil(names/25)` requests (×2 with `backfillInactive`), plus
    pagination past 200 rows per chunk, at concurrency 4 under the 20 s
    deadline. It is a full search the user asks for, through the same
@@ -129,7 +128,7 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
   which exists so buyers can check liens). They are shown exactly as filed.
   The engine never looks up personal phones, emails or home addresses for
   them.
-- Officers and agents are displayed in the CLI but never sent to the LLM.
+- Officers and agents are displayed in the web app but never sent to the LLM.
 
 ---
 
@@ -164,7 +163,7 @@ Every limitation below is surfaced in the output, not hidden:
 6. Without a web lookup the sheet makes no website claim; every business
    lead keeps a search link.
 7. **Registered agent ≠ contact person.** SoS agent fields are often law
-   firms or agent services. The CLI labels them "agent/principals".
+   firms or agent services. The web app labels them "Agent/principals".
 8. **Name merges** require compatible locality (same zip or city), so
    same-named businesses in different towns stay separate.
 
@@ -220,7 +219,14 @@ credits is a target for other websites open in the same browser.
    server-computed SHA-1; `/api/history/:id` and `/api/csv?id=` accept only
    `/^[a-f0-9]{40}$/` (400 otherwise), and no path is built from any other
    input. Opening a stored search is a pure read; there is no delete endpoint.
-- `apps/web/src/server.ts`, `apps/web/public/app.js`
+7. **Credentials.** Keys (`ANTHROPIC_API_KEY`, `EXA_API_KEY`,
+   `PARALLEL_API_KEY`) are read from the process environment only (never
+   from a request, a file or the page), held inside the backend closures,
+   never written to history or logs. API error text is reduced to status and
+   error type before it reaches the page or history. `/api/status` exposes
+   only which billing path is active (`llmBilling`).
+- `apps/web/src/server.ts`, `apps/web/src/main.ts`, `apps/web/public/app.js`,
+  `packages/qualify/src/llm/fromEnv.ts`, `packages/qualify/src/llm/adapter.ts`
 
 ---
 
@@ -269,3 +275,7 @@ credits is a target for other websites open in the same browser.
 - v3.9 (2026-10-27, v7b): "check all" registry name lookup (Threat 4, item 5):
   `maxNames` override in `SocrataDriver.fetchByNames`, `backfillAll` in the engine.
   Threat 6 item 6: no website claim without a web lookup; `--hidden` removed.
+- v3.10 (2026-10-28, v8 / ADR 0018): bring your own keys, env only. `llmBackendFromEnv`
+  (`packages/qualify/src/llm/fromEnv.ts`) picks the Anthropic API when `ANTHROPIC_API_KEY`
+  is set, else `claude -p`; API errors carry status and error type only (Threat 8, item 7).
+- v3.11 (2026-10-28, v9): CLI removed; HTTP API documented.
