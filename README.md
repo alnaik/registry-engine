@@ -2,6 +2,10 @@
 
 Find the local businesses search engines miss: type what you need or what
 you sell, and get a call sheet built from public records.
+It works because businesses leave records they can't opt out of (loans,
+permits, inspections, licenses), and each one carries an industry code
+filed by a regulator or lender. Discovery routes on those codes instead of
+searching names or websites, so a shop with no web presence still shows up.
 Covers Colorado, Connecticut and New York, plus EPA-regulated facilities
 nationwide; another state is mostly a manifest entry ([how](#add-a-state-or-a-source)).
 
@@ -203,15 +207,18 @@ The engine is also a library. Inside this repo, run with
 `npx vite-node your-script.ts`; the packages aren't published.
 
 ```ts
-import { search } from "@registry-engine/qualify";
+import { search, llmBackendFromEnv } from "@registry-engine/qualify";
 
-const out = await search("metal fabrication", { region: "US-CO", contacts: null });
+const out = await search("metal fabrication", {
+  region: "US-CO",
+  contacts: null,
+  llm: { backend: llmBackendFromEnv().backend },   // omit for the static table (supplier searches only)
+});
 console.log(out.ranked.slice(0, 10).map(l => l.entity.name));
 ```
 
-Leaving out `llm` means the static table (supplier searches only); pass
-`llm: { backend: llmBackendFromEnv().backend }` for the at most 2 AI calls
-per search. `contacts: null` keeps paid lookups off even when a key is in
+`llm` makes at most 2 AI calls per search, on `ANTHROPIC_API_KEY` or your
+Claude Code login. `contacts: null` keeps paid lookups off even when a key is in
 the env.
 
 ## Know before you call
@@ -230,7 +237,7 @@ the env.
 ## Development
 
 ```bash
-npm test && npm run typecheck
+npm test && npm run typecheck && npm run a11y   # a11y: axe over the app in headless Chromium
 ```
 
 Architecture, conventions and the data rebuild scripts: [`CLAUDE.md`](CLAUDE.md).
