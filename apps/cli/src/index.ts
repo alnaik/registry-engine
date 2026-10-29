@@ -1,13 +1,13 @@
 import { writeFileSync } from "node:fs";
-import { search, MAX_LLM_CALLS_PER_SEARCH, ClaudeCodeBackend, leadsToCsv, summaryLines, partitionLeads, SECONDS_PER_NAME, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
+import { search, MAX_LLM_CALLS_PER_SEARCH, llmBackendFromEnv, leadsToCsv, summaryLines, partitionLeads, SECONDS_PER_NAME, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { Lead, FoundContact } from "@registry-engine/qualify";
 import { SOURCES, knownRegions, lookupCodes, naicsLabel, isNaicsCode } from "@registry-engine/registry-core";
 import type { Entity } from "@registry-engine/registry-core";
 
 const DEFAULT_LEADS = 12;   // the engine's default --leads
 
-// Validation harness: the full pipeline, with LLM calls through the Claude
-// Code CLI (headless) — subscription-billed, no API key.
+// Validation harness: the full pipeline, with LLM calls through
+// ANTHROPIC_API_KEY when set, otherwise the Claude Code CLI (headless).
 
 // Flags that only make sense with a value; given bare, they are an error
 // (otherwise "--csv" would write a file named "true").
@@ -86,13 +86,17 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   if (direction !== undefined && direction !== "buy" && direction !== "sell") {
     fail(`--direction must be buy (find suppliers) or sell (find buyers) (got "${direction}")`);
   }
+  const llmPick = flags["no-llm"] === "true" ? undefined : llmBackendFromEnv(process.env, flags["model"]);
+  if (llmPick?.billing === "api-key" && flags["model"] !== undefined && !flags["model"].startsWith("claude-")) {
+    fail("--model with ANTHROPIC_API_KEY needs a full model id, e.g. claude-sonnet-5-5");
+  }
   const fetchedCounts: string[] = [];
 
   const nearFlag = flags["near"] !== undefined && flags["near"] !== "true" ? flags["near"] : undefined;
   let mapRegion = "";
   const out = await search(query, {
     // omitting llm entirely puts the engine on its zero-token path
-    ...(flags["no-llm"] === "true" ? {} : { llm: { backend: new ClaudeCodeBackend(flags["model"]) } }),
+    ...(llmPick === undefined ? {} : { llm: { backend: llmPick.backend } }),
     sources,
     region: flags["region"],
     limit,
@@ -194,8 +198,10 @@ async function cmdSearch(positional: string[], flags: Record<string, string>): P
   if (out.llmUsage !== null) {
     const u = out.llmUsage;
     const byLabel = (label: string) => u.calls.filter(k => k.label === label).reduce((n, k) => n + k.inputTokens + k.outputTokens, 0);
-    const cost = u.costUsd !== null ? ` · ~$${u.costUsd.toFixed(4)} at API prices` : "";
-    console.log(`AI tokens: ${u.inputTokens.toLocaleString()} in / ${u.outputTokens.toLocaleString()} out (map ${byLabel("map").toLocaleString()}, brief ${byLabel("brief").toLocaleString()})${cost} — billed to your Claude subscription via claude -p\n`);
+    const tail = llmPick?.billing === "api-key"
+      ? " — billed to your Anthropic API key"
+      : `${u.costUsd !== null ? ` · ~$${u.costUsd.toFixed(4)} at API prices` : ""} — via your Claude Code login (claude -p)`;
+    console.log(`AI tokens: ${u.inputTokens.toLocaleString()} in / ${u.outputTokens.toLocaleString()} out (map ${byLabel("map").toLocaleString()}, brief ${byLabel("brief").toLocaleString()})${tail}\n`);
   }
   let band = "";
   shown.forEach((lead, i) => {
@@ -363,8 +369,9 @@ Flags:
   --csv=<path>  write every ranked lead to a CSV file
   --verbose     print the evidence lines under each lead
 
-LLM calls (max ${MAX_LLM_CALLS_PER_SEARCH}/search) run through the Claude Code CLI
-(claude -p) and bill your subscription — no API key needed.
+LLM calls (max ${MAX_LLM_CALLS_PER_SEARCH}/search) use ANTHROPIC_API_KEY when set
+(full model ids), otherwise your Claude Code login (claude -p; aliases
+like sonnet work).
 `);
 }
 

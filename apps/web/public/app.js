@@ -9,7 +9,7 @@ import {
   trustLabel, trustAtCall, webTag, fetchedText, whatLine,
   OUTCOMES, OUTCOME_LABEL, migrateTracker, isTracked, shortDate, callStatusText,
   FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost, summaryParts, aboutRows,
-  registryLine, registryProgressText,
+  registryLine, registryProgressText, llmFailedHint, coverageLine,
 } from "/labels.js";
 
 const $ = id => document.getElementById(id);
@@ -328,6 +328,9 @@ async function loadStatus() {
     noLlm.disabled = true;
     $("llm-hint").hidden = false;
   }
+  const coverage = coverageLine(status.regions);
+  const fine = document.querySelector(".ask-actions .quiet.fine");
+  if (coverage !== "" && fine) fine.textContent += ` ${coverage}`;
   if (Array.isArray(status.regions) && status.regions.length > 1) {
     const select = $("region");
     for (const code of status.regions) select.append(h("option", { value: code, text: code.replace(/^US-/, "") }));
@@ -544,7 +547,7 @@ function handleEvent(event) {
     case "map": {
       app.map = event;
       if (event.llmError) {
-        addNote(`The AI step failed (${event.llmError}). If Claude Code is logged out, run claude in a terminal and log in, then search again. Call notes below are templates.`);
+        addNote(`The AI step failed (${event.llmError}). ${llmFailedHint(app.status && app.status.llmBilling)}`);
       }
       setStep("map", "done", VIA_TEXT[event.via] || "");
       setStep("records", "active", "");

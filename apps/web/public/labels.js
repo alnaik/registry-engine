@@ -310,6 +310,21 @@ export function tokensText(n) {
   return n < 1000 ? String(n) : `${(n / 1000).toFixed(1)}k`;
 }
 
+// What to do when the AI step failed, by /api/status llmBilling.
+export function llmFailedHint(billing) {
+  const fix = billing === "api-key" ? "Check ANTHROPIC_API_KEY." : "Run claude in a terminal and log in.";
+  return `${fix} Call notes below are templates.`;
+}
+
+// The states the manifest covers, from /api/status regions: "Public records
+// for CO, CT and NY." Empty string when there are none.
+export function coverageLine(regions) {
+  const codes = (Array.isArray(regions) ? regions : []).map(r => String(r).replace(/^US-/, ""));
+  if (codes.length === 0) return "";
+  const list = codes.length === 1 ? codes[0] : `${codes.slice(0, -1).join(", ")} and ${codes[codes.length - 1]}`;
+  return `Public records for ${list}.`;
+}
+
 // [label, value] rows for "About this search". status = /api/status.
 export function aboutRows(result, status = {}, seconds = null) {
   const rows = [];
@@ -326,7 +341,10 @@ export function aboutRows(result, status = {}, seconds = null) {
   rows.push(["Name matches only (kept out of the list)", Number(result.sheet ? result.sheet.nameOnly : 0).toLocaleString("en-US")]);
   const u = result.llmUsage;
   if (u) {
-    const cost = u.costUsd !== null && u.costUsd !== undefined ? ` · about $${u.costUsd.toFixed(2)} at API prices` : "";
+    // result.llmBilling: "api-key" bills the user's key (the API returns no
+    // price); "claude-code" or missing (pre-v8 history) keeps the price line.
+    const cost = result.llmBilling === "api-key" ? " · billed to your Anthropic API key"
+      : u.costUsd !== null && u.costUsd !== undefined ? ` · about $${u.costUsd.toFixed(2)} at API prices` : "";
     rows.push(["AI calls", `${u.calls.length} · ${tokensText(u.inputTokens + u.outputTokens)} tokens${cost}`]);
   } else {
     rows.push(["AI calls", result.llmCalls > 0 ? String(result.llmCalls) : "None (AI step skipped)"]);

@@ -1,8 +1,7 @@
 # Registry Engine — v5 Handoff (2026-10-26)
 
-Repo: `/Users/fcolty/dev/projects/registry-engine` · branch `v5-activity-coded`
-(HEAD includes phases 1–6 plus the Phase 7/8 plan; **not pushed**) · remote
-`git@github.com:alnaik/registry-engine.git`.
+Repo: this repository · branch `v5-activity-coded`
+(HEAD includes phases 1–6 plus the Phase 7/8 plan; **not pushed** at the time).
 
 > **Update 2026-10-27:** Phases 7 (7a–7d) and 8 are done and committed.
 > PLAN.md has the results, the fixes (F1–F7), and what's still open. The

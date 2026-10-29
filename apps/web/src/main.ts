@@ -3,7 +3,8 @@ import { execFile, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { search, providerFromEnv } from "@registry-engine/qualify";
+import { search, providerFromEnv, llmBackendFromEnv } from "@registry-engine/qualify";
+import type { RawLlm, LlmBilling } from "@registry-engine/qualify";
 import { createApp } from "./server.js";
 
 // Local web app: `npm start`, then open http://localhost:4317. Listens on
@@ -13,15 +14,25 @@ import { createApp } from "./server.js";
 const port = Number(process.env["PORT"]) || 4317;
 const publicDir = fileURLToPath(new URL("../public", import.meta.url));
 
-function llmAvailable(): Promise<boolean> {
-  return new Promise(resolve => {
-    execFile("claude", ["--version"], { timeout: 5000 }, err => resolve(err === null));
+// The LLM backend from the environment: ANTHROPIC_API_KEY when set, else
+// the Claude Code CLI when `claude --version` runs, else none. Probed once,
+// lazily, on the first call.
+let llmPick: Promise<{ backend: RawLlm; billing: LlmBilling } | null> | undefined;
+function llm(): Promise<{ backend: RawLlm; billing: LlmBilling } | null> {
+  llmPick ??= new Promise(resolve => {
+    const key = process.env["ANTHROPIC_API_KEY"];
+    if (key !== undefined && key !== "") {
+      resolve(llmBackendFromEnv());
+      return;
+    }
+    execFile("claude", ["--version"], { timeout: 5000 }, err => resolve(err === null ? llmBackendFromEnv() : null));
   });
+  return llmPick;
 }
 
 const app = createApp({
   search,
-  llmAvailable,
+  llm,
   contactsProvider: () => providerFromEnv()?.name ?? null,
   port,
   publicDir,

@@ -16,7 +16,7 @@ Scope rule: fix the mechanism (one place decides the LLM backend, and the
 page/CLI tell the truth about who gets billed), document the keys, say what
 is covered. Nothing else.
 
-## Phase I1 — one place picks the LLM backend from the environment
+## Phase I1 — one place picks the LLM backend from the environment ✅ (2026-10-28; `llmBackendFromEnv` in `packages/qualify/src/llm/fromEnv.ts`, billing on the web result and CLI line; A6 API-key live gate: not run (no key in the orchestrator's shell), owner runs it before flipping visibility; Claude Code path re-measured: tote CLI 13,856 tokens $0.050, hot sauce 80302 CLI 14,351 $0.047, tote web 14,120 $0.050)
 
 `packages/qualify/src/llm/adapter.ts`
 - Add `export type LlmBilling = "subscription" | "api"`.
@@ -83,7 +83,7 @@ Tests
 - `tests/web/labels.test.ts`: the "AI calls" row for both billings.
 - Existing fixtures that stub `llmAvailable` move to `llm`.
 
-## Phase I2 — say what is covered
+## Phase I2 — say what is covered ✅ (2026-10-28; `coverageLine` appended to the ask-bar fine print; README coverage line, ECHO in the coverage sentence, "Add a state or a source")
 
 - `/api/status` already returns `regions`. `app.js` renders one quiet line
   under the State select (or under the ask bar when there is one region):
@@ -103,7 +103,7 @@ Tests
   `packages/registry-core/src/drivers/`, which is the one case that is code.
   ZIP and place centroids are already nationwide.
 
-## Phase I3 — keys and data-flow documentation
+## Phase I3 — keys and data-flow documentation ✅ (2026-10-28; .env.example, .gitignore, README keys/data/cost/MIT, CLAUDE.md, SECURITY item 7 + v3.10, ADR 0018, handoff paths, license fields)
 
 - `.env.example` at the repo root: the three optional variables with a
   one-line comment each (`ANTHROPIC_API_KEY`, `EXA_API_KEY`,

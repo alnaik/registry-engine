@@ -7,7 +7,7 @@ import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { createApp, historyId } from "../../apps/web/src/server.js";
 import type { AppDeps } from "../../apps/web/src/server.js";
-import type { SearchConfig, SearchOutcome, Lead } from "../../packages/qualify/src/index.js";
+import type { SearchConfig, SearchOutcome, Lead, RawLlm } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
   "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "what", "coded", "individual", "employees", "lastSeen", "formedDate",
@@ -52,6 +52,9 @@ function makeOutcome(n = 3): SearchOutcome {
     mapRawAnswer: null,
   };
 }
+
+// The backend the stub deps hand out; tests check it reaches search().
+const STUB_BACKEND: RawLlm = { complete: async () => "" };
 
 interface Reply { status: number; headers: Record<string, string | string[] | undefined>; text: string }
 
@@ -117,7 +120,7 @@ describe("web app server", () => {
         cfg.onEvent?.({ type: "fetched", sourceId: "co_sos", count: 500, capped: true });
         return behavior(query, cfg);
       }) as unknown as AppDeps["search"],
-      llmAvailable: async () => true,
+      llm: async () => ({ backend: STUB_BACKEND, billing: "claude-code" }),
       contactsProvider: () => null,
       port,
       publicDir,
@@ -194,7 +197,7 @@ describe("web app server", () => {
           cfg.onEvent?.({ type: "map", map: { ...o.map, llmError: "not logged in" } });
           return o;
         }) as unknown as AppDeps["search"],
-        llmAvailable: async () => true,
+        llm: async () => ({ backend: STUB_BACKEND, billing: "claude-code" }),
         contactsProvider: () => null,
         port,
         publicDir,
@@ -352,6 +355,31 @@ describe("web app server", () => {
       expect(dflt.backfillAll).toBe(false);
     });
 
+    it("search uses the backend from deps.llm; null means no LLM config reaches search()", async () => {
+      await post({ query: "metal fabrication" });
+      expect(calls[0]!.cfg.llm).toEqual({ backend: STUB_BACKEND });
+
+      server.removeAllListeners("request");
+      server.on("request", createApp(stubDeps({ llm: async () => null })));
+      await post({ query: "metal fabrication" });
+      expect(calls[1]!.cfg.llm).toBeUndefined();
+    });
+
+    it("the result line carries llmBilling for both paths, null under noLlm or no backend", async () => {
+      const billingOf = async (body: Record<string, unknown>): Promise<unknown> =>
+        (lines(await post(body)).pop() as Record<string, unknown>)["llmBilling"];
+      expect(await billingOf({ query: "metal fabrication" })).toBe("claude-code");
+      expect(await billingOf({ query: "metal fabrication", noLlm: true })).toBeNull();
+
+      server.removeAllListeners("request");
+      server.on("request", createApp(stubDeps({ llm: async () => ({ backend: STUB_BACKEND, billing: "api-key" }) })));
+      expect(await billingOf({ query: "metal fabrication" })).toBe("api-key");
+
+      server.removeAllListeners("request");
+      server.on("request", createApp(stubDeps({ llm: async () => null })));
+      expect(await billingOf({ query: "metal fabrication" })).toBeNull();
+    });
+
     it("checkAll: true reaches search() as backfillAll: true", async () => {
       await post({ query: "metal fabrication", checkAll: true });
       expect(calls[0]!.cfg.backfillAll).toBe(true);
@@ -430,10 +458,24 @@ describe("web app server", () => {
 
     it("reports status", async () => {
       const r = await send({ path: "/api/status" });
-      const body = JSON.parse(r.text) as { llm: boolean; contactsProvider: string | null; regions: string[]; defaultRegion: string };
+      const body = JSON.parse(r.text) as { llm: boolean; llmBilling: string | null; contactsProvider: string | null; regions: string[]; defaultRegion: string };
       expect(body.llm).toBe(true);
+      expect(body.llmBilling).toBe("claude-code");
       expect(body.contactsProvider).toBeNull();
       expect(body.regions).toContain(body.defaultRegion);
+    });
+
+    it("status carries llmBilling for the API path and null when there is no backend", async () => {
+      server.removeAllListeners("request");
+      server.on("request", createApp(stubDeps({ llm: async () => ({ backend: STUB_BACKEND, billing: "api-key" }) })));
+      const api = JSON.parse((await send({ path: "/api/status" })).text) as Record<string, unknown>;
+      expect(api).toMatchObject({ llm: true, llmBilling: "api-key" });
+      expect(JSON.stringify(api)).not.toContain("complete");
+
+      server.removeAllListeners("request");
+      server.on("request", createApp(stubDeps({ llm: async () => null })));
+      const none = JSON.parse((await send({ path: "/api/status" })).text) as Record<string, unknown>;
+      expect(none).toMatchObject({ llm: false, llmBilling: null });
     });
   });
   describe("search history", () => {

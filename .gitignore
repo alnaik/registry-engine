@@ -9,3 +9,8 @@ dist/
 
 # runtime logs (npm start > server.log)
 *.log
+
+# local keys (see .env.example)
+.env
+.env.*
+!.env.example

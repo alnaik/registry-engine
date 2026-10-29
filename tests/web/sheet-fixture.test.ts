@@ -19,7 +19,7 @@ describe("field sheet fixture", () => {
     port = (server.address() as AddressInfo).port;
     server.on("request", createApp({
       search: sheetSearch,
-      llmAvailable: async () => false,
+      llm: async () => null,
       contactsProvider: () => null,
       port,
       publicDir: fileURLToPath(new URL("../../apps/web/public", import.meta.url)),

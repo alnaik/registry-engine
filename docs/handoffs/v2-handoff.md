@@ -1,11 +1,11 @@
 # Registry Engine — v2 Handoff
 
-Repo: `/Users/fcolty/dev/registry-engine` · branch `v2-distill` (3 commits, **unpushed**) · GitHub: alnaik/registry-engine (SSH)
+Repo: this repository · branch `v2-distill` (3 commits, **unpushed** at the time)
 
 ## Working rules (non-negotiable)
 - NEVER push or open PRs — always give the user the command and let them do it.
 - No Co-Authored-By trailers in commits.
-- Original spec: `/Users/fcolty/dev/Claude_Handoffs/Quarry.md` — but v2 deliberately supersedes much of it (see ADR 0009).
+- Original spec: an earlier handoff document outside this repo (`Quarry.md`) — but v2 deliberately supersedes much of it (see ADR 0009).
 
 ## What the product is now (v2)
 User types a plain-English want ("jewelers that use princess cut diamonds"), circles an area on a map, gets a ranked, web-verified list of businesses from the Colorado Secretary of State registry, with a one-page brief per lead. No profiles, no filters, no analytics tabs — those v1 features were deleted (git history keeps them).

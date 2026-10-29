@@ -41,8 +41,8 @@ CLI flags: `--near=<ZIP|town>` distance center · `--radius=<mi>` ·
 `--direction=buy|sell` (buy = find suppliers, sell = find buyers; overrides the guess) · `--check-all` check every
 coded lead's name against the state registry · `--csv=<path>` all ranked leads · `--leads=<n>` (default 12)
 · `--verbose` evidence · `--region=<US-XX>` · `--limit=<n>` · `--model=<m>`
-· `--shards=<url>`. The default path makes 2 LLM calls via the Claude Code
-CLI (`claude -p`). `--no-llm` uses a static table for supplier searches;
+· `--shards=<url>`. The default path makes 2 LLM calls via `ANTHROPIC_API_KEY`
+when set, otherwise the Claude Code CLI (`claude -p`). `--no-llm` uses a static table for supplier searches;
 buyer searches then need `--naics`.
 
 `node --experimental-strip-types apps/cli/src/index.ts` does **not** work —
@@ -90,7 +90,7 @@ reintroduce web/contact points.
 Package layout:
 
 ```
-packages/registry-core/   MIT. Entity, NAICS lookup (naics.ts + naics2017.json), drivers, manifest, route().
+packages/registry-core/   Entity, NAICS lookup (naics.ts + naics2017.json), drivers, manifest, route().
 packages/qualify/         LLM adapter (tiered), map/probe/brief verbs, engine.
 apps/web/                 Local web app: server.ts (localhost, Host check, NDJSON stream) + public/ vanilla UI.
 apps/cli/                 CLI: lead cards, CSV export, codes lookup.

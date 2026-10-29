@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import type { RawLlm, RawCompleteOptions } from "./adapter.js";
 
 // RawLlm backend that shells out to the Claude Code CLI in headless mode
-// (`claude -p --output-format json`). Bills the user's Claude subscription —
-// no API key needed. Node-only: spawns a child process.
+// (`claude -p --output-format json`). Runs on the user's Claude Code login —
+// no API key needed here. Node-only: spawns a child process.
 export class ClaudeCodeBackend implements RawLlm {
   // Optional override pins every tier to one CLI model alias (e.g. "sonnet").
   constructor(private readonly modelOverride?: string | undefined) {}
