@@ -140,4 +140,40 @@ describe("fetchWithRetry deadlines", () => {
     expect(resp.status).toBe(503);
     expect(fetchStub).toHaveBeenCalledTimes(5);
   });
+
+  it("an aborted signal rejects without a call and without retries", async () => {
+    const fetchStub = vi.fn().mockResolvedValue(new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchStub);
+    const ctl = new AbortController();
+    ctl.abort();
+    await expect(fetchWithRetry("https://example.test/x", { signal: ctl.signal })).rejects.toBeDefined();
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it("an abort during a request is not retried", async () => {
+    const fetchStub = vi.fn((_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      }));
+    vi.stubGlobal("fetch", fetchStub);
+    const ctl = new AbortController();
+    const p = fetchWithRetry("https://example.test/slow", { signal: ctl.signal });
+    const assertion = expect(p).rejects.toBeDefined();
+    ctl.abort();
+    await assertion;
+    expect(fetchStub).toHaveBeenCalledTimes(1);
+  });
+
+  it("an abort during a backoff sleep ends the wait and the retries", async () => {
+    vi.useFakeTimers();
+    const fetchStub = vi.fn().mockImplementation(() => Promise.resolve(new Response("", { status: 503 })));
+    vi.stubGlobal("fetch", fetchStub);
+    const ctl = new AbortController();
+    const p = fetchWithRetry("https://example.test/busy", { signal: ctl.signal });
+    const assertion = expect(p).rejects.toBeDefined();
+    await vi.advanceTimersByTimeAsync(10);   // first 503 seen, now sleeping
+    ctl.abort();
+    await assertion;
+    expect(fetchStub).toHaveBeenCalledTimes(1);
+  });
 });

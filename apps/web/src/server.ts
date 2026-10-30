@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck, RawLlm, LlmBilling } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhrase, naicsRelated, normalizeName, locationState, stateName, resolveLocation } from "@registry-engine/registry-core";
+import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, isNaicsCode, naicsPhrase, naicsRelated, normalizeName, locationState, stateName, resolveLocation } from "@registry-engine/registry-core";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
 // lookup, and one streaming search endpoint. Everything is loopback-only
@@ -252,6 +252,13 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
     }
     busy = true;
 
+    // A closed tab (the response closes before it finished) cancels the
+    // search; `busy` is released when the search settles.
+    const controller = new AbortController();
+    res.on("close", () => {
+      if (!res.writableEnded) controller.abort();
+    });
+
     res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" });
     const write = (obj: unknown): void => {
       if (res.writableEnded || res.destroyed) return;
@@ -275,6 +282,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         maxLeads: params.leads,
         region: params.region,
         direction: params.direction,
+        signal: controller.signal,
         contacts: params.findContacts ? undefined : null,
         onEvent: event => {
           if (event.type === "fetched") fetchedBy.set(event.sourceId, { count: event.count, capped: event.capped, error: false });
@@ -284,6 +292,9 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
           if (line !== null) write(line);
         },
       });
+
+      // The tab closed while the engine was finishing: nothing to write or keep.
+      if (controller.signal.aborted) return;
 
       // The rejected map answer goes to the server's stderr for diagnosis,
       // never into the result line or the page, and only when asked for: it
@@ -303,6 +314,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       }
       write(result);
     } catch (err) {
+      if (controller.signal.aborted) return;
       console.error(err);
       write({ type: "error", message: forPage(err instanceof Error ? err.message : String(err)) });
     } finally {
@@ -463,8 +475,9 @@ function parseSearchParams(body: unknown): SearchParams {
   if (typeof body !== "object" || body === null || Array.isArray(body)) throw new BadRequest("body must be a JSON object");
   const b = body as Record<string, unknown>;
 
-  const query = typeof b["query"] === "string" ? b["query"].trim() : "";
-  if (query.length < 3 || query.length > 300) throw new BadRequest("query must be 3 to 300 characters");
+  let query = typeof b["query"] === "string" ? b["query"].trim() : "";
+  // An empty query is allowed when valid codes are given (checked below).
+  if (query !== "" && (query.length < 3 || query.length > 300)) throw new BadRequest("query must be 3 to 300 characters");
 
   let near: string | undefined;
   if (b["near"] !== undefined && b["near"] !== null) {
@@ -485,6 +498,13 @@ function parseSearchParams(body: unknown): SearchParams {
     const codes = b["naics"].split(/[\s,]+/).filter(c => c.length > 0);
     if (!codes.every(c => /^\d{2,6}$/.test(c))) throw new BadRequest("naics codes must be 2 to 6 digits");
     if (codes.length > 0) naics = codes;
+  }
+
+  // Codes only: the query becomes the code titles.
+  if (query === "") {
+    const titles = (naics ?? []).filter(isNaicsCode).map(code => naicsLabel(code)).filter((t): t is string => t !== undefined);
+    if (titles.length === 0) throw new BadRequest("query must be 3 to 300 characters");
+    query = titles.join(", ").slice(0, 300);
   }
 
   const flag = (key: string, fallback: boolean): boolean => {

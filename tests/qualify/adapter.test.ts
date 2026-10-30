@@ -137,10 +137,11 @@ describe("ClaudeCodeBackend", () => {
     const calls: Array<{ cmd: string; args: string[] }> = [];
     vi.mocked(spawn).mockImplementation(((cmd: string, args: string[]) => {
       calls.push({ cmd, args });
-      const child = new EventEmitter() as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter; stdin: { write: () => void; end: () => void } };
+      const child = new EventEmitter() as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter; stdin: { on: () => void; write: () => void; end: () => void } };
       child.stdout = new EventEmitter();
       child.stderr = new EventEmitter();
       child.stdin = {
+        on: () => undefined,
         write: () => undefined,
         end: () => {
           setImmediate(() => {

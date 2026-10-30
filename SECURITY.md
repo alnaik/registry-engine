@@ -1,7 +1,7 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.13 (v11, tester follow-ups)
-Last updated: 2026-10-29
+Version: 3.14 (v12, v1-readiness review)
+Last updated: 2026-10-30
 
 The known threats, their mitigations, and where each mitigation lives in the
 code. Update the code locations when code moves.
@@ -110,6 +110,8 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
    the full backoff budget. Each request attempt has a 20 s deadline (DNS
    probe 5 s); Retry-After is capped at 30 s.
 3. An optional Socrata app token sent as `X-App-Token`.
+   Socrata page responses (200 only) are cached in memory for 15 minutes, up
+   to 200 entries, so a repeated search doesn't repeat its requests.
 4. Bulk-only sources (PPP) are served from local shards, never queried per
    search.
 5. The registry name lookup sends at most 80 name patterns per search by
@@ -217,7 +219,10 @@ credits is a target for other websites open in the same browser.
    and the server sends no CORS headers, so cross-origin pages can't trigger
    a search.
 3. One search at a time (429 otherwise), with a 10 KB body cap and
-   validated, length-capped fields. An oversized body gets 413 with
+   validated, length-capped fields. A closed tab cancels its search (abort
+   signal through the engine, drivers, `fetchWithRetry`, the DNS and contact
+   requests and the LLM call, which kills the `claude -p` child), so an
+   abandoned search stops spending credits and frees the slot. An oversized body gets 413 with
    `Connection: close` as soon as the declared or streamed size passes the cap,
    and the socket is closed.
 4. **XSS.** All registry and web strings are rendered with `textContent`;
@@ -306,3 +311,8 @@ credits is a target for other websites open in the same browser.
   answer logged only with `REGISTRY_ENGINE_DEBUG=1`; no-token accepted risk.
 - v3.13 (2026-10-29, v11): network failures are retried once; 429/5xx keep the
   backoff (Threat 4, item 2).
+- v3.14 (2026-10-30, v12 Batch A): a closed browser tab aborts its search (signal
+  threaded through `search`, `fetchWithRetry`, probe, contact lookup and both LLM
+  backends; an abort is never retried; Threat 8, item 3). Socrata pages are cached
+  for 15 minutes (Threat 4, item 3). `/api/search` accepts an empty query when `naics`
+  holds a valid code (the query becomes the code titles).

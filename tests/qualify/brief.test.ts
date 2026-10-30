@@ -106,6 +106,45 @@ describe("scoreEntity", () => {
   });
 });
 
+describe("rankEntities: mixed-industry searches interleave codes", () => {
+  const MIXED: RankContext = { naics: ["3231", "4244", "5418"], existenceIds: [], now: NOW };
+  const ids = (ls: Lead[]): string[] => ls.map(l => l.entity.id);
+  // Scores fall with the index, so each code's own order is a0, a1, ...
+  const many = (code: string, tag: string, n: number, city = "Denver"): Entity[] =>
+    Array.from({ length: n }, (_, i) => entity({ id: `${tag}${i}`, name: `${tag}${i}`, naics: [code + "10"], address: { city }, employees: 100 - i }));
+
+  it("3 codes x several leads in one band come out round-robin", () => {
+    const es = [...many("3231", "a", 3), ...many("4244", "b", 2), ...many("5418", "c", 3)];
+    expect(ids(rankEntities(es, new Map(), MIXED))).toEqual(["a0", "b0", "c0", "a1", "b1", "c1", "a2", "c2"]);
+  });
+
+  it("a single-code search orders exactly as before", () => {
+    const one: RankContext = { naics: ["3231"], existenceIds: [], now: NOW };
+    const coarse = entity({ id: "coarse", name: "Coarse", naics: ["32"], employees: 500 });
+    const nameOnly = entity({ id: "named", name: "Named", naics: [], employees: 900 });
+    const es = [nameOnly, coarse, ...many("3231", "a", 3)];
+    expect(ids(rankEntities(es, new Map(), one))).toEqual(["a0", "a1", "a2", "coarse", "named"]);
+  });
+
+  it("leads with no fitting code go last in their group", () => {
+    const stray = entity({ id: "stray", name: "Stray", naics: ["9999"], employees: 900, evidence: [{ source: "ppp", field: "name", value: "x", note: 'matched "x"' }] });
+    const es = [stray, ...many("3231", "a", 2), ...many("4244", "b", 1)];
+    expect(ids(rankEntities(es, new Map(), MIXED))).toEqual(["a0", "b0", "a1", "stray"]);
+  });
+
+  it("tier and band still dominate the interleave", () => {
+    const origin = { lat: 39.7392, lon: -104.9903 };   // Denver
+    const ctx: RankContext = { ...MIXED, origin, region: "US-CO" };
+    const near = [...many("3231", "a", 2), ...many("4244", "b", 1)];
+    const far = many("5418", "z", 1, "Fort Collins");   // a different band; first code listed last
+    const named = entity({ id: "named", name: "Named", naics: [], address: { city: "Denver" } });
+    const ranked = rankEntities([named, ...far, ...near], new Map(), ctx);
+    expect(ids(ranked)).toEqual(["a0", "b0", "a1", "z0", "named"]);
+    expect(ranked[3]!.band).not.toBe(ranked[0]!.band);
+    expect(ranked[4]!.band).toBe(NAME_ONLY_BAND);
+  });
+});
+
 describe("webPresence and search URL", () => {
   it("verified: the probe resolved a domain; unresolved: a published domain exists but did not resolve; none: neither", () => {
     const withSite = entity({ contacts: ["https://example.com"] });

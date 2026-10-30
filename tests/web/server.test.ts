@@ -7,6 +7,7 @@ import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { createApp, historyId } from "../../apps/web/src/server.js";
 import type { AppDeps } from "../../apps/web/src/server.js";
+import { naicsLabel } from "../../packages/registry-core/src/index.js";
 import type { SearchConfig, SearchOutcome, Lead, RawLlm } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
@@ -206,6 +207,23 @@ describe("web app server", () => {
       expect((await post({ query: "metal fabrication", radiusMi: 0 })).status).toBe(400);
       expect((await post({ query: "metal fabrication", leads: 99 })).status).toBe(400);
       expect((await post({ query: "metal fabrication", naics: "33; DROP" })).status).toBe(400);
+      expect(calls).toHaveLength(0);
+    });
+  });
+
+  describe("codes-only search", () => {
+    it("takes the code titles as the query when query is empty or absent", async () => {
+      expect((await post({ naics: "621210", noLlm: true })).status).toBe(200);
+      expect((await post({ query: "", naics: "621210, 238220", noLlm: true })).status).toBe(200);
+      expect(calls[0]!.query).toContain("Dentists");
+      expect(calls[0]!.cfg.naics).toEqual(["621210"]);
+      expect(calls[1]!.query).toBe(`${naicsLabel("621210")}, ${naicsLabel("238220")}`);
+    });
+
+    it("still needs a 3 to 300 character query without a valid code", async () => {
+      expect((await post({ noLlm: true })).status).toBe(400);
+      expect((await post({ query: "", naics: "99", noLlm: true })).status).toBe(400);
+      expect((await post({ query: "ab", naics: "621210" })).status).toBe(400);
       expect(calls).toHaveLength(0);
     });
   });
@@ -470,6 +488,34 @@ describe("web app server", () => {
       expect((await first).status).toBe(200);
       behavior = async () => makeOutcome();
       expect((await post({ query: "third search" })).status).toBe(200);
+    });
+
+    it("a closed tab cancels the search, frees the slot and saves nothing", async () => {
+      let seen: AbortSignal | undefined;
+      behavior = (_q, cfg) => new Promise<SearchOutcome>((_resolve, reject) => {
+        seen = cfg.signal;
+        cfg.signal?.addEventListener("abort", () => reject(cfg.signal!.reason));
+      });
+      const req = request({
+        host: "127.0.0.1", port, method: "POST", path: "/api/search",
+        headers: { Host: `localhost:${port}`, "Content-Type": "application/json" },
+      }, res => { res.resume(); res.on("error", () => {}); });
+      req.on("error", () => {});
+      req.end(JSON.stringify({ query: "metal fabrication" }));
+      while (calls.length === 0) await new Promise(r => setTimeout(r, 5));
+      expect(seen?.aborted).toBe(false);
+      req.destroy();
+
+      behavior = async () => makeOutcome();
+      let status = 0;
+      for (let i = 0; i < 100 && status !== 200; i++) {
+        status = (await post({ query: "another search" })).status;
+        if (status !== 200) await new Promise(r => setTimeout(r, 10));
+      }
+      expect(status).toBe(200);
+      expect(seen?.aborted).toBe(true);
+      // Only the second search was saved.
+      expect(readdirSync(historyDir).filter(f => f.endsWith(".json"))).toHaveLength(1);
     });
 
     it("reports a search failure as a final error line and frees the slot", async () => {

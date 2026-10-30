@@ -17,7 +17,7 @@ export interface WebResult { url: string; title: string; text: string }
 
 export interface WebSearchProvider {
   readonly name: string;
-  search(query: string, objective: string): Promise<{ results: WebResult[]; costDollars?: number | undefined }>;
+  search(query: string, objective: string, signal?: AbortSignal | undefined): Promise<{ results: WebResult[]; costDollars?: number | undefined }>;
 }
 
 export interface FoundContact {
@@ -36,7 +36,7 @@ const SEARCH_TIMEOUT_MS = 20_000;
 export function exaProvider(apiKey: string, fetchImpl: typeof fetch = fetch): WebSearchProvider {
   return {
     name: "exa",
-    async search(query) {
+    async search(query, _objective, signal) {
       const resp = await fetchImpl("https://api.exa.ai/search", {
         method: "POST",
         headers: { "x-api-key": apiKey, "content-type": "application/json" },
@@ -47,7 +47,7 @@ export function exaProvider(apiKey: string, fetchImpl: typeof fetch = fetch): We
           userLocation: "US",
           contents: { text: { maxCharacters: 1500 } },   // never `summary`: that is model-generated
         }),
-        signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
+        signal: searchSignal(signal),
       });
       if (!resp.ok) throw new Error(`exa search -> HTTP ${resp.status}`);
       const data = (await resp.json()) as { results?: unknown; costDollars?: { total?: unknown } };
@@ -63,12 +63,12 @@ export function exaProvider(apiKey: string, fetchImpl: typeof fetch = fetch): We
 export function parallelProvider(apiKey: string, fetchImpl: typeof fetch = fetch): WebSearchProvider {
   return {
     name: "parallel",
-    async search(query, objective) {
+    async search(query, objective, signal) {
       const resp = await fetchImpl("https://api.parallel.ai/v1/search", {
         method: "POST",
         headers: { "x-api-key": apiKey, "content-type": "application/json" },
         body: JSON.stringify({ objective, search_queries: [query], mode: "fast" }),
-        signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
+        signal: searchSignal(signal),
       });
       if (!resp.ok) throw new Error(`parallel search -> HTTP ${resp.status}`);
       const data = (await resp.json()) as { results?: unknown };
@@ -78,6 +78,12 @@ export function parallelProvider(apiKey: string, fetchImpl: typeof fetch = fetch
       };
     },
   };
+}
+
+// The per-request deadline, plus the caller's cancel when there is one.
+function searchSignal(signal: AbortSignal | undefined): AbortSignal {
+  const deadline = AbortSignal.timeout(SEARCH_TIMEOUT_MS);
+  return signal === undefined ? deadline : AbortSignal.any([signal, deadline]);
 }
 
 function toResults(raw: unknown, text: (r: Record<string, unknown>) => string): WebResult[] {
@@ -294,7 +300,7 @@ function cacheKey(provider: string, e: Entity): string {
 export async function findContacts(
   leads: Lead[],
   provider: WebSearchProvider,
-  opts: { limit: number; concurrency?: number | undefined; cache?: ContactCache | undefined }
+  opts: { limit: number; concurrency?: number | undefined; cache?: ContactCache | undefined; signal?: AbortSignal | undefined }
 ): Promise<{ looked: number; found: number; costDollars: number }> {
   const limiter = new Limiter(opts.concurrency ?? 3);
   const cache = opts.cache;
@@ -324,7 +330,7 @@ export async function findContacts(
       const where = [city, state].filter(p => p !== "").join(", ");
       const objective = `Official website, phone number and email of the business "${name}"${where !== "" ? ` in ${where}` : ""}.`;
       try {
-        const res = await provider.search(query, objective);
+        const res = await provider.search(query, objective, opts.signal);
         costDollars += res.costDollars ?? 0;
         lead.found = extractContact(e, res.results, provider.name);
         cache?.set(key, lead.found);

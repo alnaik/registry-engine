@@ -196,13 +196,45 @@ export function rankEntities(entities: Entity[], probes: Map<string, ProbeResult
     const b = y.lead;
     return x.tier - y.tier
       || bandOrder(a.band) - bandOrder(b.band)
-      || x.fit - y.fit
       || b.score - a.score
       || (a.distanceMi ?? Infinity) - (b.distanceMi ?? Infinity)
       || (b.entity.employees ?? -1) - (a.entity.employees ?? -1)
       || a.entity.name.localeCompare(b.entity.name);
   });
-  return tiered.map(t => t.lead);
+  // Within one (tier, band) group the codes take turns, so a many-lead first
+  // code can't fill the band. Per group: leads whose entity code matches a
+  // query code (fit < n) come first, then leads that only match through a
+  // coarser code (fit < 2n), then leads with no fitting code; the first two
+  // classes round-robin by code index, each code's leads in the order above.
+  const n = ctx.naics.length;
+  const out: Lead[] = [];
+  for (let i = 0; i < tiered.length;) {
+    let j = i;
+    while (j < tiered.length && tiered[j]!.tier === tiered[i]!.tier && tiered[j]!.lead.band === tiered[i]!.lead.band) j++;
+    const group = tiered.slice(i, j);
+    out.push(...interleaveByCode(group.filter(t => t.fit < n), 0).map(t => t.lead));
+    out.push(...interleaveByCode(group.filter(t => t.fit >= n && t.fit < 2 * n), n).map(t => t.lead));
+    out.push(...group.filter(t => t.fit >= 2 * n).map(t => t.lead));
+    i = j;
+  }
+  return out;
+}
+
+// One lead per code in turn (code index = fit - offset), skipping codes that
+// have run out; leads keep their incoming order within a code.
+function interleaveByCode<T extends { fit: number }>(items: T[], offset: number): T[] {
+  const buckets = new Map<number, T[]>();
+  for (const t of items) {
+    const q = buckets.get(t.fit - offset);
+    if (q === undefined) buckets.set(t.fit - offset, [t]);
+    else q.push(t);
+  }
+  const queues = [...buckets.entries()].sort((a, b) => a[0] - b[0]).map(([, q]) => q);
+  const out: T[] = [];
+  for (let round = 0; out.length < items.length; round++) {
+    for (const q of queues) if (round < q.length) out.push(q[round]!);
+  }
+  return out;
 }
 
 // Takes the already-ranked list: every lead gets a template brief + opener;

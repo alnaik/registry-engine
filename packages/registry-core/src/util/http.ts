@@ -3,6 +3,7 @@ export interface FetchRetryOptions {
   appToken?: string | undefined;  // Socrata app token -> X-App-Token header
   maxRetries?: number | undefined;
   timeoutMs?: number | undefined;  // per-attempt deadline (default 20_000)
+  signal?: AbortSignal | undefined;  // caller's cancel: never retried, ends backoff sleeps early
 }
 
 const MAX_BACKOFF_MS = 30_000;
@@ -66,19 +67,24 @@ export async function fetchWithRetry(
     headers["X-App-Token"] = opts.appToken;
   }
 
+  const callerSignal = opts.signal;
   let lastError: unknown;
   // No response at all (refused, DNS, timeout) means the source is probably
   // down: one retry for the whole call, not the full 429/5xx budget.
   let networkRetried = false;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    callerSignal?.throwIfAborted();
     let resp: Response;
     try {
-      resp = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
+      const deadline = AbortSignal.timeout(timeoutMs);
+      resp = await fetch(url, { headers, signal: callerSignal === undefined ? deadline : AbortSignal.any([callerSignal, deadline]) });
     } catch (err) {
+      // A cancel from the caller is final, whatever the fetch threw.
+      callerSignal?.throwIfAborted();
       lastError = err;
       if (attempt < maxRetries && !networkRetried) {
         networkRetried = true;
-        await sleep(jitteredBackoff(attempt));
+        await sleep(jitteredBackoff(attempt), callerSignal);
         continue;
       }
       throw err;
@@ -96,7 +102,7 @@ export async function fetchWithRetry(
             }
           }
         }
-        await sleep(delay);
+        await sleep(delay, callerSignal);
         continue;
       }
     }
@@ -107,8 +113,23 @@ export async function fetchWithRetry(
   throw lastError ?? new Error(`fetchWithRetry: max retries exceeded for ${url}`);
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// Resolves after ms; rejects with the signal's reason as soon as it aborts.
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted === true) {
+      reject(signal.reason as unknown);
+      return;
+    }
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      reject(signal!.reason as unknown);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 export function buildSoqlUrl(base: string, params: Record<string, string>): string {

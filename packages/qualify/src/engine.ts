@@ -42,6 +42,7 @@ export interface SearchConfig {
   contacts?: WebSearchProvider | null | undefined;  // web contact lookup; undefined -> from env keys, null -> off
   contactCache?: ContactCache | undefined;          // default: ~/.cache/registry-engine/contacts.json
   fetchOpts?: FetchRetryOptions | undefined;
+  signal?: AbortSignal | undefined;   // cancel: the search throws signal.reason at the next stage boundary and in-flight requests stop
   now?: Date | undefined;           // clock for the recent-filings window (tests)
   onEvent?: ((e: EngineEvent) => void) | undefined;
 }
@@ -130,13 +131,18 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // leads get template briefs. The budget travels with the instance.
   let llm: Llm | null = null;
   try {
-    llm = createLlm({ ...(cfg.llm ?? {}), maxCalls: MAX_LLM_CALLS_PER_SEARCH });
+    llm = createLlm({ ...(cfg.llm ?? {}), maxCalls: MAX_LLM_CALLS_PER_SEARCH, signal: cfg.signal });
   } catch {
     llm = null;
   }
 
+  const signal = cfg.signal;
+  // Every driver and DNS/contact request carries the same cancel.
+  const fetchOpts: FetchRetryOptions | undefined = signal === undefined ? cfg.fetchOpts : { ...cfg.fetchOpts, signal };
+
   const region = cfg.region ?? defaultRegion(sources);
   const { mapRawAnswer, ...map } = await mapQuery(query, llm, { region, cities: regionCities(sources, region), places: regionPlaces(region), naics: cfg.naics, locationHint: cfg.near, direction: cfg.direction });
+  signal?.throwIfAborted();
   emit({ type: "map", map });
 
   // The origin is the user's location: --near, else the first city named in
@@ -167,7 +173,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   if (recentRuns && existenceSpec !== undefined && existenceDriver?.fetchRecent !== undefined) {
     const since = new Date((cfg.now ?? new Date()).getTime() - RECENT_DAYS * 86_400_000).toISOString().slice(0, 10);
     const spec = existenceSpec;
-    recentPromise = existenceDriver.fetchRecent(spec, { keywords: map.keywords, since }, cfg.fetchOpts).catch(err => {
+    recentPromise = existenceDriver.fetchRecent(spec, { keywords: map.keywords, since }, fetchOpts).catch(err => {
       emit({ type: "source_error", sourceId: spec.id, message: `recent filings: ${err instanceof Error ? err.message : String(err)}` });
       return [] as Entity[];
     });
@@ -187,7 +193,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
         cities: origin === null ? map.intent.geo.cities : [],
         naics: map.intent.naics,
         limit: cfg.limit,
-      }, cfg.fetchOpts);
+      }, fetchOpts);
       const cap = cfg.limit ?? driver.defaultLimit;
       const capped = cap !== undefined && Number.isFinite(cap) && entities.length >= cap;
       emit({ type: "fetched", sourceId: spec.id, count: entities.length, capped });
@@ -197,6 +203,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
       emit({ type: "source_error", sourceId: spec.id, message: err instanceof Error ? err.message : String(err) });
     }
   }));
+  signal?.throwIfAborted();
   fetched.sort((a, b) => ((a as { __rank?: number }).__rank ?? 9) - ((b as { __rank?: number }).__rank ?? 9));
   for (const e of fetched) delete (e as { __rank?: number }).__rank;
 
@@ -238,7 +245,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
     if (plan.names.length > 0) {
       try {
         const onProgress = (checked: number, total: number): void => emit({ type: "backfill_progress", sourceId: existenceSpec.id, checked, total });
-        const found = await existenceDriver.fetchByNames(existenceSpec, plan.names, cfg.fetchOpts,
+        const found = await existenceDriver.fetchByNames(existenceSpec, plan.names, fetchOpts,
           all ? { maxNames: Infinity, onProgress } : { onProgress });
         for (const e of plan.checked) {
           for (const k of [e.name, ...e.names].map(normalizeName)) if (k.length > 0) checkedKeys.add(k);
@@ -286,6 +293,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
       }
     }
   }
+  signal?.throwIfAborted();
   const keysOf = (e: Entity): string[] => [e.name, ...e.names].map(normalizeName).filter(k => k.length > 0);
   // The locality guard applies here too: a dissolved namesake in another
   // town says nothing about this business (it counts as "elsewhere" above).
@@ -328,6 +336,7 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
     existenceSourceId: existenceSpec?.id,
     wasChecked: e => registryCheck(e) !== "not_checked",
     inactiveStatus: e => (registryCheck(e) === "inactive" ? (standingOf(e)?.status ?? null) : null),
+    signal,
   });
   emit({ type: "probed", count: probes.size });
 
@@ -341,12 +350,14 @@ export async function search(query: string, cfg: SearchConfig = {}): Promise<Sea
   // maxLeads and cached. Ranking above never saw it.
   const provider = cfg.contacts === undefined ? providerFromEnv() : cfg.contacts;
   let contactLookups: SearchOutcome["contactLookups"] = null;
+  signal?.throwIfAborted();
   if (provider !== null) {
-    const stats = await findContacts(ranked, provider, { limit: maxLeads, cache: cfg.contactCache ?? fileContactCache() });
+    const stats = await findContacts(ranked, provider, { limit: maxLeads, cache: cfg.contactCache ?? fileContactCache(), signal });
     contactLookups = { provider: provider.name, ...stats };
     emit({ type: "contacts", ...contactLookups });
   }
 
+  signal?.throwIfAborted();
   const sourceNames = Object.fromEntries(routed.map(s => [s.id, s.name]));
   await briefLeads(ranked, map, map.llmError !== undefined ? null : llm, { maxLeads, sourceNames, naicsFields: naicsFieldMap(routed), existenceIds, query });
   const leads = ranked.slice(0, maxLeads);
