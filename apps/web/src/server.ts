@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck, RawLlm, LlmBilling } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhrase, naicsRelated, normalizeName } from "@registry-engine/registry-core";
+import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhrase, naicsRelated, normalizeName, locationState, stateName, resolveLocation } from "@registry-engine/registry-core";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
 // lookup, and one streaming search endpoint. Everything is loopback-only
@@ -505,6 +505,19 @@ function parseSearchParams(body: unknown): SearchParams {
   if (b["region"] !== undefined && b["region"] !== null) {
     if (typeof b["region"] !== "string" || !knownRegions(SOURCES).includes(b["region"])) throw new BadRequest("unknown region");
     region = b["region"];
+  }
+
+  // A ZIP or town in another state would search nowhere useful: say so now.
+  // A real town whose name ends in a state word ("North Washington") resolves
+  // first and passes.
+  if (near !== undefined) {
+    const nearState = locationState(near);
+    const searched = region ?? defaultRegion(SOURCES);
+    if (nearState !== undefined && nearState !== searched.split("-")[1] && resolveLocation(searched, near) === undefined) {
+      const place = stateName(nearState) ?? nearState;
+      const covered = REGION_NAMES[searched] ?? searched.replace(/^US-/, "");
+      throw new BadRequest(`"${near}" is in ${place}, and this search covers ${covered}. Pick ${place} as the state if it's covered, or use a ${covered} ZIP or town.`);
+    }
   }
 
   let direction: "buy" | "sell" | undefined;

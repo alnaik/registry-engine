@@ -229,6 +229,22 @@ describe("web app server", () => {
       expect(lines(r)[0]).toMatchObject({ type: "map", llmError: "not logged in" });
     });
 
+    it("rejects a near in another state before searching, and accepts ZIP+4 in the state", async () => {
+      const before = calls.length;
+      const wrong = await post({ query: "metal fabrication", near: "06103", region: "US-CO" });
+      expect(wrong.status).toBe(400);
+      const message = String((JSON.parse(wrong.text) as Record<string, unknown>)["error"]);
+      expect(message).toContain("Connecticut");
+      expect(message).toContain("Colorado");
+      expect(calls.length).toBe(before);
+      const town = await post({ query: "metal fabrication", near: "Hartford, CT", region: "US-CO" });
+      expect(town.status).toBe(400);
+      const town2 = await post({ query: "metal fabrication", near: "North Washington", region: "US-CO" });
+      expect(town2.status).toBe(200);
+      const ok = await post({ query: "metal fabrication", near: "80202-1234", region: "US-CO" });
+      expect(ok.status).toBe(200);
+    });
+
     it("passes llmUsage through to the result line", async () => {
       const usage = {
         inputTokens: 900, outputTokens: 100, costUsd: 0.002,

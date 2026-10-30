@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.12 (v10, security audit follow-ups)
+Version: 3.13 (v11, tester follow-ups)
 Last updated: 2026-10-29
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -105,8 +105,10 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 
 1. Concurrency limiters on every external source: Socrata 4, ECHO 2, DNS
    probes 4.
-2. Jittered exponential backoff on 429/5xx (`fetchWithRetry`). Each request
-   attempt has a 20 s deadline (DNS probe 5 s); Retry-After is capped at 30 s.
+2. Jittered exponential backoff on 429/5xx (`fetchWithRetry`). Network
+   failures (no response: refused, DNS, timeout) are retried once, not with
+   the full backoff budget. Each request attempt has a 20 s deadline (DNS
+   probe 5 s); Retry-After is capped at 30 s.
 3. An optional Socrata app token sent as `X-App-Token`.
 4. Bulk-only sources (PPP) are served from local shards, never queried per
    search.
@@ -302,3 +304,5 @@ credits is a target for other websites open in the same browser.
 - v3.12 (2026-10-29, v10): reporting section; PACA emails not committed; `forPage`
   strips home-directory paths from error text; 413 closes the connection; raw AI
   answer logged only with `REGISTRY_ENGINE_DEBUG=1`; no-token accepted risk.
+- v3.13 (2026-10-29, v11): network failures are retried once; 429/5xx keep the
+  backoff (Threat 4, item 2).
