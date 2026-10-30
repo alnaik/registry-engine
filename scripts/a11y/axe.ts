@@ -2,7 +2,7 @@
 // by the real server with a fictional search outcome (no network, no AI).
 //
 //   npm run a11y                 # exits 1 on any serious or critical violation
-//   CHROME=/path/to/chrome npm run a11y
+//   CHROME=/path/to/chrome npm run a11y   # default: the newest Chromium in the Playwright cache
 //
 // Pages: /design (component sheet), / after a Skip AI search with a row open
 // and every group expanded, and the My calls tab with one logged call. Each
@@ -12,15 +12,15 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir, homedir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { createApp } from "../../apps/web/src/server.js";
 import { sheetSearch } from "../../tests/web/fixtures/sheet-outcome.js";
+import { findChromium } from "../lib/chromium.js";
 
-const CHROME = process.env["CHROME"]
-  ?? join(homedir(), "Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell");
+const CHROME = findChromium();
 const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
 const WIDTHS = [390, 1280];
 const SCHEMES = ["light", "dark"] as const;

@@ -234,9 +234,21 @@ export function summaryParts(result, opts = {}) {
     if (s.individuals > 0) add(` ${n(s.individuals)} ${s.individuals === 1 ? "individual's record is" : "individuals' records are"} listed separately.`);
   };
 
+  // A source that returned exactly its row cap was cut short: the list can't be complete.
+  const capped = () => {
+    const byCount = new Map();
+    for (const src of result.sources || []) {
+      if (src.capped) byCount.set(src.count, [...(byCount.get(src.count) || []), src.name]);
+    }
+    if (byCount.size === 0) return;
+    const stops = [...byCount].map(([c, names]) => `${joinWords(names)} stopped at ${n(c)} records`);
+    add(` ${stops.join(" and ")}, so this isn't every business. Narrow the area or the codes for a fuller list.`);
+  };
+
   if (count === 0) {
     add(`No businesses are coded for this work in ${place}`);
     add(origin && opts.radiusSet ? ` within ${s.radiusMi} miles of ${origin}.` : ".");
+    capped();
     individuals();
     return parts;
   }
@@ -246,7 +258,11 @@ export function summaryParts(result, opts = {}) {
   } else {
     add(biz(count), true);
     add(` ${are(count)} coded for this work in ${place}`);
-    if (origin && s.withinRadius !== null) {
+    if (origin && s.withinRadius === 0 && typeof s.nearestMi === "number") {
+      add(". ");
+      add(`None within ${s.radiusMi} mi`, true);
+      add(`; the nearest is ${Math.round(s.nearestMi * 10) / 10} mi away.`);
+    } else if (origin && s.withinRadius !== null) {
       add(", ");
       add(s.withinRadius === 0 ? `none within ${s.radiusMi} miles` : `${n(s.withinRadius)} within ${s.radiusMi} miles`, true);
       add(` of ${origin}.`);
@@ -267,9 +283,20 @@ export function summaryParts(result, opts = {}) {
     add(c ? ` ${s.withPhone === 1 ? "has" : "have"} a phone number, from the records or the web lookup of the top ${n(c.looked)}.`
       : ` ${s.withPhone === 1 ? "publishes" : "publish"} a phone number.`);
   }
-  if (typeof s.listed === "number" && s.listed < count) add(` The sheet lists the top ${n(s.listed)}; the CSV has all of them.`);
+  capped();
   individuals();
   return parts;
+}
+
+// "A", "A and B", "A, B and C".
+function joinWords(words) {
+  return words.length <= 1 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+
+// Under the list when the sheet cuts it short; "" when it shows every business.
+export function listFoot(sheet) {
+  if (!sheet || typeof sheet.listed !== "number" || sheet.listed >= sheet.businesses) return "";
+  return `Showing ${Number(sheet.listed).toLocaleString("en-US")} of ${Number(sheet.businesses).toLocaleString("en-US")}. The CSV has all of them.`;
 }
 
 // ---- registry name check -----------------------------------------------------------
@@ -376,7 +403,8 @@ export function coverageLine(regions) {
 // [label, value] rows for "About this search". status = /api/status.
 export function aboutRows(result, status = {}, seconds = null) {
   const rows = [];
-  for (const s of result.sources || []) rows.push([s.name, s.error ? "didn't respond" : fetchedText(s.count, s.capped)]);
+  // dataAsOf: "live", "recorded July 2026" or "2020–21 loans" (absent in pre-v12 history).
+  for (const s of result.sources || []) rows.push([s.name, s.error ? "didn't respond" : [fetchedText(s.count, s.capped), s.dataAsOf].filter(Boolean).join(" · ")]);
   const l = result.registryLookup || { status: "none" };
   const num = v => Number(v).toLocaleString("en-US");
   const ranText = typeof l.totalNames !== "number"

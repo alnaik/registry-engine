@@ -11,7 +11,7 @@ import { naicsLabel, defaultRegion, SOURCES } from "../../packages/registry-core
 import type { SearchConfig, SearchOutcome, Lead, RawLlm } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
-  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "what", "coded", "individual", "employees", "lastSeen", "formedDate",
+  "id", "key", "rank", "score", "name", "displayName", "aka", "address", "distanceMi", "band", "naics", "what", "coded", "individual", "employees", "lastSeen", "formedDate",
   "sources", "codeSources", "registryCheck", "registeredElsewhere", "registryStanding", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
@@ -379,11 +379,11 @@ describe("web app server", () => {
       }
       expect(more[0]?.["evidence"]).toBeDefined();
       expect(result["sources"]).toEqual([
-        { id: "co_sos", name: "Colorado SoS", plane: "existence", count: 500, capped: true, error: false },
-        { id: "ppp", name: "PPP loans", plane: "category", count: 7, capped: false, error: false },
+        { id: "co_sos", name: "Colorado SoS", plane: "existence", count: 500, capped: true, error: false, dataAsOf: "live" },
+        { id: "ppp", name: "PPP loans", plane: "category", count: 7, capped: false, error: false, dataAsOf: "2020–21 loans" },
       ]);
       expect(result["registryLookup"]).toEqual({ status: "ran", namesChecked: 0, nameCap: 80, candidates: 0, totalNames: 0 });
-      expect(result["sheet"]).toEqual({ total: 3, coded: 3, businesses: 3, listed: 3, nameOnly: 0, individuals: 0, withinRadius: 3, radiusMi: 25, confirmed: 3, withPhone: 3 });
+      expect(result["sheet"]).toEqual({ total: 3, coded: 3, businesses: 3, listed: 3, nameOnly: 0, individuals: 0, withinRadius: 3, nearestMi: 3.2, radiusMi: 25, confirmed: 3, withPhone: 3 });
       expect(result["regionName"]).toBe("Colorado");
       expect(top[0]).toMatchObject({
         rank: 1, registryCheck: "matched", registeredElsewhere: false, found: null, employees: 10,
@@ -393,6 +393,37 @@ describe("web app server", () => {
       });
       expect(String(top[0]?.["mapsUrl"])).toBe(
         `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("ACME 0 FABRICATION 0 Main St Denver CO 80202")}`);
+    });
+
+    it("sends the display-case name: business names re-cased, an individual's as filed", async () => {
+      behavior = async () => {
+        const o = makeOutcome(2);
+        const person = makeLead(1);
+        person.entity = { ...person.entity, name: "SMITH, JOHN A", evidence: [{ source: "ppp", field: "business_type", value: "Sole Proprietorship" }] };
+        o.ranked = [o.ranked[0]!, person];
+        return o;
+      };
+      const out = lines(await post({ query: "metal fabrication", leads: 2 }));
+      const result = out[out.length - 1] as { leads: { name: string; displayName: string; individual: boolean }[]; individuals: { name: string; displayName: string }[] };
+      expect(result.leads[0]).toMatchObject({ name: "ACME 0 FABRICATION", displayName: "Acme 0 Fabrication" });
+      const cased = [...result.leads, ...result.individuals].find(l => l.name === "SMITH, JOHN A");
+      expect(cased?.displayName).toBe("SMITH, JOHN A");
+      behavior = async () => { const o = makeOutcome(1); o.ranked[0]!.entity.name = "JUNIPER CANVAS WORKS LLC"; return o; };
+      const again = lines(await post({ query: "canvas bags", leads: 1 }));
+      expect((again[again.length - 1] as { leads: { displayName: string }[] }).leads[0]?.displayName).toBe("Juniper Canvas Works LLC");
+    });
+
+    it("names how current each source is: live, the PPP snapshot, or the shard's recorded month", async () => {
+      behavior = async () => {
+        const o = makeOutcome(1);
+        o.routed = [...o.routed, SOURCES.find(s => s.id === "paca")!];
+        return o;
+      };
+      const out = lines(await post({ query: "produce wholesaler", leads: 1 }));
+      const sources = (out[out.length - 1] as { sources: { id: string; dataAsOf: string }[] }).sources;
+      expect(sources.map(s => [s.id, s.dataAsOf.replace(/ (January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/, " <Month YYYY>")])).toEqual([
+        ["co_sos", "live"], ["ppp", "2020–21 loans"], ["paca", "recorded <Month YYYY>"],
+      ]);
     });
 
     it("sends recently registered leads and the window in the result line", async () => {
@@ -717,6 +748,29 @@ describe("web app server", () => {
       const missing = "0".repeat(40);
       expect((await send({ path: `/api/history/${missing}` })).status).toBe(404);
       expect((await send({ path: `/api/csv?id=${missing}` })).status).toBe(404);
+    });
+
+    it("DELETE /api/history needs a JSON content type, then removes every stored search", async () => {
+      await post({ query: "metal fabrication one" });
+      await post({ query: "metal fabrication two" });
+      expect(readdirSync(historyDir)).toHaveLength(4);
+      const refused = await send({ method: "DELETE", path: "/api/history" });
+      expect(refused.status).toBe(415);
+      expect(readdirSync(historyDir)).toHaveLength(4);
+      const r = await send({ method: "DELETE", path: "/api/history", headers: { "Content-Type": "application/json" } });
+      expect(r.status).toBe(204);
+      expect(r.text).toBe("");
+      expect(readdirSync(historyDir)).toEqual([]);
+      expect(JSON.parse((await send({ path: "/api/history" })).text)).toEqual([]);
+    });
+
+    it("clearing leaves files that aren't a stored search, and works with no history dir", async () => {
+      await post({ query: "metal fabrication one" });
+      writeFileSync(join(historyDir, "notes.txt"), "keep");
+      await send({ method: "DELETE", path: "/api/history", headers: { "Content-Type": "application/json" } });
+      expect(readdirSync(historyDir)).toEqual(["notes.txt"]);
+      useApp({});
+      expect((await send({ method: "DELETE", path: "/api/history", headers: { "Content-Type": "application/json" } })).status).toBe(204);
     });
 
     it("keeps the 20 newest searches and drops the oldest pair", async () => {

@@ -5,7 +5,9 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck, RawLlm, LlmBilling } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, isNaicsCode, naicsPhrase, naicsRelated, normalizeName, locationState, stateName, resolveLocation } from "@registry-engine/registry-core";
+import { SOURCES, shardGenerated, knownRegions, defaultRegion, lookupCodes, naicsLabel, isNaicsCode, naicsPhrase, naicsRelated, normalizeName, locationState, stateName, resolveLocation } from "@registry-engine/registry-core";
+import type { SourceSpec } from "@registry-engine/registry-core";
+import { displayName } from "../public/labels.js";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
 // lookup, and one streaming search endpoint. Everything is loopback-only
@@ -30,6 +32,11 @@ const DEFAULT_RADIUS_MI = 25; // the summary's "within N miles" when no radius i
 const HISTORY_MAX = 20;
 const HISTORY_ID_RE = /^[a-f0-9]{40}$/;
 const HISTORY_FILE_RE = /^[a-f0-9]{40}\.json$/;
+const HISTORY_ANY_RE = /^[a-f0-9]{40}\.(json|csv)$/;   // what clearing removes
+
+// Static sources whose age is a fact about the data, not the shard file.
+const SNAPSHOT_NOTES: Record<string, string> = { ppp: "2020–21 loans" };
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const REGION_NAMES: Record<string, string> = { "US-CO": "Colorado", "US-CT": "Connecticut", "US-NY": "New York" };
 
@@ -69,6 +76,7 @@ export interface LeadView {
   rank: number;
   score: number;
   name: string;
+  displayName: string;   // the name as the sheet shows it: display case for businesses, as filed for individuals
   aka: string[];
   address: { street: string; city: string; state: string; zip: string };
   distanceMi: number | null;
@@ -165,6 +173,19 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
 
     if (method === "GET" && path === "/api/history") {
       sendJson(res, 200, await listHistory(deps.historyDir));
+      return;
+    }
+
+    if (method === "DELETE" && path === "/api/history") {
+      // Same guard as search: a JSON content type forces a CORS preflight, so
+      // a page on another site can't clear the history.
+      if (!/^application\/json\s*(;|$)/i.test(req.headers["content-type"] ?? "")) {
+        sendJson(res, 415, { error: "Content-Type must be application/json" });
+        return;
+      }
+      await clearHistory(deps.historyDir);
+      res.writeHead(204, { "Cache-Control": "no-store" });
+      res.end();
       return;
     }
 
@@ -316,7 +337,8 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       }
       const existenceIds = outcome.routed.filter(s => s.plane === "existence").map(s => s.id);
       last = { ranked: outcome.ranked, existenceIds };
-      const result = buildResult(outcome, existenceIds, params, sourceNames, fetchedBy, picked?.billing ?? null);
+      const asOf = new Map(await Promise.all(outcome.routed.map(async s => [s.id, await dataAsOf(s, outcome.map.intent.geo.region)] as const)));
+      const result = buildResult(outcome, existenceIds, params, sourceNames, fetchedBy, asOf, picked?.billing ?? null);
       if (deps.historyDir !== undefined) {
         await saveHistory(deps.historyDir, params, mapLine, result, leadsToCsv(outcome.ranked, existenceIds));
       }
@@ -378,6 +400,20 @@ async function saveHistory(dir: string, params: SearchParams, map: Record<string
     }
   } catch (err) {
     console.error(`[history] couldn't save this search: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+// Removes every stored search (the id-named .json and .csv files only).
+async function clearHistory(dir: string | undefined): Promise<void> {
+  if (dir === undefined) return;
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (HISTORY_ANY_RE.test(name)) await unlink(join(dir, name)).catch(() => {});
   }
 }
 
@@ -619,12 +655,24 @@ function translateEvent(event: EngineEvent, region: string): Record<string, unkn
   }
 }
 
+// How current a source's records are, for "About this search": live sources
+// say "live"; a shard says when it was recorded ("" when it doesn't say).
+async function dataAsOf(source: SourceSpec, region: string): Promise<string> {
+  if (source.driver !== "static_shard") return "live";
+  const note = SNAPSHOT_NOTES[source.id];
+  if (note !== undefined) return note;
+  const m = /^(\d{4})-(\d{2})/.exec(await shardGenerated(source, region) ?? "");
+  const month = m === null ? undefined : MONTH_NAMES[Number(m[2]) - 1];
+  return m !== null && month !== undefined ? `recorded ${month} ${m[1]}` : "";
+}
+
 function buildResult(
   outcome: SearchOutcome,
   existenceIds: string[],
   params: SearchParams,
   sourceNames: Map<string, string>,
   fetchedBy: Map<string, { count: number; capped: boolean; error: boolean }>,
+  asOf: Map<string, string>,
   llmBilling: LlmBilling | null
 ): Record<string, unknown> {
   const names = new Map(sourceNames);
@@ -651,7 +699,7 @@ function buildResult(
     summary: summaryCounts(outcome.ranked, codes),
     sheet: sheetCounts(outcome.ranked, codes, { radiusMi, hasOrigin: outcome.origin !== null, listCap: topN + MORE_LEADS }),
     registryLookup: outcome.registryLookup,
-    sources: outcome.routed.map(s => ({ id: s.id, name: s.name, plane: s.plane, ...(fetchedBy.get(s.id) ?? { count: 0, capped: false, error: false }) })),
+    sources: outcome.routed.map(s => ({ id: s.id, name: s.name, plane: s.plane, ...(fetchedBy.get(s.id) ?? { count: 0, capped: false, error: false }), dataAsOf: asOf.get(s.id) ?? "" })),
     contactLookups: outcome.contactLookups,
     llmCalls: outcome.llmCalls,
     llmUsage: outcome.llmUsage,
@@ -681,6 +729,7 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
     rank,
     score: lead.score,
     name: e.name,
+    displayName: individual ? e.name : displayName(e.name),
     aka: e.names,
     address,
     distanceMi: lead.distanceMi,

@@ -38,6 +38,7 @@ export function bandTitle(band: string): string;
 export function phoneDigits(value: string | null | undefined): string | null;
 export function reachSummary(lead: Record<string, unknown>): { phone: string; source: string; place: string; principal: string };
 export function summaryParts(result: Record<string, unknown>, opts?: { radiusSet?: boolean }): [string, boolean][];
+export function listFoot(sheet: Record<string, unknown> | null | undefined): string;
 export const SECONDS_PER_NAME: number;
 export function checkAllEstimate(names: number): string;
 export function registryProgressText(checked: number, total: number): string;

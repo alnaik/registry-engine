@@ -9,7 +9,7 @@ import {
   trustLabel, trustAtCall, webTag, fetchedText, whatLine,
   OUTCOMES, OUTCOME_LABEL, migrateTracker, isTracked, shortDate, callStatusText,
   FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost, summaryParts, aboutRows,
-  registryLine, registryProgressText, llmFailedHint, coverageLine, displayName, displayCity,
+  registryLine, registryProgressText, llmFailedHint, coverageLine, displayName, displayCity, listFoot,
 } from "/labels.js";
 
 const $ = id => document.getElementById(id);
@@ -457,6 +457,7 @@ function setupForm() {
     if (app.lastParams && !app.running) runSearch(app.lastParams);
   });
   $("print").addEventListener("click", () => window.print());
+  $("clear-history").addEventListener("click", clearHistory);
   $("save").addEventListener("click", () => saveCurrentSearch());
   $("calls-csv").addEventListener("click", downloadCalls);
 
@@ -710,6 +711,7 @@ function resetForRun(params) {
   $("error-box").hidden = true;
   $("empty").hidden = true;
   $("results-area").hidden = true;
+  $("list-foot").hidden = true;
   $("csv").href = "/api/csv";
   for (const id of ["reading-lines", "notes", "bands", "groups", "filters", "about-rows"]) clear($(id));
   $("reading").hidden = false;
@@ -834,6 +836,7 @@ function showResult(result, opts = {}) {
   renderTools(stored);
   renderBands(result);
   renderGroups(result);
+  renderListFoot(result);
   renderAbout(result, stored);
   applyFilter();
 }
@@ -1045,6 +1048,21 @@ async function loadRecent() {
   }
 }
 
+// Removes every stored search on the server, after a confirm.
+async function clearHistory() {
+  if (!window.confirm("Clear all recent searches? Your saved searches and call notes stay.")) return;
+  try {
+    const resp = await fetch("/api/history", { method: "DELETE", headers: { "Content-Type": "application/json" } });
+    if (!resp.ok) throw new Error(String(resp.status));
+  } catch {
+    toast("Couldn't clear recent searches.");
+    return;
+  }
+  clear($("recent-list"));
+  $("recent").hidden = true;
+  toast("Recent searches cleared.");
+}
+
 async function fetchRecent(id) {
   try {
     const resp = await fetch(`/api/history/${encodeURIComponent(id)}`);
@@ -1198,6 +1216,13 @@ function renderGroups(result) {
   }
 }
 
+// "Showing 312 of 540. The CSV has all of them." under the list.
+function renderListFoot(result) {
+  const text = listFoot(result.sheet);
+  $("list-foot").textContent = text;
+  $("list-foot").hidden = text === "";
+}
+
 // ---- about this search ----------------------------------------------------------------------------
 
 function renderAbout(result, stored) {
@@ -1215,7 +1240,8 @@ function renderAbout(result, stored) {
 // The name as shown on the sheet: display case for businesses, as filed for
 // individuals' records (ADR 0017). CSV, history and clipboard keep lead.name.
 function shownName(lead) {
-  return lead.individual === true ? lead.name : displayName(lead.name);
+  if (typeof lead.displayName === "string") return lead.displayName;
+  return lead.individual === true ? lead.name : displayName(lead.name);   // a sheet stored before v12
 }
 
 function distanceCell(lead) {

@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.15 (v12, v1-readiness review)
+Version: 3.16 (v12, v1-readiness review)
 Last updated: 2026-10-30
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -245,7 +245,11 @@ credits is a target for other websites open in the same browser.
    the sheet showed, including individuals' records as filed. The id is a
    server-computed SHA-1; `/api/history/:id` and `/api/csv?id=` accept only
    `/^[a-f0-9]{40}$/` (400 otherwise), and no path is built from any other
-   input. Opening a stored search is a pure read; there is no delete endpoint.
+   input. Opening a stored search is a pure read. `DELETE /api/history`
+   removes every stored search (only files named by the id pattern) and, like
+   search, requires `Content-Type: application/json`, so a page on another site
+   can't clear it (415 otherwise; no CORS headers are sent). The page's "Clear
+   history" button asks for a confirm first.
 7. **Credentials.** Keys (`ANTHROPIC_API_KEY`, `EXA_API_KEY`,
    `PARALLEL_API_KEY`) are read from the process environment only (never
    from a request, a file or the page), held inside the backend closures,
@@ -330,3 +334,7 @@ credits is a target for other websites open in the same browser.
   `/api/codes` rejects an empty or over-100-character `q` with 400. Email tokens are
   stripped from PPP `name` and `address`, PACA `website` addresses are blank, and
   a scan test covers `shards/` and `tests/fixtures/` (Threat 5).
+- v3.16 (2026-10-30, v12 Batch C): `DELETE /api/history` clears the stored searches
+  (415 without a JSON content type, 204 otherwise; Threat 8, item 6, which said there
+  was no delete endpoint). The result's `sources` carry `dataAsOf` and each lead
+  `displayName`; neither adds an input or a path.

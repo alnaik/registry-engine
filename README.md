@@ -44,8 +44,9 @@ shell environment when the app starts ([`.env.example`](.env.example) lists them
 - **My calls** lives in your browser's localStorage.
 - Keys are read from the environment, never stored or shown in the page.
 
-Tested on Node 24. Behind a proxy, set `HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1`
-before `npm start` (Node 24 reads them; there is no proxy setting in the app).
+Tested on Node 24; runs on 20.19+. The proxy note needs 24. Behind a proxy, set
+`HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1` before `npm start` (Node 24 reads them;
+there is no proxy setting in the app).
 
 ## How a search works
 
@@ -96,9 +97,11 @@ were checked, and the AI tokens used.
 
 Also in the app: saved searches (stored in your browser), CSV export, and a
 printable call sheet with a notes line under each business.
-Recent searches: the server keeps your 20 newest finished searches in
-`~/.cache/registry-engine/searches`, so you can reopen a sheet and its CSV
-without running it again.
+Recent searches: the local server keeps your 20 newest finished searches in
+`~/.cache/registry-engine/searches` (on this computer, not in the browser), so
+you can reopen a sheet and its CSV without running it again. **Clear history**
+in the Recent searches box deletes them. Saved searches and **My calls** live
+in the browser.
 
 ## Sources
 
@@ -197,12 +200,17 @@ The response is newline-delimited JSON, one event per line:
 - `contacts`: web contact lookups made
 - then exactly one of `result` (the call sheet) or `error`
 
+In `result`, each lead has `name` (as filed) and `displayName` (as the sheet
+shows it: display case for businesses, as filed for individuals' records), and
+each source has `dataAsOf` (`live`, `recorded <Month YYYY>` or `2020–21 loans`).
+
 Other routes:
 
 - `GET /api/status` (also `HEAD`): which AI and contact paths are active, and the regions
 - `GET /api/codes?q=`: the code finder
 - `GET /api/history`: past searches
 - `GET /api/history/:id`: one past search
+- `DELETE /api/history`: clear the stored searches (204; needs `Content-Type: application/json`)
 - `GET /api/csv`: the last search as CSV
 - `GET /api/csv?id=`: a past search as CSV
 
@@ -240,8 +248,12 @@ the env.
 ## Development
 
 ```bash
-npm test && npm run typecheck && npm run a11y   # a11y: axe over the app in headless Chromium
+npm test && npm run typecheck && npm run a11y && npm run smoke
+# a11y: axe over the app in headless Chromium; smoke: drives the app (search, CSV, history, error box)
 ```
+
+The browser scripts use `CHROME` if set, else the newest Chromium in the
+Playwright cache (`npx playwright install chromium-headless-shell`).
 
 Architecture, conventions and the data rebuild scripts: [`CLAUDE.md`](CLAUDE.md).
 Threat model: [`SECURITY.md`](SECURITY.md). Decisions: [`docs/decisions/`](docs/decisions/).

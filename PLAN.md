@@ -138,35 +138,35 @@ result carry the region actually searched.
 
 ## Batch C — sheet honesty, docs and tooling
 
-### C1 — capped sources in the summary (review 7)
+### C1 — capped sources in the summary (review 7) ✅ (2026-10-30)
 When any source's fetch was capped, the summary block (where the headline
 counts render in `apps/web/public/app.js`) adds one plain sentence: `<names>
 stopped at <n> records, so this isn't every business. Narrow the area or the
 codes for a fuller list.` Pin the wording in labels.js with a test, like the
 other labels.
 
-### C2 — nothing within radius says so (review 11)
+### C2 — nothing within radius says so (review 11) ✅ (2026-10-30)
 When a location resolved and `withinRadius` is 0 but businesses were listed,
 the summary says `None within <r> mi; the nearest is <d> mi away.` instead
 of a bare 0. Label in labels.js, tested.
 
-### C3 — listed vs total (review 24)
+### C3 — listed vs total (review 24) ✅ (2026-10-30)
 When `listed` < `businesses`, the list footer says `Showing <listed> of
 <businesses>. The CSV has all of them.` (verify the CSV export really
 contains every ranked lead; if not, raise a DEVIATION REQUEST).
 
-### C4 — data date per source (review 20)
+### C4 — data date per source (review 20) ✅ (2026-10-30)
 "About this search" sources list: each source shows how current it is —
 static shards: `recorded <Month YYYY>` from the shard's `generated`
 (PPP: `2020–21 loans`); live sources: `live`. Server adds the field to the
 result's `sources`; UI renders it; test the server field.
 
-### C5 — `displayName` in the API (review 26)
+### C5 — `displayName` in the API (review 26) ✅ (2026-10-30)
 LeadView gains `displayName` (display case for business names, the filed
 name for individuals: the same rule app.js uses); app.js uses it. README API
 section lists it.
 
-### C6 — history: docs and a clear button (review 18)
+### C6 — history: docs and a clear button (review 18) ✅ (2026-10-30)
 - README line ~97: saved searches are kept by the local server under
   `~/.cache/registry-engine/searches` (newest 20); My calls lives in the
   browser.
@@ -178,18 +178,18 @@ section lists it.
 - Tests: DELETE without JSON content type → 415; with → 204 and the list is
   empty.
 
-### C7 — Node version pinned (review 15)
+### C7 — Node version pinned (review 15) ✅ (2026-10-30)
 `package.json` `"engines": { "node": ">=20.19" }`; `.nvmrc` with `24`.
 README: "Tested on Node 24; runs on 20.19+. The proxy note needs 24."
 
-### C8 — a11y script finds Chromium (review 17)
+### C8 — a11y script finds Chromium (review 17) ✅ (2026-10-30)
 `scripts/a11y/axe.ts`: when `CHROME` is unset, look under the Playwright
 cache (`~/Library/Caches/ms-playwright` on macOS, `~/.cache/ms-playwright`
 on Linux, `%LOCALAPPDATA%\ms-playwright` on Windows) for the newest
 `chromium_headless_shell-*` executable; if none, exit 1 with
 `Set CHROME to a Chromium or Chrome executable, or run npx playwright install chromium-headless-shell.`
 
-### C9 — UI smoke run (review 19)
+### C9 — UI smoke run (review 19) ✅ (2026-10-30)
 `scripts/smoke/ui.ts` + `npm run smoke`: same harness as the a11y script
 (real server on the fixture search, no network, no AI). Drives: empty page
 renders; a search streams and shows result rows; the CSV link returns
@@ -197,11 +197,17 @@ renders; a search streams and shows result rows; the CSV link returns
 shows the search. Exit non-zero with the failing step. Document in README
 Development and CLAUDE.md Commands.
 
-### C10 — CONTRIBUTING.md (review 21)
+### C10 — CONTRIBUTING.md (review 21) ✅ (2026-10-30)
 Short: setup, the commands from CLAUDE.md, how to add a state (manifest
 entry, zero-code test), data rebuild scripts, the PLAN.md/spec workflow,
 SECURITY.md for anything building queries/paths, and no personal data in
 shards or fixtures (the B4 test).
+
+Batch C review notes (2026-10-30): the summary's "The sheet lists the top N;
+the CSV has all of them." was removed (C3's list footer says it); `nearestMi`
+added to SheetCounts for C2. Review 28: a live search at 390px ("dentists and
+veterinarians" near "Brooklyn, NY") rendered with no horizontal scroll and
+resolved to New York from the location.
 
 ## Done when
 All three batches merged into the branch, `npm test`, `npm run typecheck`,

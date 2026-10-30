@@ -252,6 +252,7 @@ details.about > summary { min-height: 44px; display: flex; align-items: center; 
 .sheet { padding-bottom: var(--s12); }
 .how-box { max-width: 62ch; padding: var(--s2) 0 var(--s6); color: var(--ink-2); }
 .saved-box { display: grid; gap: var(--s2); padding-top: var(--s3); border-top: 1px solid var(--rule); }
+.recent-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--s2); }
 .saved-list { display: grid; }
 .saved-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s1) var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--rule); }
 .saved-info { display: flex; flex-wrap: wrap; gap: 0 var(--s3); align-items: baseline; min-width: 0; overflow-wrap: anywhere; }

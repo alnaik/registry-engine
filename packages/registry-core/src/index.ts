@@ -8,7 +8,7 @@ export { route } from "./route.js";
 export { zipCentroid, placeCentroid, regionPlaces, milesBetween, resolveLocation, entityPoint, zipState, stateName, locationState } from "./geo.js";
 export type { LatLon } from "./geo.js";
 export { knownRegions, defaultRegion, regionCities } from "./regions.js";
-export { defaultDrivers, SocrataDriver, StaticShardDriver, EchoDriver, soqlSafeLiteral, namePattern, MAX_BACKFILL_NAMES, rowToEntity } from "./drivers/index.js";
+export { defaultDrivers, SocrataDriver, StaticShardDriver, shardGenerated, EchoDriver, soqlSafeLiteral, namePattern, MAX_BACKFILL_NAMES, rowToEntity } from "./drivers/index.js";
 export { MemoryCache } from "./util/cache.js";
 export type { KVCache } from "./util/cache.js";
 export { Limiter, fetchWithRetry, buildSoqlUrl } from "./util/http.js";
