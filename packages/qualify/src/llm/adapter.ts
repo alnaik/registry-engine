@@ -20,6 +20,7 @@ export interface RawCompleteOptions {
   maxTokens: number;
   system?: string | undefined;
   onUsage?: ((u: LlmUsage) => void) | undefined;
+  signal?: AbortSignal | undefined;   // the search was cancelled: stop the request or child process
 }
 
 // The one thing a backend must do. With an API key the tier picks the
@@ -32,6 +33,7 @@ export interface LlmConfig {
   apiKey?: string | undefined;
   backend?: RawLlm | undefined;
   maxCalls?: number | undefined;   // hard ceiling per Llm instance (per search)
+  signal?: AbortSignal | undefined;   // passed to every call this instance makes
 }
 
 export interface LlmCallOptions {
@@ -59,7 +61,8 @@ export class Llm {
 
   constructor(
     private readonly raw: RawLlm,
-    private readonly maxCalls?: number | undefined
+    private readonly maxCalls?: number | undefined,
+    private readonly signal?: AbortSignal | undefined
   ) {}
 
   get calls(): number {
@@ -89,6 +92,7 @@ export class Llm {
   }
 
   async call(prompt: string, opts: LlmCallOptions): Promise<string> {
+    this.signal?.throwIfAborted();
     if (this.maxCalls !== undefined && this.used >= this.maxCalls) {
       throw new LlmCallBudgetError(this.maxCalls);
     }
@@ -98,6 +102,7 @@ export class Llm {
       model,
       maxTokens: opts.maxTokens ?? 1000,
       system: opts.system,
+      signal: this.signal,
       onUsage: u => {
         this.log.push({ label: opts.label ?? opts.tier, model, ...u });
       },
@@ -113,7 +118,7 @@ export function createLlm(cfg: LlmConfig = {}): Llm {
       : (() => {
           throw new Error("No LLM backend available: set cfg.apiKey or inject cfg.backend");
         })());
-  return new Llm(raw, cfg.maxCalls);
+  return new Llm(raw, cfg.maxCalls, cfg.signal);
 }
 
 // Anthropic Messages API backend. With modelOverride set, every tier uses
@@ -138,7 +143,7 @@ export function anthropicApiBackend(apiKey: string, modelOverride?: string | und
           "x-api-key": apiKey,
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(120_000),
+        signal: opts.signal === undefined ? AbortSignal.timeout(120_000) : AbortSignal.any([opts.signal, AbortSignal.timeout(120_000)]),
       });
       if (!resp.ok) {
         // Status and error type only: the raw body never reaches the page or history.

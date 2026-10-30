@@ -46,6 +46,7 @@ export interface SheetCounts {
   nameOnly: number;         // the rest: name matches only
   individuals: number;      // coded leads that are an individual's record (listed separately)
   withinRadius: number | null;   // businesses within radiusMi of the origin; null = no origin
+  nearestMi: number | null;      // distance of the nearest business with a known distance; null = none
   radiusMi: number;
   confirmed: number;        // businesses matched on the state registry
   withPhone: number;        // businesses with a published phone
@@ -70,6 +71,7 @@ export function partitionLeads(ranked: Lead[], mapCodes: string[]): { businesses
 // separately and name-only matches never enter the headline.
 export function sheetCounts(ranked: Lead[], mapCodes: string[], opts: { radiusMi: number; hasOrigin: boolean; listCap?: number | undefined }): SheetCounts {
   const { businesses, individuals, nameOnly } = partitionLeads(ranked, mapCodes);
+  const distances = businesses.flatMap(l => (l.distanceMi === null ? [] : [l.distanceMi]));
   return {
     total: ranked.length,
     coded: businesses.length + individuals.length,
@@ -78,6 +80,7 @@ export function sheetCounts(ranked: Lead[], mapCodes: string[], opts: { radiusMi
     nameOnly: nameOnly.length,
     individuals: individuals.length,
     withinRadius: opts.hasOrigin ? businesses.filter(l => l.distanceMi !== null && l.distanceMi <= opts.radiusMi).length : null,
+    nearestMi: opts.hasOrigin && distances.length > 0 ? Math.min(...distances) : null,
     radiusMi: opts.radiusMi,
     confirmed: businesses.filter(l => l.registryCheck === "matched").length,
     withPhone: businesses.filter(hasPhone).length,

@@ -69,7 +69,8 @@ describe("soqlSafeLiteral", () => {
 });
 
 describe("SocrataDriver", () => {
-  const driver = new SocrataDriver();
+  let driver = new SocrataDriver();
+  beforeEach(() => { driver = new SocrataDriver(); });   // the page cache is per instance
 
   it("returns [] and makes zero requests without usable keywords", async () => {
     const fetchMock = fixtureFetch([], []);
@@ -174,7 +175,8 @@ const FARM_ROW = {
 };
 
 describe("SocrataDriver — keywordFields, optional status, address_line cities", () => {
-  const driver = new SocrataDriver();
+  let driver = new SocrataDriver();
+  beforeEach(() => { driver = new SocrataDriver(); });   // the page cache is per instance
 
   function whereOf(): string {
     return decodeURIComponent(urls[0]!.split("$where=")[1]!.split("&")[0]!);
@@ -259,7 +261,8 @@ describe("SocrataDriver — keywordFields, optional status, address_line cities"
 });
 
 describe("SocrataDriver.fetchByNames", () => {
-  const driver = new SocrataDriver();
+  let driver = new SocrataDriver();
+  beforeEach(() => { driver = new SocrataDriver(); });   // the page cache is per instance
 
   it("builds normalized LIKE patterns and a status filter", async () => {
     const fetchMock = vi.fn(async (url: string) => {
@@ -360,7 +363,8 @@ describe("SocrataDriver.fetchByNames", () => {
 });
 
 describe("SocrataDriver.fetchRecent", () => {
-  const driver = new SocrataDriver();
+  let driver = new SocrataDriver();
+  beforeEach(() => { driver = new SocrataDriver(); });   // the page cache is per instance
   const RECENT_SOS: SourceSpec = { ...CO_SOS, fields: { ...CO_SOS.fields, formedDate: "entityformdate" } };
   const recentRow = (id: string, name: string, formed: string) => ({
     entityid: id, entityname: name, entitystatus: "Good Standing", principalcity: "Denver", principalzipcode: "80202", entityformdate: formed,
@@ -406,5 +410,50 @@ describe("SocrataDriver.fetchRecent", () => {
     vi.stubGlobal("fetch", vi.fn());
     await expect(driver.fetchRecent(RECENT_SOS, { keywords: ["taco"], since: "2026-07-29' OR 1=1" }))
       .rejects.toThrow("fetchRecent: since must be YYYY-MM-DD");
+  });
+});
+
+describe("SocrataDriver page cache", () => {
+  afterEach(() => vi.useRealTimers());
+
+  // fixtureFetch's answers carry no status; the cache only keeps real 200s.
+  function okFetch() {
+    return vi.fn(async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [entityRows[0]!] } as unknown as Response;
+    });
+  }
+
+  it("two identical page requests within the TTL make one fetch; after it, two", async () => {
+    vi.useFakeTimers();
+    const fetchMock = okFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    const driver = new SocrataDriver();
+    await driver.fetch(CO_SOS, req({ keywords: ["jewel"], cities: [] }));
+    const first = fetchMock.mock.calls.length;
+    await driver.fetch(CO_SOS, req({ keywords: ["jewel"], cities: [] }));
+    expect(fetchMock.mock.calls.length).toBe(first);
+    await vi.advanceTimersByTimeAsync(16 * 60_000);
+    await driver.fetch(CO_SOS, req({ keywords: ["jewel"], cities: [] }));
+    expect(fetchMock.mock.calls.length).toBe(first * 2);
+  });
+
+  it("does not cache a non-200 answer", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: false, status: 404, json: async () => [] }) as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    const driver = new SocrataDriver();
+    await expect(driver.fetch(CO_SOS, req({ cities: [] }))).rejects.toThrow("HTTP 404");
+    await expect(driver.fetch(CO_SOS, req({ cities: [] }))).rejects.toThrow("HTTP 404");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("an app token is part of the key", async () => {
+    const fetchMock = okFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    const driver = new SocrataDriver();
+    await driver.fetch(CO_SOS, req({ cities: [] }));
+    const first = fetchMock.mock.calls.length;
+    await driver.fetch(CO_SOS, req({ cities: [] }), { appToken: "tok" });
+    expect(fetchMock.mock.calls.length).toBe(first * 2);
   });
 });

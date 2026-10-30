@@ -2,15 +2,21 @@
 """Build the geo lookup tables from the Census 2024 Gazetteer files.
 
 Usage:
-  python3 -I scripts/data/build_geo.py [--zcta <txt>] [--places <txt>] [--states CO,CT,NY]
+  python3 -I scripts/data/build_geo.py [--zcta <txt>] [--places <txt>]
+      [--counties <txt>] [--states CO,CT,NY]
 
-Omitted inputs are downloaded from census.gov (zip archives) into memory.
+Omitted inputs are downloaded from census.gov (zip archives) into memory:
+  2024_Gaz_zcta_national.zip, 2024_Gaz_place_national.zip and
+  2024_Gaz_counties_national.zip under
+  https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/
 Writes into packages/registry-core/src/geo/:
   zips.json    {"80202":[39.7525,-104.9995],...}  every ZCTA nationally
   places.json  {"US-CO":{"denver":[lat,lon],...},...}  places for --states
 Place names are lowercased with the trailing LSAD word removed
 ("Denver city" -> "denver"); on duplicate names the first row wins.
-Stdlib only.
+Counties (and CT's planning regions) are added under their full lowercased
+name ("denver county") unless a place already has that key, then the hand
+aliases in ALIASES. Stdlib only.
 """
 import argparse
 import io
@@ -22,6 +28,7 @@ import zipfile
 BASE = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/"
 ZCTA_URL = BASE + "2024_Gaz_zcta_national.zip"
 PLACES_URL = BASE + "2024_Gaz_place_national.zip"
+COUNTIES_URL = BASE + "2024_Gaz_counties_national.zip"
 OUT_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "..", "..", "packages", "registry-core", "src", "geo",
@@ -33,6 +40,22 @@ LSAD_SUFFIXES = sorted(
     key=len,
     reverse=True,
 )
+
+# Names people type that the Gazetteer has no place for: NYC's boroughs (each
+# is a county, but nobody types "Richmond County") and the city's own names.
+# A string value copies that place's point.
+ALIASES = {
+    "US-NY": {
+        "brooklyn": [40.6782, -73.9442],
+        "queens": [40.7282, -73.7949],
+        "bronx": [40.8448, -73.8648],
+        "the bronx": [40.8448, -73.8648],
+        "manhattan": [40.7831, -73.9712],
+        "staten island": [40.5795, -74.1502],
+        "nyc": "new york",
+        "new york city": "new york",
+    },
+}
 
 
 def read_rows(path, url):
@@ -69,6 +92,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--zcta")
     ap.add_argument("--places")
+    ap.add_argument("--counties")
     ap.add_argument("--states", default="CO,CT,NY")
     args = ap.parse_args()
     states = [s.strip().upper() for s in args.states.split(",") if s.strip()]
@@ -85,6 +109,20 @@ def main():
         name = strip_lsad(row["NAME"])
         if name != "" and name not in places[region]:
             places[region][name] = point(row)
+
+    for row in read_rows(args.counties, COUNTIES_URL):
+        region = f"US-{row['USPS']}"
+        if region not in places:
+            continue
+        name = row["NAME"].strip().lower()
+        if name != "" and name not in places[region]:
+            places[region][name] = point(row)
+
+    for region, aliases in ALIASES.items():
+        if region not in places:
+            continue
+        for name, target in aliases.items():
+            places[region][name] = places[region][target] if isinstance(target, str) else target
 
     os.makedirs(OUT_DIR, exist_ok=True)
     for fname, obj in (("zips.json", zips), ("places.json", places)):

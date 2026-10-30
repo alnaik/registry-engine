@@ -22,6 +22,7 @@ npx vitest run tests/registry-core/zero-code-state.test.ts       # single test f
 npm run test:watch
 npm run typecheck                                                # strict TS across the workspace
 npm run a11y                                                     # axe-core over the web app (fixture search, headless Chromium; CHROME=…)
+npm run smoke                                                    # drives the web app (search, CSV, history, error box; same harness as a11y)
 
 # Web app (localhost:4317; vite-node, no build) — the customer-facing surface
 npm start

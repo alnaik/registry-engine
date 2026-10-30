@@ -62,8 +62,10 @@ describe("sheetCounts / hasPhone", () => {
     const c2 = { ...c, registryCheck: "matched" as const };
     const counts = sheetCounts([a, b, c2, d], ["332"], { radiusMi: 25, hasOrigin: true });
     // the individual's record (c2) is matched but counts only as an individual
-    expect(counts).toEqual({ total: 4, coded: 3, businesses: 2, listed: 2, nameOnly: 1, individuals: 1, withinRadius: 1, radiusMi: 25, confirmed: 1, withPhone: 2 });
+    expect(counts).toEqual({ total: 4, coded: 3, businesses: 2, listed: 2, nameOnly: 1, individuals: 1, withinRadius: 1, nearestMi: 4, radiusMi: 25, confirmed: 1, withPhone: 2 });
     expect(sheetCounts([a, b], ["332"], { radiusMi: 25, hasOrigin: true, listCap: 1 }).listed).toBe(1);
     expect(sheetCounts([a], ["332"], { radiusMi: 25, hasOrigin: false }).withinRadius).toBeNull();
+    expect(sheetCounts([a], ["332"], { radiusMi: 25, hasOrigin: false }).nearestMi).toBeNull();
+    expect(sheetCounts([b, c], ["332"], { radiusMi: 25, hasOrigin: true }).nearestMi).toBe(40);   // c has no distance
   });
 });

@@ -7,10 +7,11 @@ import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { createApp, historyId } from "../../apps/web/src/server.js";
 import type { AppDeps } from "../../apps/web/src/server.js";
+import { naicsLabel, defaultRegion, SOURCES } from "../../packages/registry-core/src/index.js";
 import type { SearchConfig, SearchOutcome, Lead, RawLlm } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
-  "id", "key", "rank", "score", "name", "aka", "address", "distanceMi", "band", "naics", "what", "coded", "individual", "employees", "lastSeen", "formedDate",
+  "id", "key", "rank", "score", "name", "displayName", "aka", "address", "distanceMi", "band", "naics", "what", "coded", "individual", "employees", "lastSeen", "formedDate",
   "sources", "codeSources", "registryCheck", "registeredElsewhere", "registryStanding", "status", "contacts", "web", "found", "officers", "searchUrl", "mapsUrl", "brief", "opener",
 ];
 
@@ -210,6 +211,23 @@ describe("web app server", () => {
     });
   });
 
+  describe("codes-only search", () => {
+    it("takes the code titles as the query when query is empty or absent", async () => {
+      expect((await post({ naics: "621210", noLlm: true })).status).toBe(200);
+      expect((await post({ query: "", naics: "621210, 238220", noLlm: true })).status).toBe(200);
+      expect(calls[0]!.query).toContain("Dentists");
+      expect(calls[0]!.cfg.naics).toEqual(["621210"]);
+      expect(calls[1]!.query).toBe(`${naicsLabel("621210")}, ${naicsLabel("238220")}`);
+    });
+
+    it("still needs a 3 to 300 character query without a valid code", async () => {
+      expect((await post({ noLlm: true })).status).toBe(400);
+      expect((await post({ query: "", naics: "99", noLlm: true })).status).toBe(400);
+      expect((await post({ query: "ab", naics: "621210" })).status).toBe(400);
+      expect(calls).toHaveLength(0);
+    });
+  });
+
   describe("POST /api/search streaming", () => {
     it("forwards llmError on the map event", async () => {
       const deps: AppDeps = {
@@ -243,6 +261,41 @@ describe("web app server", () => {
       expect(town2.status).toBe(200);
       const ok = await post({ query: "metal fabrication", near: "80202-1234", region: "US-CO" });
       expect(ok.status).toBe(200);
+    });
+
+    it("takes the state from the location when none is picked", async () => {
+      const before = calls.length;
+      expect((await post({ query: "metal fabrication", near: "11201" })).status).toBe(200);
+      expect(calls[before]!.cfg.region).toBe("US-NY");
+      expect((await post({ query: "metal fabrication", near: "Brooklyn, NY" })).status).toBe(200);
+      expect(calls[before + 1]!.cfg.region).toBe("US-NY");
+      // A covered town whose own name ends in a state word is that region's.
+      expect((await post({ query: "metal fabrication", near: "Port Washington" })).status).toBe(200);
+      expect(calls[before + 2]!.cfg.region).toBe("US-NY");
+      // No state named: no region sent, the default applies downstream.
+      expect((await post({ query: "metal fabrication", near: "Denver" })).status).toBe(200);
+      expect(calls[before + 3]!.cfg.region).toBeUndefined();
+      const austin = await post({ query: "metal fabrication", near: "Austin, TX" });
+      expect(austin.status).toBe(400);
+      const message = String((JSON.parse(austin.text) as Record<string, unknown>)["error"]);
+      expect(message).toContain("Texas");
+      expect(message).toContain("isn't covered");
+      expect(message).toContain("Colorado, Connecticut, New York");
+      expect(calls.length).toBe(before + 4);
+      // An explicit region keeps its rule.
+      expect((await post({ query: "metal fabrication", near: "06103", region: "US-CO" })).status).toBe(400);
+    });
+
+    it("names the searched region on the origin event and the result", async () => {
+      behavior = async (_query, cfg) => {
+        cfg.onEvent?.({ type: "origin", origin: null });
+        return makeOutcome();
+      };
+      const named = lines(await post({ query: "metal fabrication", near: "Brooklyn, NY" }));
+      expect(named.find(l => l["type"] === "origin")).toMatchObject({ region: "US-NY" });
+      const dflt = lines(await post({ query: "metal fabrication", near: "Denver" }));
+      expect(dflt.find(l => l["type"] === "origin")!["region"]).toBe(defaultRegion(SOURCES));
+      expect(dflt.find(l => l["type"] === "result")).toMatchObject({ region: "US-CO" });
     });
 
     it("passes llmUsage through to the result line", async () => {
@@ -326,11 +379,11 @@ describe("web app server", () => {
       }
       expect(more[0]?.["evidence"]).toBeDefined();
       expect(result["sources"]).toEqual([
-        { id: "co_sos", name: "Colorado SoS", plane: "existence", count: 500, capped: true, error: false },
-        { id: "ppp", name: "PPP loans", plane: "category", count: 7, capped: false, error: false },
+        { id: "co_sos", name: "Colorado SoS", plane: "existence", count: 500, capped: true, error: false, dataAsOf: "live" },
+        { id: "ppp", name: "PPP loans", plane: "category", count: 7, capped: false, error: false, dataAsOf: "2020–21 loans" },
       ]);
       expect(result["registryLookup"]).toEqual({ status: "ran", namesChecked: 0, nameCap: 80, candidates: 0, totalNames: 0 });
-      expect(result["sheet"]).toEqual({ total: 3, coded: 3, businesses: 3, listed: 3, nameOnly: 0, individuals: 0, withinRadius: 3, radiusMi: 25, confirmed: 3, withPhone: 3 });
+      expect(result["sheet"]).toEqual({ total: 3, coded: 3, businesses: 3, listed: 3, nameOnly: 0, individuals: 0, withinRadius: 3, nearestMi: 3.2, radiusMi: 25, confirmed: 3, withPhone: 3 });
       expect(result["regionName"]).toBe("Colorado");
       expect(top[0]).toMatchObject({
         rank: 1, registryCheck: "matched", registeredElsewhere: false, found: null, employees: 10,
@@ -340,6 +393,37 @@ describe("web app server", () => {
       });
       expect(String(top[0]?.["mapsUrl"])).toBe(
         `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("ACME 0 FABRICATION 0 Main St Denver CO 80202")}`);
+    });
+
+    it("sends the display-case name: business names re-cased, an individual's as filed", async () => {
+      behavior = async () => {
+        const o = makeOutcome(2);
+        const person = makeLead(1);
+        person.entity = { ...person.entity, name: "SMITH, JOHN A", evidence: [{ source: "ppp", field: "business_type", value: "Sole Proprietorship" }] };
+        o.ranked = [o.ranked[0]!, person];
+        return o;
+      };
+      const out = lines(await post({ query: "metal fabrication", leads: 2 }));
+      const result = out[out.length - 1] as { leads: { name: string; displayName: string; individual: boolean }[]; individuals: { name: string; displayName: string }[] };
+      expect(result.leads[0]).toMatchObject({ name: "ACME 0 FABRICATION", displayName: "Acme 0 Fabrication" });
+      const cased = [...result.leads, ...result.individuals].find(l => l.name === "SMITH, JOHN A");
+      expect(cased?.displayName).toBe("SMITH, JOHN A");
+      behavior = async () => { const o = makeOutcome(1); o.ranked[0]!.entity.name = "JUNIPER CANVAS WORKS LLC"; return o; };
+      const again = lines(await post({ query: "canvas bags", leads: 1 }));
+      expect((again[again.length - 1] as { leads: { displayName: string }[] }).leads[0]?.displayName).toBe("Juniper Canvas Works LLC");
+    });
+
+    it("names how current each source is: live, the PPP snapshot, or the shard's recorded month", async () => {
+      behavior = async () => {
+        const o = makeOutcome(1);
+        o.routed = [...o.routed, SOURCES.find(s => s.id === "paca")!];
+        return o;
+      };
+      const out = lines(await post({ query: "produce wholesaler", leads: 1 }));
+      const sources = (out[out.length - 1] as { sources: { id: string; dataAsOf: string }[] }).sources;
+      expect(sources.map(s => [s.id, s.dataAsOf.replace(/ (January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/, " <Month YYYY>")])).toEqual([
+        ["co_sos", "live"], ["ppp", "2020–21 loans"], ["paca", "recorded <Month YYYY>"],
+      ]);
     });
 
     it("sends recently registered leads and the window in the result line", async () => {
@@ -472,6 +556,34 @@ describe("web app server", () => {
       expect((await post({ query: "third search" })).status).toBe(200);
     });
 
+    it("a closed tab cancels the search, frees the slot and saves nothing", async () => {
+      let seen: AbortSignal | undefined;
+      behavior = (_q, cfg) => new Promise<SearchOutcome>((_resolve, reject) => {
+        seen = cfg.signal;
+        cfg.signal?.addEventListener("abort", () => reject(cfg.signal!.reason));
+      });
+      const req = request({
+        host: "127.0.0.1", port, method: "POST", path: "/api/search",
+        headers: { Host: `localhost:${port}`, "Content-Type": "application/json" },
+      }, res => { res.resume(); res.on("error", () => {}); });
+      req.on("error", () => {});
+      req.end(JSON.stringify({ query: "metal fabrication" }));
+      while (calls.length === 0) await new Promise(r => setTimeout(r, 5));
+      expect(seen?.aborted).toBe(false);
+      req.destroy();
+
+      behavior = async () => makeOutcome();
+      let status = 0;
+      for (let i = 0; i < 100 && status !== 200; i++) {
+        status = (await post({ query: "another search" })).status;
+        if (status !== 200) await new Promise(r => setTimeout(r, 10));
+      }
+      expect(status).toBe(200);
+      expect(seen?.aborted).toBe(true);
+      // Only the second search was saved.
+      expect(readdirSync(historyDir).filter(f => f.endsWith(".json"))).toHaveLength(1);
+    });
+
     it("reports a search failure as a final error line and frees the slot", async () => {
       behavior = async () => { throw new Error("registry exploded"); };
       const failed = lines(await post({ query: "metal fabrication" }));
@@ -525,7 +637,15 @@ describe("web app server", () => {
       expect(r.status).toBe(200);
       const hits = JSON.parse(r.text) as { code: string; title: string; description: string }[];
       expect(hits.map(h => h.code)).toContain("314910");
-      expect(JSON.parse((await send({ path: "/api/codes?q=" })).text)).toEqual([]);
+      const empty = await send({ path: "/api/codes?q=" });
+      expect(empty.status).toBe(400);
+      expect(JSON.parse(empty.text)).toEqual({ error: "q is required" });
+      expect((await send({ path: "/api/codes?q=%20%20" })).status).toBe(400);
+      expect((await send({ path: "/api/codes" })).status).toBe(400);
+      expect((await send({ path: `/api/codes?q=${"a".repeat(101)}` })).status).toBe(400);
+      expect((await send({ path: `/api/codes?q=${"a".repeat(100)}` })).status).toBe(200);
+      const daycare = JSON.parse((await send({ path: "/api/codes?q=daycare" })).text) as { code: string }[];
+      expect(daycare[0]!.code).toBe("624410");
     });
 
     it("answers HEAD for static routes and /api/status with headers and no body", async () => {
@@ -628,6 +748,29 @@ describe("web app server", () => {
       const missing = "0".repeat(40);
       expect((await send({ path: `/api/history/${missing}` })).status).toBe(404);
       expect((await send({ path: `/api/csv?id=${missing}` })).status).toBe(404);
+    });
+
+    it("DELETE /api/history needs a JSON content type, then removes every stored search", async () => {
+      await post({ query: "metal fabrication one" });
+      await post({ query: "metal fabrication two" });
+      expect(readdirSync(historyDir)).toHaveLength(4);
+      const refused = await send({ method: "DELETE", path: "/api/history" });
+      expect(refused.status).toBe(415);
+      expect(readdirSync(historyDir)).toHaveLength(4);
+      const r = await send({ method: "DELETE", path: "/api/history", headers: { "Content-Type": "application/json" } });
+      expect(r.status).toBe(204);
+      expect(r.text).toBe("");
+      expect(readdirSync(historyDir)).toEqual([]);
+      expect(JSON.parse((await send({ path: "/api/history" })).text)).toEqual([]);
+    });
+
+    it("clearing leaves files that aren't a stored search, and works with no history dir", async () => {
+      await post({ query: "metal fabrication one" });
+      writeFileSync(join(historyDir, "notes.txt"), "keep");
+      await send({ method: "DELETE", path: "/api/history", headers: { "Content-Type": "application/json" } });
+      expect(readdirSync(historyDir)).toEqual(["notes.txt"]);
+      useApp({});
+      expect((await send({ method: "DELETE", path: "/api/history", headers: { "Content-Type": "application/json" } })).status).toBe(204);
     });
 
     it("keeps the 20 newest searches and drops the oldest pair", async () => {

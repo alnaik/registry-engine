@@ -1,7 +1,7 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.13 (v11, tester follow-ups)
-Last updated: 2026-10-29
+Version: 3.16 (v12, v1-readiness review)
+Last updated: 2026-10-30
 
 The known threats, their mitigations, and where each mitigation lives in the
 code. Update the code locations when code moves.
@@ -110,6 +110,8 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
    the full backoff budget. Each request attempt has a 20 s deadline (DNS
    probe 5 s); Retry-After is capped at 30 s.
 3. An optional Socrata app token sent as `X-App-Token`.
+   Socrata page responses (200 only) are cached in memory for 15 minutes, up
+   to 200 entries, so a repeated search doesn't repeat its requests.
 4. Bulk-only sources (PPP) are served from local shards, never queried per
    search.
 5. The registry name lookup sends at most 80 name patterns per search by
@@ -141,6 +143,14 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 - **PACA emails.** The committed PACA shards keep the filed phone and website
   and drop the filed email. About 665 of them were personal mailboxes, and a
   bulk file in a public repo is a harvest target.
+- **PPP names and addresses.** Some borrowers typed a mailbox into the name or
+  address field. The committed PPP shards have those email tokens stripped
+  (a record whose name was only an email is dropped), and the PACA shards'
+  `website` values that held an address are blank. Rule in
+  `scripts/data/build_ppp_shards.py` (`clean_name`, `clean_address`); the scan
+  test `tests/data/no-personal-emails.test.ts` fails on any consumer-provider
+  address (gmail, yahoo, aol, hotmail, outlook, msn, icloud, comcast, verizon,
+  optonline, att, sbcglobal) in `shards/` or `tests/fixtures/`.
 
 ---
 
@@ -217,7 +227,10 @@ credits is a target for other websites open in the same browser.
    and the server sends no CORS headers, so cross-origin pages can't trigger
    a search.
 3. One search at a time (429 otherwise), with a 10 KB body cap and
-   validated, length-capped fields. An oversized body gets 413 with
+   validated, length-capped fields. A closed tab cancels its search (abort
+   signal through the engine, drivers, `fetchWithRetry`, the DNS and contact
+   requests and the LLM call, which kills the `claude -p` child), so an
+   abandoned search stops spending credits and frees the slot. An oversized body gets 413 with
    `Connection: close` as soon as the declared or streamed size passes the cap,
    and the socket is closed.
 4. **XSS.** All registry and web strings are rendered with `textContent`;
@@ -232,7 +245,11 @@ credits is a target for other websites open in the same browser.
    the sheet showed, including individuals' records as filed. The id is a
    server-computed SHA-1; `/api/history/:id` and `/api/csv?id=` accept only
    `/^[a-f0-9]{40}$/` (400 otherwise), and no path is built from any other
-   input. Opening a stored search is a pure read; there is no delete endpoint.
+   input. Opening a stored search is a pure read. `DELETE /api/history`
+   removes every stored search (only files named by the id pattern) and, like
+   search, requires `Content-Type: application/json`, so a page on another site
+   can't clear it (415 otherwise; no CORS headers are sent). The page's "Clear
+   history" button asks for a confirm first.
 7. **Credentials.** Keys (`ANTHROPIC_API_KEY`, `EXA_API_KEY`,
    `PARALLEL_API_KEY`) are read from the process environment only (never
    from a request, a file or the page), held inside the backend closures,
@@ -306,3 +323,18 @@ credits is a target for other websites open in the same browser.
   answer logged only with `REGISTRY_ENGINE_DEBUG=1`; no-token accepted risk.
 - v3.13 (2026-10-29, v11): network failures are retried once; 429/5xx keep the
   backoff (Threat 4, item 2).
+- v3.14 (2026-10-30, v12 Batch A): a closed browser tab aborts its search (signal
+  threaded through `search`, `fetchWithRetry`, probe, contact lookup and both LLM
+  backends; an abort is never retried; Threat 8, item 3). Socrata pages are cached
+  for 15 minutes (Threat 4, item 3). `/api/search` accepts an empty query when `naics`
+  holds a valid code (the query becomes the code titles).
+- v3.15 (2026-10-30, v12 Batch B): with no state picked, `/api/search` takes the region
+  from `near` (only a known region; a state we don't cover is a 400, and a covered
+  town whose name ends in a state word keeps its own region; Threat 8, item 3).
+  `/api/codes` rejects an empty or over-100-character `q` with 400. Email tokens are
+  stripped from PPP `name` and `address`, PACA `website` addresses are blank, and
+  a scan test covers `shards/` and `tests/fixtures/` (Threat 5).
+- v3.16 (2026-10-30, v12 Batch C): `DELETE /api/history` clears the stored searches
+  (415 without a JSON content type, 204 otherwise; Threat 8, item 6, which said there
+  was no delete endpoint). The result's `sources` carry `dataAsOf` and each lead
+  `displayName`; neither adds an input or a path.

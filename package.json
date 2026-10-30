@@ -3,6 +3,9 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -12,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc",
-    "a11y": "vite-node scripts/a11y/axe.ts"
+    "a11y": "vite-node scripts/a11y/axe.ts",
+    "smoke": "vite-node scripts/smoke/ui.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

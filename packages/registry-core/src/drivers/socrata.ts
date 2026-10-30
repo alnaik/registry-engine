@@ -12,6 +12,8 @@ const CONCURRENCY = 4;
 export const MAX_BACKFILL_NAMES = 80;    // cap on distinct name patterns per call
 const NAME_CHUNK = 25;            // OR'd LIKE patterns per request
 const BACKFILL_PAGE_LIMIT = 200;  // row cap per chunk request
+const CACHE_TTL_MS = 15 * 60_000;  // a repeated page request within this reuses the parsed body
+const CACHE_MAX = 200;             // entries kept (oldest dropped first)
 const RECENT_LIMIT = 1000;        // default row cap for fetchRecent: one Socrata page, so the 90-day window isn't cut short statewide before the radius filter
 
 // Socrata quirks carried by the manifest entry. The optional tradeNames block
@@ -66,6 +68,10 @@ export class SocrataDriver implements Driver {
   readonly kind = "socrata" as const;
   readonly defaultLimit: number = DEFAULT_LIMIT;
   readonly maxBackfillNames: number = MAX_BACKFILL_NAMES;
+
+  // Page URL (+ whether an app token went with it) -> parsed 200 body. Map
+  // insertion order is age order, so the first key is the oldest.
+  private readonly cache = new Map<string, { at: number; page: Record<string, unknown>[] }>();
 
   backfillKey(name: string): string | null {
     return namePattern(name);
@@ -286,14 +292,35 @@ export class SocrataDriver implements Driver {
         $offset: String(offset),
         $order: order ?? ":id",
       });
-      const resp = await limiter.run(() => fetchWithRetry(url, opts));
-      if (!resp.ok) throw new Error(`${source.id}: HTTP ${resp.status}`);
-      const page = (await resp.json()) as Record<string, unknown>[];
+      const key = `${opts.appToken !== undefined ? "token " : ""}${url}`;
+      let page = this.cached(key);
+      if (page === undefined) {
+        const resp = await limiter.run(() => fetchWithRetry(url, opts));
+        if (!resp.ok) throw new Error(`${source.id}: HTTP ${resp.status}`);
+        page = (await resp.json()) as Record<string, unknown>[];
+        if (resp.status === 200) this.remember(key, page);
+      }
       rows.push(...page);
       if (page.length < requested) break;
       offset += requested;
     }
     return rows.slice(0, Math.max(limit, 0));
+  }
+
+  private cached(key: string): Record<string, unknown>[] | undefined {
+    const hit = this.cache.get(key);
+    if (hit === undefined) return undefined;
+    if (Date.now() - hit.at > CACHE_TTL_MS) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return hit.page;
+  }
+
+  private remember(key: string, page: Record<string, unknown>[]): void {
+    this.cache.delete(key);
+    this.cache.set(key, { at: Date.now(), page });
+    while (this.cache.size > CACHE_MAX) this.cache.delete(this.cache.keys().next().value!);
   }
 }
 

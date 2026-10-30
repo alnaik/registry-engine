@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { naicsTitle, naicsLabel, isNaicsCode, naicsIndex, naicsRelated, lookupCodes } from "../../packages/registry-core/src/naics.js";
 
@@ -98,6 +99,43 @@ describe("lookupCodes", () => {
     expect(lookupCodes(["metal"], 3).length).toBeLessThanOrEqual(3);
     expect(lookupCodes([])).toEqual([]);
     expect(lookupCodes(["zzzzqqqq"])).toEqual([]);
+  });
+});
+
+describe("lookupCodes synonyms", () => {
+  const top = (q: string, n: number) => lookupCodes(q.split(/\s+/)).slice(0, n).map(h => h.code);
+
+  it("every synonym code is a real NAICS code", () => {
+    const table = JSON.parse(readFileSync(new URL("../../packages/registry-core/src/naics-synonyms.json", import.meta.url), "utf8")) as Record<string, string[]>;
+    expect(Object.keys(table).length).toBeGreaterThan(30);
+    for (const [phrase, codes] of Object.entries(table)) {
+      expect(codes.length, phrase).toBeGreaterThan(0);
+      for (const code of codes) expect(isNaicsCode(code), `${phrase} -> ${code}`).toBe(true);
+    }
+  });
+
+  it("puts the review's misses first, in the listed order", () => {
+    expect(top("co-packer", 4)).toEqual(["311999", "311421", "311941", "561910"]);
+    expect(top("co packer", 4)).toEqual(["311999", "311421", "311941", "561910"]);
+    expect(top("copacker", 1)).toEqual(["311999"]);
+    expect(top("daycare", 1)).toEqual(["624410"]);
+    expect(top("child care", 1)).toEqual(["624410"]);
+    expect(top("mechanic", 2)).toEqual(["811111", "811118"]);
+    expect(top("dental", 1)).toEqual(["621210"]);
+    expect(top("property management", 2)).toEqual(["531311", "531312"]);
+  });
+
+  it("matches a phrase inside a longer query, then adds the word matches without duplicates", () => {
+    const hits = lookupCodes("find a good Auto Mechanic near me".split(/\s+/), 15).map(h => h.code);
+    expect(hits.slice(0, 2)).toEqual(["811111", "811118"]);
+    expect(new Set(hits).size).toBe(hits.length);
+    expect(hits.length).toBeLessThanOrEqual(15);
+    expect(lookupCodes(["dental", "office"]).map(h => h.code)[0]).toBe("621210");
+    expect(lookupCodes(["mechanics"]).map(h => h.code)[0]).toBe("811111");
+  });
+
+  it("needs a whole word: no vet in velvet", () => {
+    expect(lookupCodes(["velvet"]).map(h => h.code)).not.toContain("541940");
   });
 });
 

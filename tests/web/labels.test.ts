@@ -186,20 +186,63 @@ describe("summary sentence and About this search", () => {
     expect(text(summaryParts({ ...base, sheet: { ...sheet, coded: 1, businesses: 0, listed: 0, individuals: 1 } })))
       .toBe("No businesses are coded for this work in Colorado. 1 individual's record is listed separately.");
     expect(text(summaryParts({ ...base, sheet: { ...sheet, individuals: 0, listed: 30 } })))
-      .toContain("The sheet lists the top 30; the CSV has all of them.");
+      .not.toContain("CSV"); // the list footer says it (listFoot)
+  });
+
+  it("says when a source stopped at its row cap, once per distinct cap", async () => {
+    const { summaryParts } = await import("../../apps/web/public/labels.js");
+    const src = (name: string, count: number, capped: boolean) => ({ name, count, capped, error: false });
+    const none = text(summaryParts({ ...base, sources: [src("Colorado Secretary of State", 400, false)] }));
+    expect(none).not.toContain("stopped at");
+    const one = text(summaryParts({ ...base, sources: [src("Colorado Secretary of State", 500, true), src("PPP loans", 7, false)] }));
+    expect(one).toContain(" Colorado Secretary of State stopped at 500 records, so this isn't every business. Narrow the area or the codes for a fuller list. 11 individuals' records");
+    expect(text(summaryParts({ ...base, sources: [src("A", 500, true), src("B", 500, true), src("C", 500, true)] })))
+      .toContain(" A, B and C stopped at 500 records, so this isn't every business.");
+    expect(text(summaryParts({ ...base, sources: [src("A", 500, true), src("B", 1000, true)] })))
+      .toContain(" A stopped at 500 records and B stopped at 1,000 records, so this isn't every business.");
+    // a search with nothing listed still says the sources were cut short
+    expect(text(summaryParts({ ...base, sources: [src("A", 500, true)], sheet: { ...sheet, coded: 0, businesses: 0, listed: 0, individuals: 0 } })))
+      .toBe("No businesses are coded for this work in Colorado. A stopped at 500 records, so this isn't every business. Narrow the area or the codes for a fuller list.");
+  });
+
+  it("nothing within the radius names the nearest business instead of a bare zero", async () => {
+    const { summaryParts } = await import("../../apps/web/public/labels.js");
+    const far = { ...base, sheet: { ...sheet, individuals: 0, withinRadius: 0, nearestMi: 31.24 } };
+    expect(text(summaryParts(far)))
+      .toBe("35 businesses are coded for this work in Colorado. None within 25 mi; the nearest is 31.2 mi away. 17 are confirmed on the state registry. None publish a phone number in these records, so the sheet gives addresses and named agents.");
+    expect(summaryParts(far).filter(p => p[1]).map(p => p[0])).toEqual(["35 businesses", "None within 25 mi", "17"]);
+    // no known distance: the older wording stands
+    expect(text(summaryParts({ ...far, sheet: { ...far.sheet, nearestMi: null } }))).toContain("in Colorado, none within 25 miles of Denver, CO.");
+    // a nonzero count is unchanged
+    expect(text(summaryParts({ ...far, sheet: { ...far.sheet, withinRadius: 3 } }))).toContain("in Colorado, 3 within 25 miles of Denver, CO.");
+  });
+
+  it("the list footer says how many are shown only when the sheet cuts the list short", async () => {
+    const { listFoot } = await import("../../apps/web/public/labels.js");
+    expect(listFoot({ businesses: 1312, listed: 312 })).toBe("Showing 312 of 1,312. The CSV has all of them.");
+    expect(listFoot({ businesses: 35, listed: 35 })).toBe("");
+    expect(listFoot({ businesses: 35 })).toBe("");
+    expect(listFoot(undefined)).toBe("");
   });
 
   it("About rows carry capped notation, names checked, AI usage and contact lookup status", async () => {
     const { aboutRows } = await import("../../apps/web/public/labels.js");
     const rows = aboutRows({
       ...base,
-      sources: [{ name: "Colorado Secretary of State", count: 500, capped: true, error: false }, { name: "EPA ECHO", count: 0, capped: false, error: true }],
+      sources: [
+        { name: "Colorado Secretary of State", count: 500, capped: true, error: false, dataAsOf: "live" },
+        { name: "PPP loans", count: 7, capped: false, error: false, dataAsOf: "2020–21 loans" },
+        { name: "Produce dealers", count: 12, capped: false, error: false, dataAsOf: "recorded July 2026" },
+        { name: "EPA ECHO", count: 0, capped: false, error: true, dataAsOf: "live" },
+      ],
       registryLookup: { status: "ran", namesChecked: 46, nameCap: 80, candidates: 46, totalNames: 46 },
       llmUsage: { inputTokens: 9000, outputTokens: 4500, costUsd: 0.059, calls: [{}, {}] },
       llmCalls: 2,
     }, { contactsProvider: null }, 14);
     expect(rows).toEqual([
-      ["Colorado Secretary of State", "500+ (capped)"],
+      ["Colorado Secretary of State", "500+ (capped) · live"],
+      ["PPP loans", "7 · 2020–21 loans"],
+      ["Produce dealers", "12 · recorded July 2026"],
       ["EPA ECHO", "didn't respond"],
       ["Names checked against the state registry", "all 46"],
       ["Name matches only (kept out of the list)", "359"],

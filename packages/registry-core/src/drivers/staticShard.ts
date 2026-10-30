@@ -118,6 +118,19 @@ export class StaticShardDriver implements Driver {
   }
 }
 
+// The `generated` date (YYYY-MM-DD) of a region's shard, for "About this
+// search". Null for sector-sharded or http sources, a missing file, or no date.
+export async function shardGenerated(source: SourceSpec, region: string): Promise<string | null> {
+  const quirks = (source.quirks ?? {}) as ShardQuirks;
+  if (quirks.shardBy !== undefined || !source.endpoint.startsWith("repo:") || !REGION_PATTERN.test(region)) return null;
+  try {
+    const shard = await readShard(source, `${region}.json`, true, {}) as (ShardFile & { generated?: unknown }) | null;
+    return typeof shard?.generated === "string" && /^\d{4}-\d{2}/.test(shard.generated) ? shard.generated : null;
+  } catch {
+    return null;
+  }
+}
+
 // Reads one shard file from disk (repo: endpoints) or over HTTP. With
 // `optional`, a missing file is "no records here" (null), not an error.
 async function readShard(

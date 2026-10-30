@@ -1,3 +1,220 @@
+# v12 — v1-readiness review fixes
+
+Working branch: `v12-v1-review`. Source: the v1 review of `5a13550`
+(2026-10-30), cross-checked against `main` @ 040c702. Review items 2 and the
+wrong-state half of 4 were fixed by v11; 13 and 16 were wrong (the no-AI hint
+exists; `capture.mjs` is tracked). Owner decisions 2026-10-30: phones (5),
+CT/NY PPP data (6, with 29) and the PACA history rewrite (9, history part;
+23) stay out of v12. Typed contacts (25) deferred: large refactor, the page
+already extracts phones. One PR. Three coder batches, run in order (A, B, C);
+each must leave `npm test` and `npm run typecheck` green.
+
+## Batch A — ranking, cancel, speed, codes-only search
+
+### A1 — mixed-industry searches interleave codes (review 1) ✅ (2026-10-30)
+`rankEntities` in `packages/qualify/src/verbs/brief.ts` sorts tier, band,
+then `fit` (code order), then score, so the first code fills each band.
+Keep tier then band. Within one (tier, band) group, interleave by fit code:
+order each code's leads by the existing tail (score, distance, employees,
+name), then take one lead from code 0, one from code 1, … cycling, skipping
+codes that have run out. Leads with no fitting code (fit = sentinel) go last
+in the group in the existing order. A single-code search orders exactly as
+today. Tests: 3 codes × several leads in one band come out round-robin; a
+single-code search is unchanged; tier and band still dominate.
+
+### A2 — a closed tab cancels the search (review 10) ✅ (2026-10-30)
+- `apps/web/src/server.ts` `handleSearch`: create an `AbortController`;
+  abort it when the response closes before the search finished
+  (`res.on("close")` with `!res.writableEnded`). Pass `signal` in the search
+  config. `busy` is released when the search promise settles (as now), so the
+  engine must settle promptly after abort.
+- `packages/qualify/src/engine.ts`: accept `signal?: AbortSignal` in the
+  config; throw `signal.reason` (or an `AbortError`) at each stage boundary
+  (after map, after fetch, after backfill, before contacts, before brief) and
+  pass it down to drivers and the LLM call.
+- `packages/registry-core/src/util/http.ts` `fetchWithRetry`: accept
+  `signal`; combine with the per-attempt timeout (`AbortSignal.any`); an
+  abort from the caller is never retried and sleeps between retries end
+  early on abort.
+- Drivers: thread the signal through their fetch calls (Socrata, ECHO,
+  static shard http, DNS probe, contact lookup) via existing options objects.
+- LLM: `claudeCodeBackend` kills the child process on abort; the Anthropic
+  API backend passes the signal to its fetch. Adapter signature may take an
+  optional `signal`.
+- Server: an aborted search writes nothing further and does not save
+  history.
+- Tests (server.test.ts): a search whose stub waits on the signal; the
+  client destroys its request; a second search right after gets 200, not 429
+  (poll briefly for the slot). http.test.ts: an aborted signal stops retries
+  (fetch called once) and rejects.
+
+### A3 — Socrata responses are cached briefly (review 14) ✅ (2026-10-30)
+In-memory cache in the Socrata driver (or `fetchWithRetry` behind an opt-in
+flag used only by Socrata): key = full URL incl. app token presence, value =
+parsed JSON body, TTL 15 minutes, at most 200 entries (drop oldest). Only
+200 responses are cached. Test: two identical page requests within TTL make
+one fetch; after TTL (fake timers) two.
+
+### A4 — codes-only API search (review 12) ✅ (2026-10-30)
+`parseSearchParams`: `query` may be empty or absent when `naics` has at
+least one valid code; then the query becomes the code titles joined with
+", " (via `naicsLabel`), clipped to 300. Otherwise the 3–300 rule stands.
+Test: `{ naics: ["621210"], noLlm: true }` → 200 and the stub sees a query
+containing "Dentists".
+
+## Batch B — places, state from location, code finder, emails
+
+### B1 — NYC boroughs and counties are places (review 3) ✅ (2026-10-30)
+- `scripts/data/build_geo.py`: also read the Census 2024 Gazetteer counties
+  file and add each county in a covered region to that region's
+  `places.json` table under its lowercased name (e.g. `denver county`,
+  `kings county`; CT's county-equivalents are planning regions, use their
+  Gazetteer names). Do not overwrite an existing place key.
+- Add hand aliases in the script for US-NY: `brooklyn` (40.6782,-73.9442),
+  `queens` (40.7282,-73.7949), `bronx` and `the bronx` (40.8448,-73.8648),
+  `manhattan` (40.7831,-73.9712), `staten island` (40.5795,-74.1502), `nyc`
+  and `new york city` (same as `new york`). Rebuild `places.json` (download
+  the Gazetteer file; keep the rebuild deterministic and document the source
+  URL in the script header).
+- Tests in geo.test.ts: `Brooklyn`, `Brooklyn, NY`, `Kings County`,
+  `Denver County` resolve in their regions.
+
+### B2 — the state comes from the location when the user didn't pick one (review 4) ✅ (2026-10-30)
+- UI: the state select gets a first option `From your location` (value
+  `""`), selected by default; when it's selected the request sends no
+  `region`. A previously stored search's region still restores.
+- Server `parseSearchParams`: when `region` is absent and `near` names a
+  state (`locationState`) that is a known region (`US-<code>` in
+  `knownRegions`), use it. If it names a state we don't cover → 400
+  `"<near>" is in <State>, which isn't covered yet. Covered: <names>.`
+  If it names no state, `defaultRegion` as now. An explicit `region` keeps
+  v11's rule (resolves in region, else the 400).
+- Tests: `near: "11201"`, no region → the stub sees region US-NY;
+  `near: "Brooklyn, NY"` → US-NY; `near: "Austin, TX"` → 400 naming Texas;
+  explicit US-CO + `06103` → 400 as before.
+
+### B3 — code finder synonyms (review 8, 27) ✅ (2026-10-30)
+- New `packages/registry-core/src/naics-synonyms.json`: phrase → codes,
+  checked against `isNaicsCode` in a test. Entries: co-packer, copacker,
+  co-packing → 311999, 311421, 311941, 561910; daycare, day care, childcare,
+  child care → 624410; mechanic, auto mechanic, car repair → 811111, 811118;
+  dental, dentist, dental office → 621210; property management, property
+  manager → 531311, 531312; insurance agent → 524210; vet, veterinarian →
+  541940; trucking, trucker → 484110, 484121, 484122; plumber → 238220;
+  electrician → 238210; hvac → 238220; accountant, bookkeeper → 541211,
+  541219; lawyer, attorney → 541110; landscaper, landscaping → 561730;
+  janitorial, cleaning service → 561720; roofer → 238160; caterer → 722320;
+  printer, print shop → 323111; bakery → 311811; restaurant → 722511.
+- `lookupCodes`: if the joined lowercased words (hyphens and spaces
+  normalized) equal or contain a synonym phrase, those codes come first in
+  the listed order, then the existing word-match results with duplicates
+  removed, within `max`. Wherever the no-AI path matches words to codes, it
+  goes through `lookupCodes` or this table (check `map.ts`).
+- `/api/codes`: empty or whitespace `q` → 400 `q is required`; `q` over 100
+  chars → 400 (instead of silent clip).
+- Tests: each review miss (`co-packer`, `daycare`, `mechanic`, `dental`
+  → 621210 first, `property management` → 531311 first); 400s.
+
+### B4 — no personal emails in tracked data (review 9, files part) ✅ (2026-10-30)
+- `shards/paca/US-NY.json` (and CO/CT): a `website` value containing `@`
+  becomes `""`. PPP shards: an `address` value that is an email (matches
+  `^\S+@\S+\.\S+$`) becomes `""`; same rule added to
+  `scripts/data/build_ppp_shards.py`. Preserve file formatting (PACA: indent
+  1, ensure_ascii False, trailing newline; PPP: check the existing
+  one-object-per-line format and keep it).
+- `tests/fixtures/paca-us-co-shard.json`: drop `email_address` from every
+  record; adjust tests that relied on it.
+- New `tests/data/no-personal-emails.test.ts`: scans every file under
+  `shards/` and `tests/fixtures/` for an address at gmail, yahoo, aol,
+  hotmail, outlook, msn, icloud, comcast, verizon, optonline, att, sbcglobal
+  and fails listing file:line.
+
+Batch B review notes (2026-10-30): PPP email tokens are stripped from `name`
+and `address` (name-only-email records dropped, 11; README count 153,082), also
+the spaced form `name@Gmail Com`; the no-AI `STATIC_LEADS` table in map.ts is
+unchanged (synonyms feed the Find codes box); a bare place in a covered region
+wins over an uncovered-state suffix ("Port Washington"); the origin event and
+result carry the region actually searched.
+
+## Batch C — sheet honesty, docs and tooling
+
+### C1 — capped sources in the summary (review 7) ✅ (2026-10-30)
+When any source's fetch was capped, the summary block (where the headline
+counts render in `apps/web/public/app.js`) adds one plain sentence: `<names>
+stopped at <n> records, so this isn't every business. Narrow the area or the
+codes for a fuller list.` Pin the wording in labels.js with a test, like the
+other labels.
+
+### C2 — nothing within radius says so (review 11) ✅ (2026-10-30)
+When a location resolved and `withinRadius` is 0 but businesses were listed,
+the summary says `None within <r> mi; the nearest is <d> mi away.` instead
+of a bare 0. Label in labels.js, tested.
+
+### C3 — listed vs total (review 24) ✅ (2026-10-30)
+When `listed` < `businesses`, the list footer says `Showing <listed> of
+<businesses>. The CSV has all of them.` (verify the CSV export really
+contains every ranked lead; if not, raise a DEVIATION REQUEST).
+
+### C4 — data date per source (review 20) ✅ (2026-10-30)
+"About this search" sources list: each source shows how current it is —
+static shards: `recorded <Month YYYY>` from the shard's `generated`
+(PPP: `2020–21 loans`); live sources: `live`. Server adds the field to the
+result's `sources`; UI renders it; test the server field.
+
+### C5 — `displayName` in the API (review 26) ✅ (2026-10-30)
+LeadView gains `displayName` (display case for business names, the filed
+name for individuals: the same rule app.js uses); app.js uses it. README API
+section lists it.
+
+### C6 — history: docs and a clear button (review 18) ✅ (2026-10-30)
+- README line ~97: saved searches are kept by the local server under
+  `~/.cache/registry-engine/searches` (newest 20); My calls lives in the
+  browser.
+- `DELETE /api/history` (requires `Content-Type: application/json`, like
+  search, so cross-site pages can't trigger it) removes the stored searches;
+  204. UI: a "Clear history" button in the history panel with a confirm.
+  SECURITY.md Threat 8 item 6 updated ("there is no delete endpoint" →
+  the clear endpoint and its guard); changelog.
+- Tests: DELETE without JSON content type → 415; with → 204 and the list is
+  empty.
+
+### C7 — Node version pinned (review 15) ✅ (2026-10-30)
+`package.json` `"engines": { "node": ">=20.19" }`; `.nvmrc` with `24`.
+README: "Tested on Node 24; runs on 20.19+. The proxy note needs 24."
+
+### C8 — a11y script finds Chromium (review 17) ✅ (2026-10-30)
+`scripts/a11y/axe.ts`: when `CHROME` is unset, look under the Playwright
+cache (`~/Library/Caches/ms-playwright` on macOS, `~/.cache/ms-playwright`
+on Linux, `%LOCALAPPDATA%\ms-playwright` on Windows) for the newest
+`chromium_headless_shell-*` executable; if none, exit 1 with
+`Set CHROME to a Chromium or Chrome executable, or run npx playwright install chromium-headless-shell.`
+
+### C9 — UI smoke run (review 19) ✅ (2026-10-30)
+`scripts/smoke/ui.ts` + `npm run smoke`: same harness as the a11y script
+(real server on the fixture search, no network, no AI). Drives: empty page
+renders; a search streams and shows result rows; the CSV link returns
+`text/csv`; a forced server error shows the error box; the history list
+shows the search. Exit non-zero with the failing step. Document in README
+Development and CLAUDE.md Commands.
+
+### C10 — CONTRIBUTING.md (review 21) ✅ (2026-10-30)
+Short: setup, the commands from CLAUDE.md, how to add a state (manifest
+entry, zero-code test), data rebuild scripts, the PLAN.md/spec workflow,
+SECURITY.md for anything building queries/paths, and no personal data in
+shards or fixtures (the B4 test).
+
+Batch C review notes (2026-10-30): the summary's "The sheet lists the top N;
+the CSV has all of them." was removed (C3's list footer says it); `nearestMi`
+added to SheetCounts for C2. Review 28: a live search at 390px ("dentists and
+veterinarians" near "Brooklyn, NY") rendered with no horizontal scroll and
+resolved to New York from the location.
+
+## Done when
+All three batches merged into the branch, `npm test`, `npm run typecheck`,
+`npm run a11y` and `npm run smoke` pass.
+
+---
+
 # v11 — tester follow-ups: location input, out-of-state ZIP, retries, proxy note
 
 Working branch: `v11-location-retry`. Owner decisions 2026-10-29: from an

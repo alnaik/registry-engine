@@ -9,7 +9,7 @@ import {
   trustLabel, trustAtCall, webTag, fetchedText, whatLine,
   OUTCOMES, OUTCOME_LABEL, migrateTracker, isTracked, shortDate, callStatusText,
   FILTERS, bandTitle, phoneDigits, reachSummary, prettyHost, summaryParts, aboutRows,
-  registryLine, registryProgressText, llmFailedHint, coverageLine, displayName, displayCity,
+  registryLine, registryProgressText, llmFailedHint, coverageLine, displayName, displayCity, listFoot,
 } from "/labels.js";
 
 const $ = id => document.getElementById(id);
@@ -244,6 +244,7 @@ const app = {
   direction: "auto",
   map: null,
   origin: undefined,        // undefined until the origin event arrives
+  region: undefined,        // the region the search used (after inference from the location)
   result: null,
   filter: "all",
   items: [],                // main list: { lead, el, band, collapsed }
@@ -334,8 +335,10 @@ async function loadStatus() {
   if (coverage !== "" && fine) fine.textContent += ` ${coverage}`;
   if (Array.isArray(status.regions) && status.regions.length > 1) {
     const select = $("region");
+    // No state picked: the server takes it from the location.
+    select.append(h("option", { value: "", text: "From your location" }));
     for (const code of status.regions) select.append(h("option", { value: code, text: code.replace(/^US-/, "") }));
-    select.value = status.defaultRegion;
+    select.value = "";
     $("region-field").hidden = false;
   }
   updateCodeBox();
@@ -454,6 +457,7 @@ function setupForm() {
     if (app.lastParams && !app.running) runSearch(app.lastParams);
   });
   $("print").addEventListener("click", () => window.print());
+  $("clear-history").addEventListener("click", clearHistory);
   $("save").addEventListener("click", () => saveCurrentSearch());
   $("calls-csv").addEventListener("click", downloadCalls);
 
@@ -564,6 +568,7 @@ function handleEvent(event) {
     }
     case "origin":
       app.origin = event.origin;
+      app.region = event.region;
       renderReading();
       break;
     case "routed":
@@ -648,7 +653,7 @@ function renderReading() {
     line.append(h("span", { class: "quiet", "aria-hidden": "true", text: "·" }));
     if (app.origin === null) {
       if (app.lastParams && app.lastParams.near) {
-        const region = String(app.lastParams.region || (app.status && app.status.defaultRegion) || "this state").replace(/^US-/, "");
+        const region = String(app.region || app.lastParams.region || (app.status && app.status.defaultRegion) || "this state").replace(/^US-/, "");
         line.append(h("span", null, h("strong", { text: `couldn't find "${app.lastParams.near}" in ${region}` }), ", so results aren't sorted by distance"));
       } else {
         line.append(h("span", { text: "whole state, no distance (add a ZIP or town to sort by distance)" }));
@@ -687,6 +692,7 @@ function renderReading() {
 function resetForRun(params) {
   app.map = null;
   app.origin = undefined;
+  app.region = undefined;
   app.result = null;
   app.items = [];
   app.bands = new Map();
@@ -705,6 +711,7 @@ function resetForRun(params) {
   $("error-box").hidden = true;
   $("empty").hidden = true;
   $("results-area").hidden = true;
+  $("list-foot").hidden = true;
   $("csv").href = "/api/csv";
   for (const id of ["reading-lines", "notes", "bands", "groups", "filters", "about-rows"]) clear($(id));
   $("reading").hidden = false;
@@ -805,6 +812,7 @@ function showResult(result, opts = {}) {
   app.result = result;
   app.skipBuyerCaveat = false;
   if (result.origin !== undefined) app.origin = result.origin;
+  if (result.region) app.region = result.region;
   renderReading();
 
   const main = mainLeads(result);
@@ -828,6 +836,7 @@ function showResult(result, opts = {}) {
   renderTools(stored);
   renderBands(result);
   renderGroups(result);
+  renderListFoot(result);
   renderAbout(result, stored);
   applyFilter();
 }
@@ -1039,6 +1048,21 @@ async function loadRecent() {
   }
 }
 
+// Removes every stored search on the server, after a confirm.
+async function clearHistory() {
+  if (!window.confirm("Clear all recent searches? Your saved searches and call notes stay.")) return;
+  try {
+    const resp = await fetch("/api/history", { method: "DELETE", headers: { "Content-Type": "application/json" } });
+    if (!resp.ok) throw new Error(String(resp.status));
+  } catch {
+    toast("Couldn't clear recent searches.");
+    return;
+  }
+  clear($("recent-list"));
+  $("recent").hidden = true;
+  toast("Recent searches cleared.");
+}
+
 async function fetchRecent(id) {
   try {
     const resp = await fetch(`/api/history/${encodeURIComponent(id)}`);
@@ -1192,6 +1216,13 @@ function renderGroups(result) {
   }
 }
 
+// "Showing 312 of 540. The CSV has all of them." under the list.
+function renderListFoot(result) {
+  const text = listFoot(result.sheet);
+  $("list-foot").textContent = text;
+  $("list-foot").hidden = text === "";
+}
+
 // ---- about this search ----------------------------------------------------------------------------
 
 function renderAbout(result, stored) {
@@ -1209,7 +1240,8 @@ function renderAbout(result, stored) {
 // The name as shown on the sheet: display case for businesses, as filed for
 // individuals' records (ADR 0017). CSV, history and clipboard keep lead.name.
 function shownName(lead) {
-  return lead.individual === true ? lead.name : displayName(lead.name);
+  if (typeof lead.displayName === "string") return lead.displayName;
+  return lead.individual === true ? lead.name : displayName(lead.name);   // a sheet stored before v12
 }
 
 function distanceCell(lead) {

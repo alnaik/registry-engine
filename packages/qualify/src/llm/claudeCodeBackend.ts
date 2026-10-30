@@ -23,7 +23,7 @@ export class ClaudeCodeBackend implements RawLlm {
       ...(opts.system !== undefined ? ["--system-prompt", opts.system] : []),
     ];
 
-    const stdout = await run("claude", args, prompt);
+    const stdout = await run("claude", args, prompt, opts.signal);
 
     let result: {
       result?: string;
@@ -53,21 +53,26 @@ export class ClaudeCodeBackend implements RawLlm {
   }
 }
 
-function run(cmd: string, args: string[], stdin: string): Promise<string> {
+// An aborted signal kills the child and rejects with the signal's reason.
+function run(cmd: string, args: string[], stdin: string, signal?: AbortSignal | undefined): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { timeout: 300_000 });
+    signal?.throwIfAborted();
+    const child = spawn(cmd, args, { timeout: 300_000, ...(signal !== undefined ? { signal } : {}) });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
     child.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
-    child.on("error", err => reject(new Error(`claude CLI failed to start: ${err.message}`)));
+    child.on("error", err => reject(signal?.aborted === true ? (signal.reason as unknown) : new Error(`claude CLI failed to start: ${err.message}`)));
     child.on("close", code => {
-      if (code === 0) {
+      if (signal?.aborted === true) {
+        reject(signal.reason as unknown);
+      } else if (code === 0) {
         resolve(stdout);
       } else {
         reject(new Error(`claude CLI exited ${code}${stderr ? `: ${stderr.slice(0, 300)}` : ""}`));
       }
     });
+    child.stdin.on("error", () => { /* killed or exited early: the close/error handler reports it */ });
     child.stdin.write(stdin);
     child.stdin.end();
   });

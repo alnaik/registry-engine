@@ -5,7 +5,9 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { leadsToCsv, summaryCounts, sheetCounts, partitionLeads, codeSourceIds, naicsFieldMap, isLikelyIndividual } from "@registry-engine/qualify";
 import type { search, EngineEvent, Lead, SearchOutcome, RegistryCheck, RawLlm, LlmBilling } from "@registry-engine/qualify";
-import { SOURCES, knownRegions, defaultRegion, lookupCodes, naicsLabel, naicsPhrase, naicsRelated, normalizeName, locationState, stateName, resolveLocation } from "@registry-engine/registry-core";
+import { SOURCES, shardGenerated, knownRegions, defaultRegion, lookupCodes, naicsLabel, isNaicsCode, naicsPhrase, naicsRelated, normalizeName, locationState, stateName, resolveLocation } from "@registry-engine/registry-core";
+import type { SourceSpec } from "@registry-engine/registry-core";
+import { displayName } from "../public/labels.js";
 
 // The local web app's HTTP surface: static files, a status probe, a NAICS
 // lookup, and one streaming search endpoint. Everything is loopback-only
@@ -30,6 +32,11 @@ const DEFAULT_RADIUS_MI = 25; // the summary's "within N miles" when no radius i
 const HISTORY_MAX = 20;
 const HISTORY_ID_RE = /^[a-f0-9]{40}$/;
 const HISTORY_FILE_RE = /^[a-f0-9]{40}\.json$/;
+const HISTORY_ANY_RE = /^[a-f0-9]{40}\.(json|csv)$/;   // what clearing removes
+
+// Static sources whose age is a fact about the data, not the shard file.
+const SNAPSHOT_NOTES: Record<string, string> = { ppp: "2020–21 loans" };
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const REGION_NAMES: Record<string, string> = { "US-CO": "Colorado", "US-CT": "Connecticut", "US-NY": "New York" };
 
@@ -69,6 +76,7 @@ export interface LeadView {
   rank: number;
   score: number;
   name: string;
+  displayName: string;   // the name as the sheet shows it: display case for businesses, as filed for individuals
   aka: string[];
   address: { street: string; city: string; state: string; zip: string };
   distanceMi: number | null;
@@ -150,13 +158,34 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
     }
 
     if (method === "GET" && path === "/api/codes") {
-      const q = (url.searchParams.get("q") ?? "").slice(0, 100);
+      const q = url.searchParams.get("q") ?? "";
+      if (q.trim() === "") {
+        sendJson(res, 400, { error: "q is required" });
+        return;
+      }
+      if (q.length > 100) {
+        sendJson(res, 400, { error: "q must be at most 100 characters" });
+        return;
+      }
       sendJson(res, 200, lookupCodes(q.split(/\s+/).filter(Boolean)));
       return;
     }
 
     if (method === "GET" && path === "/api/history") {
       sendJson(res, 200, await listHistory(deps.historyDir));
+      return;
+    }
+
+    if (method === "DELETE" && path === "/api/history") {
+      // Same guard as search: a JSON content type forces a CORS preflight, so
+      // a page on another site can't clear the history.
+      if (!/^application\/json\s*(;|$)/i.test(req.headers["content-type"] ?? "")) {
+        sendJson(res, 415, { error: "Content-Type must be application/json" });
+        return;
+      }
+      await clearHistory(deps.historyDir);
+      res.writeHead(204, { "Cache-Control": "no-store" });
+      res.end();
       return;
     }
 
@@ -252,6 +281,13 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
     }
     busy = true;
 
+    // A closed tab (the response closes before it finished) cancels the
+    // search; `busy` is released when the search settles.
+    const controller = new AbortController();
+    res.on("close", () => {
+      if (!res.writableEnded) controller.abort();
+    });
+
     res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" });
     const write = (obj: unknown): void => {
       if (res.writableEnded || res.destroyed) return;
@@ -275,15 +311,19 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         maxLeads: params.leads,
         region: params.region,
         direction: params.direction,
+        signal: controller.signal,
         contacts: params.findContacts ? undefined : null,
         onEvent: event => {
           if (event.type === "fetched") fetchedBy.set(event.sourceId, { count: event.count, capped: event.capped, error: false });
           if (event.type === "source_error" && !fetchedBy.has(event.sourceId)) fetchedBy.set(event.sourceId, { count: 0, capped: false, error: true });
-          const line = translateEvent(event);
+          const line = translateEvent(event, params.region ?? defaultRegion(SOURCES));
           if (event.type === "map") mapLine = line;
           if (line !== null) write(line);
         },
       });
+
+      // The tab closed while the engine was finishing: nothing to write or keep.
+      if (controller.signal.aborted) return;
 
       // The rejected map answer goes to the server's stderr for diagnosis,
       // never into the result line or the page, and only when asked for: it
@@ -297,12 +337,14 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
       }
       const existenceIds = outcome.routed.filter(s => s.plane === "existence").map(s => s.id);
       last = { ranked: outcome.ranked, existenceIds };
-      const result = buildResult(outcome, existenceIds, params, sourceNames, fetchedBy, picked?.billing ?? null);
+      const asOf = new Map(await Promise.all(outcome.routed.map(async s => [s.id, await dataAsOf(s, outcome.map.intent.geo.region)] as const)));
+      const result = buildResult(outcome, existenceIds, params, sourceNames, fetchedBy, asOf, picked?.billing ?? null);
       if (deps.historyDir !== undefined) {
         await saveHistory(deps.historyDir, params, mapLine, result, leadsToCsv(outcome.ranked, existenceIds));
       }
       write(result);
     } catch (err) {
+      if (controller.signal.aborted) return;
       console.error(err);
       write({ type: "error", message: forPage(err instanceof Error ? err.message : String(err)) });
     } finally {
@@ -358,6 +400,20 @@ async function saveHistory(dir: string, params: SearchParams, map: Record<string
     }
   } catch (err) {
     console.error(`[history] couldn't save this search: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+// Removes every stored search (the id-named .json and .csv files only).
+async function clearHistory(dir: string | undefined): Promise<void> {
+  if (dir === undefined) return;
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (HISTORY_ANY_RE.test(name)) await unlink(join(dir, name)).catch(() => {});
   }
 }
 
@@ -463,8 +519,9 @@ function parseSearchParams(body: unknown): SearchParams {
   if (typeof body !== "object" || body === null || Array.isArray(body)) throw new BadRequest("body must be a JSON object");
   const b = body as Record<string, unknown>;
 
-  const query = typeof b["query"] === "string" ? b["query"].trim() : "";
-  if (query.length < 3 || query.length > 300) throw new BadRequest("query must be 3 to 300 characters");
+  let query = typeof b["query"] === "string" ? b["query"].trim() : "";
+  // An empty query is allowed when valid codes are given (checked below).
+  if (query !== "" && (query.length < 3 || query.length > 300)) throw new BadRequest("query must be 3 to 300 characters");
 
   let near: string | undefined;
   if (b["near"] !== undefined && b["near"] !== null) {
@@ -487,6 +544,13 @@ function parseSearchParams(body: unknown): SearchParams {
     if (codes.length > 0) naics = codes;
   }
 
+  // Codes only: the query becomes the code titles.
+  if (query === "") {
+    const titles = (naics ?? []).filter(isNaicsCode).map(code => naicsLabel(code)).filter((t): t is string => t !== undefined);
+    if (titles.length === 0) throw new BadRequest("query must be 3 to 300 characters");
+    query = titles.join(", ").slice(0, 300);
+  }
+
   const flag = (key: string, fallback: boolean): boolean => {
     const v = b[key];
     if (v === undefined || v === null) return fallback;
@@ -505,6 +569,24 @@ function parseSearchParams(body: unknown): SearchParams {
   if (b["region"] !== undefined && b["region"] !== null) {
     if (typeof b["region"] !== "string" || !knownRegions(SOURCES).includes(b["region"])) throw new BadRequest("unknown region");
     region = b["region"];
+  }
+
+  // No state picked: the state the location names is the one searched. A
+  // place whose own name ends in a state word ("Port Washington") that
+  // resolves in a covered region is that region's, not the named state's.
+  if (region === undefined && near !== undefined) {
+    const nearState = locationState(near);
+    if (nearState !== undefined) {
+      const known = knownRegions(SOURCES);
+      const named = `US-${nearState}`;
+      const home = known.includes(named) ? named : known.find(r => resolveLocation(r, near) !== undefined);
+      if (home === undefined) {
+        const place = stateName(nearState) ?? nearState;
+        const covered = known.map(r => REGION_NAMES[r] ?? r.replace(/^US-/, "")).join(", ");
+        throw new BadRequest(`"${near}" is in ${place}, which isn't covered yet. Covered: ${covered}.`);
+      }
+      region = home;
+    }
   }
 
   // A ZIP or town in another state would search nowhere useful: say so now.
@@ -536,7 +618,7 @@ function parseSearchParams(body: unknown): SearchParams {
 
 // Engine events -> the shapes the browser needs. Raw MapResult/SourceSpec
 // objects (endpoints, field maps) stay on the server.
-function translateEvent(event: EngineEvent): Record<string, unknown> | null {
+function translateEvent(event: EngineEvent, region: string): Record<string, unknown> | null {
   switch (event.type) {
     case "map":
       return {
@@ -550,7 +632,8 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
         ...(event.map.llmError !== undefined ? { llmError: forPage(event.map.llmError) } : {}),
       };
     case "origin":
-      return { type: "origin", origin: event.origin };
+      // The region searched, after inference from `near`, so the page can name it.
+      return { type: "origin", origin: event.origin, region };
     case "routed":
       return { type: "routed", sources: event.sources.map(s => ({ id: s.id, name: s.name })) };
     case "fetched":
@@ -572,12 +655,24 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
   }
 }
 
+// How current a source's records are, for "About this search": live sources
+// say "live"; a shard says when it was recorded ("" when it doesn't say).
+async function dataAsOf(source: SourceSpec, region: string): Promise<string> {
+  if (source.driver !== "static_shard") return "live";
+  const note = SNAPSHOT_NOTES[source.id];
+  if (note !== undefined) return note;
+  const m = /^(\d{4})-(\d{2})/.exec(await shardGenerated(source, region) ?? "");
+  const month = m === null ? undefined : MONTH_NAMES[Number(m[2]) - 1];
+  return m !== null && month !== undefined ? `recorded ${month} ${m[1]}` : "";
+}
+
 function buildResult(
   outcome: SearchOutcome,
   existenceIds: string[],
   params: SearchParams,
   sourceNames: Map<string, string>,
   fetchedBy: Map<string, { count: number; capped: boolean; error: boolean }>,
+  asOf: Map<string, string>,
   llmBilling: LlmBilling | null
 ): Record<string, unknown> {
   const names = new Map(sourceNames);
@@ -604,7 +699,7 @@ function buildResult(
     summary: summaryCounts(outcome.ranked, codes),
     sheet: sheetCounts(outcome.ranked, codes, { radiusMi, hasOrigin: outcome.origin !== null, listCap: topN + MORE_LEADS }),
     registryLookup: outcome.registryLookup,
-    sources: outcome.routed.map(s => ({ id: s.id, name: s.name, plane: s.plane, ...(fetchedBy.get(s.id) ?? { count: 0, capped: false, error: false }) })),
+    sources: outcome.routed.map(s => ({ id: s.id, name: s.name, plane: s.plane, ...(fetchedBy.get(s.id) ?? { count: 0, capped: false, error: false }), dataAsOf: asOf.get(s.id) ?? "" })),
     contactLookups: outcome.contactLookups,
     llmCalls: outcome.llmCalls,
     llmUsage: outcome.llmUsage,
@@ -634,6 +729,7 @@ function leadView(lead: Lead, rank: number, existenceIds: string[], names: Map<s
     rank,
     score: lead.score,
     name: e.name,
+    displayName: individual ? e.name : displayName(e.name),
     aka: e.names,
     address,
     distanceMi: lead.distanceMi,

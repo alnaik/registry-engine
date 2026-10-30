@@ -110,7 +110,10 @@
           </div>
 
           <div id="recent" class="saved-box" hidden>
-            <h2 class="label">Recent searches</h2>
+            <div class="recent-head">
+              <h2 class="label">Recent searches</h2>
+              <button type="button" id="clear-history" class="btn sm">Clear history</button>
+            </div>
             <ul id="recent-list" class="saved-list"></ul>
           </div>
         </form>
@@ -150,6 +153,7 @@
           <p class="print-only print-head" id="print-head"></p>
           <div id="bands"></div>
           <p id="filter-empty" class="state-box quiet" hidden>No businesses in this list match the filter.</p>
+          <p id="list-foot" class="fine quiet" hidden></p>
           <div id="groups"></div>
           <details id="about" class="about">
             <summary>About this search</summary>

@@ -33,6 +33,7 @@ export interface ProbeOptions {
   wasChecked?: ((entity: Entity) => boolean) | undefined;  // false = its name was never looked up in that source
   inactiveStatus?: ((entity: Entity) => string | null) | undefined;  // the registry's status when it has this name but not in good standing
   fetchImpl?: typeof fetch | undefined;
+  signal?: AbortSignal | undefined;   // the search was cancelled: stop the lookups
 }
 
 export async function probeEntities(entities: Entity[], opts: ProbeOptions = {}): Promise<Map<string, ProbeResult>> {
@@ -42,7 +43,7 @@ export async function probeEntities(entities: Entity[], opts: ProbeOptions = {})
   const results = new Map<string, ProbeResult>();
 
   const jobs = entities.slice(0, limit).map(entity =>
-    probeOne(entity, limiter, doFetch).then(r => {
+    probeOne(entity, limiter, doFetch, opts.signal).then(r => {
       results.set(entity.id, r);
       applyToEntity(entity, r);
       if (opts.existenceSourceId !== undefined && !entity.source_ids.includes(opts.existenceSourceId)) {
@@ -78,7 +79,7 @@ export async function probeEntities(entities: Entity[], opts: ProbeOptions = {})
   return results;
 }
 
-async function probeOne(entity: Entity, limiter: Limiter, doFetch: typeof fetch): Promise<ProbeResult> {
+async function probeOne(entity: Entity, limiter: Limiter, doFetch: typeof fetch, signal?: AbortSignal | undefined): Promise<ProbeResult> {
   const result: ProbeResult = {
     entityId: entity.id, domain: null, a: false, mx: false,
     emailGuess: null, published: false, tried: [],
@@ -90,8 +91,8 @@ async function probeOne(entity: Entity, limiter: Limiter, doFetch: typeof fetch)
   for (const domain of candidates) {
     result.tried.push(domain);
     const [a, mx] = await Promise.all([
-      hasRecords(domain, "A", limiter, doFetch),
-      hasRecords(domain, "MX", limiter, doFetch),
+      hasRecords(domain, "A", limiter, doFetch, signal),
+      hasRecords(domain, "MX", limiter, doFetch, signal),
     ]);
     if (a || mx) {
       result.domain = domain;
@@ -145,12 +146,12 @@ function hasEmail(entity: Entity): boolean {
   return entity.contacts.some(c => c.includes("@"));
 }
 
-async function hasRecords(domain: string, type: "A" | "MX", limiter: Limiter, doFetch: typeof fetch): Promise<boolean> {
+async function hasRecords(domain: string, type: "A" | "MX", limiter: Limiter, doFetch: typeof fetch, signal?: AbortSignal | undefined): Promise<boolean> {
   try {
     const resp = await limiter.run(() =>
       doFetch(`${DOH_BASE}?name=${encodeURIComponent(domain)}&type=${type}`, {
         headers: { accept: "application/dns-json" },
-        signal: AbortSignal.timeout(5_000),
+        signal: signal === undefined ? AbortSignal.timeout(5_000) : AbortSignal.any([signal, AbortSignal.timeout(5_000)]),
       })
     );
     if (!resp.ok) return false;

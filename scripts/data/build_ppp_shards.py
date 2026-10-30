@@ -48,6 +48,34 @@ def zip5(raw):
     return m.group(0) if m else ""
 
 
+# A mailbox typed into a name or address field, with the <> some borrowers
+# wrapped it in. A bare "@" with spaces or no dot ("UNI @ HOME") is not one.
+EMAIL_TOKEN = re.compile(r"<?[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>?")
+# A personal mailbox typed with a space for the dot ("name@Gmail Com").
+SPACED_EMAIL = re.compile(r"\S+@(?:gmail|yahoo|aol|hotmail|outlook|msn|icloud|comcast|verizon|optonline|att|sbcglobal)\s+(?:com|net)\b", re.I)
+
+
+def strip_emails(raw):
+    """The text with any email token removed and whitespace collapsed; text
+    without one comes back unchanged."""
+    value = raw.strip()
+    if not EMAIL_TOKEN.search(value) and not SPACED_EMAIL.search(value):
+        return value
+    return " ".join(EMAIL_TOKEN.sub(" ", SPACED_EMAIL.sub(" ", value)).split())
+
+
+def clean_name(raw):
+    """The borrower name without email tokens; "" when nothing else was there
+    (the record is then dropped). A bulk file in a public repo must not carry
+    mailboxes (tests/data/no-personal-emails.test.ts)."""
+    return strip_emails(raw)
+
+
+def clean_address(raw):
+    """The street address without email tokens ("" when it was only one)."""
+    return strip_emails(raw)
+
+
 def parse_jobs(raw):
     try:
         return int(raw.strip())
@@ -65,7 +93,7 @@ def read_rows(paths, state):
                     row_state = (row.get("ProjectState") or "").strip().upper()
                 if row_state != state:
                     continue
-                name = (row.get("BorrowerName") or "").strip()
+                name = clean_name(row.get("BorrowerName") or "")
                 if name == "" or name.upper() in PLACEHOLDER_NAMES:
                     continue
                 naics = (row.get("NAICSCode") or "").strip()
@@ -76,7 +104,7 @@ def read_rows(paths, state):
                 record = {
                     "loan_number": (row.get("LoanNumber") or "").strip(),
                     "name": name,
-                    "address": (row.get("BorrowerAddress") or "").strip(),
+                    "address": clean_address(row.get("BorrowerAddress") or ""),
                     "city": (row.get("BorrowerCity") or "").strip(),
                     "state": state,
                     "zip": zip_code,
