@@ -64,7 +64,7 @@ containing "Dentists".
 
 ## Batch B — places, state from location, code finder, emails
 
-### B1 — NYC boroughs and counties are places (review 3)
+### B1 — NYC boroughs and counties are places (review 3) ✅ (2026-10-30)
 - `scripts/data/build_geo.py`: also read the Census 2024 Gazetteer counties
   file and add each county in a covered region to that region's
   `places.json` table under its lowercased name (e.g. `denver county`,
@@ -79,7 +79,7 @@ containing "Dentists".
 - Tests in geo.test.ts: `Brooklyn`, `Brooklyn, NY`, `Kings County`,
   `Denver County` resolve in their regions.
 
-### B2 — the state comes from the location when the user didn't pick one (review 4)
+### B2 — the state comes from the location when the user didn't pick one (review 4) ✅ (2026-10-30)
 - UI: the state select gets a first option `From your location` (value
   `""`), selected by default; when it's selected the request sends no
   `region`. A previously stored search's region still restores.
@@ -93,7 +93,7 @@ containing "Dentists".
   `near: "Brooklyn, NY"` → US-NY; `near: "Austin, TX"` → 400 naming Texas;
   explicit US-CO + `06103` → 400 as before.
 
-### B3 — code finder synonyms (review 8, 27)
+### B3 — code finder synonyms (review 8, 27) ✅ (2026-10-30)
 - New `packages/registry-core/src/naics-synonyms.json`: phrase → codes,
   checked against `isNaicsCode` in a test. Entries: co-packer, copacker,
   co-packing → 311999, 311421, 311941, 561910; daycare, day care, childcare,
@@ -115,7 +115,7 @@ containing "Dentists".
 - Tests: each review miss (`co-packer`, `daycare`, `mechanic`, `dental`
   → 621210 first, `property management` → 531311 first); 400s.
 
-### B4 — no personal emails in tracked data (review 9, files part)
+### B4 — no personal emails in tracked data (review 9, files part) ✅ (2026-10-30)
 - `shards/paca/US-NY.json` (and CO/CT): a `website` value containing `@`
   becomes `""`. PPP shards: an `address` value that is an email (matches
   `^\S+@\S+\.\S+$`) becomes `""`; same rule added to
@@ -128,6 +128,13 @@ containing "Dentists".
   `shards/` and `tests/fixtures/` for an address at gmail, yahoo, aol,
   hotmail, outlook, msn, icloud, comcast, verizon, optonline, att, sbcglobal
   and fails listing file:line.
+
+Batch B review notes (2026-10-30): PPP email tokens are stripped from `name`
+and `address` (name-only-email records dropped, 11; README count 153,082), also
+the spaced form `name@Gmail Com`; the no-AI `STATIC_LEADS` table in map.ts is
+unchanged (synonyms feed the Find codes box); a bare place in a covered region
+wins over an uncovered-state suffix ("Port Washington"); the origin event and
+result carry the region actually searched.
 
 ## Batch C — sheet honesty, docs and tooling
 

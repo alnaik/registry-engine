@@ -99,6 +99,18 @@ describe("resolveLocation forms and states", () => {
   });
 });
 
+describe("boroughs and counties are places", () => {
+  it("resolves NYC boroughs and county names in their own region", () => {
+    expect(resolveLocation("US-NY", "Brooklyn")!.label).toBe("Brooklyn, NY");
+    expect(resolveLocation("US-NY", "Brooklyn, NY")!.label).toBe("Brooklyn, NY");
+    expect(resolveLocation("US-NY", "Kings County")!.label).toBe("Kings County, NY");
+    expect(resolveLocation("US-NY", "the bronx")).toBeDefined();
+    expect(resolveLocation("US-NY", "NYC")!.point).toEqual(placeCentroid("US-NY", "new york"));
+    expect(resolveLocation("US-CO", "Denver County")!.label).toBe("Denver County, CO");
+    expect(resolveLocation("US-CO", "Kings County")).toBeUndefined();
+  });
+});
+
 describe("zipState, stateName and locationState", () => {
   it("maps a ZIP to its state from the first 3 digits", () => {
     expect(zipState("80202")).toBe("CO");

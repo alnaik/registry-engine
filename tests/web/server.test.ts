@@ -7,7 +7,7 @@ import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { createApp, historyId } from "../../apps/web/src/server.js";
 import type { AppDeps } from "../../apps/web/src/server.js";
-import { naicsLabel } from "../../packages/registry-core/src/index.js";
+import { naicsLabel, defaultRegion, SOURCES } from "../../packages/registry-core/src/index.js";
 import type { SearchConfig, SearchOutcome, Lead, RawLlm } from "../../packages/qualify/src/index.js";
 
 const LEAD_VIEW_KEYS = [
@@ -261,6 +261,41 @@ describe("web app server", () => {
       expect(town2.status).toBe(200);
       const ok = await post({ query: "metal fabrication", near: "80202-1234", region: "US-CO" });
       expect(ok.status).toBe(200);
+    });
+
+    it("takes the state from the location when none is picked", async () => {
+      const before = calls.length;
+      expect((await post({ query: "metal fabrication", near: "11201" })).status).toBe(200);
+      expect(calls[before]!.cfg.region).toBe("US-NY");
+      expect((await post({ query: "metal fabrication", near: "Brooklyn, NY" })).status).toBe(200);
+      expect(calls[before + 1]!.cfg.region).toBe("US-NY");
+      // A covered town whose own name ends in a state word is that region's.
+      expect((await post({ query: "metal fabrication", near: "Port Washington" })).status).toBe(200);
+      expect(calls[before + 2]!.cfg.region).toBe("US-NY");
+      // No state named: no region sent, the default applies downstream.
+      expect((await post({ query: "metal fabrication", near: "Denver" })).status).toBe(200);
+      expect(calls[before + 3]!.cfg.region).toBeUndefined();
+      const austin = await post({ query: "metal fabrication", near: "Austin, TX" });
+      expect(austin.status).toBe(400);
+      const message = String((JSON.parse(austin.text) as Record<string, unknown>)["error"]);
+      expect(message).toContain("Texas");
+      expect(message).toContain("isn't covered");
+      expect(message).toContain("Colorado, Connecticut, New York");
+      expect(calls.length).toBe(before + 4);
+      // An explicit region keeps its rule.
+      expect((await post({ query: "metal fabrication", near: "06103", region: "US-CO" })).status).toBe(400);
+    });
+
+    it("names the searched region on the origin event and the result", async () => {
+      behavior = async (_query, cfg) => {
+        cfg.onEvent?.({ type: "origin", origin: null });
+        return makeOutcome();
+      };
+      const named = lines(await post({ query: "metal fabrication", near: "Brooklyn, NY" }));
+      expect(named.find(l => l["type"] === "origin")).toMatchObject({ region: "US-NY" });
+      const dflt = lines(await post({ query: "metal fabrication", near: "Denver" }));
+      expect(dflt.find(l => l["type"] === "origin")!["region"]).toBe(defaultRegion(SOURCES));
+      expect(dflt.find(l => l["type"] === "result")).toMatchObject({ region: "US-CO" });
     });
 
     it("passes llmUsage through to the result line", async () => {
@@ -571,7 +606,15 @@ describe("web app server", () => {
       expect(r.status).toBe(200);
       const hits = JSON.parse(r.text) as { code: string; title: string; description: string }[];
       expect(hits.map(h => h.code)).toContain("314910");
-      expect(JSON.parse((await send({ path: "/api/codes?q=" })).text)).toEqual([]);
+      const empty = await send({ path: "/api/codes?q=" });
+      expect(empty.status).toBe(400);
+      expect(JSON.parse(empty.text)).toEqual({ error: "q is required" });
+      expect((await send({ path: "/api/codes?q=%20%20" })).status).toBe(400);
+      expect((await send({ path: "/api/codes" })).status).toBe(400);
+      expect((await send({ path: `/api/codes?q=${"a".repeat(101)}` })).status).toBe(400);
+      expect((await send({ path: `/api/codes?q=${"a".repeat(100)}` })).status).toBe(200);
+      const daycare = JSON.parse((await send({ path: "/api/codes?q=daycare" })).text) as { code: string }[];
+      expect(daycare[0]!.code).toBe("624410");
     });
 
     it("answers HEAD for static routes and /api/status with headers and no body", async () => {

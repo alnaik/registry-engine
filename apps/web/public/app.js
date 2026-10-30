@@ -244,6 +244,7 @@ const app = {
   direction: "auto",
   map: null,
   origin: undefined,        // undefined until the origin event arrives
+  region: undefined,        // the region the search used (after inference from the location)
   result: null,
   filter: "all",
   items: [],                // main list: { lead, el, band, collapsed }
@@ -334,8 +335,10 @@ async function loadStatus() {
   if (coverage !== "" && fine) fine.textContent += ` ${coverage}`;
   if (Array.isArray(status.regions) && status.regions.length > 1) {
     const select = $("region");
+    // No state picked: the server takes it from the location.
+    select.append(h("option", { value: "", text: "From your location" }));
     for (const code of status.regions) select.append(h("option", { value: code, text: code.replace(/^US-/, "") }));
-    select.value = status.defaultRegion;
+    select.value = "";
     $("region-field").hidden = false;
   }
   updateCodeBox();
@@ -564,6 +567,7 @@ function handleEvent(event) {
     }
     case "origin":
       app.origin = event.origin;
+      app.region = event.region;
       renderReading();
       break;
     case "routed":
@@ -648,7 +652,7 @@ function renderReading() {
     line.append(h("span", { class: "quiet", "aria-hidden": "true", text: "·" }));
     if (app.origin === null) {
       if (app.lastParams && app.lastParams.near) {
-        const region = String(app.lastParams.region || (app.status && app.status.defaultRegion) || "this state").replace(/^US-/, "");
+        const region = String(app.region || app.lastParams.region || (app.status && app.status.defaultRegion) || "this state").replace(/^US-/, "");
         line.append(h("span", null, h("strong", { text: `couldn't find "${app.lastParams.near}" in ${region}` }), ", so results aren't sorted by distance"));
       } else {
         line.append(h("span", { text: "whole state, no distance (add a ZIP or town to sort by distance)" }));
@@ -687,6 +691,7 @@ function renderReading() {
 function resetForRun(params) {
   app.map = null;
   app.origin = undefined;
+  app.region = undefined;
   app.result = null;
   app.items = [];
   app.bands = new Map();
@@ -805,6 +810,7 @@ function showResult(result, opts = {}) {
   app.result = result;
   app.skipBuyerCaveat = false;
   if (result.origin !== undefined) app.origin = result.origin;
+  if (result.region) app.region = result.region;
   renderReading();
 
   const main = mainLeads(result);

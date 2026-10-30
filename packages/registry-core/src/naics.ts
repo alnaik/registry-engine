@@ -1,4 +1,5 @@
 import data from "./naics/naics2017.json" with { type: "json" };
+import synonymData from "./naics-synonyms.json" with { type: "json" };
 
 // NAICS 2017 (Census) lookup. Built by scripts/data/build_naics.py from the
 // official 2-6 digit code list and the alphabetical index file. Routing
@@ -6,6 +7,14 @@ import data from "./naics/naics2017.json" with { type: "json" };
 
 const TITLES: Readonly<Record<string, string>> = data.titles;
 const INDEX = data.index as unknown as ReadonlyArray<readonly [string, string]>;
+
+// Trade words the official index doesn't carry ("co-packer", "daycare") ->
+// the codes they mean, best first. Hyphens and spaces are interchangeable.
+const SYNONYMS = Object.entries(synonymData as Readonly<Record<string, readonly string[]>>)
+  .map(([phrase, codes]) => ({
+    re: new RegExp("(?:^| )" + phrase.toLowerCase().replace(/-/g, " ").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?:s|es)?(?: |$)"),
+    codes,
+  }));
 
 export function naicsTitle(code: string): string | undefined {
   return Object.hasOwn(TITLES, code) ? TITLES[code] : undefined;
@@ -50,10 +59,14 @@ function stem(word: string): string {
 // 6-digit codes ranked by how many distinct query stems their index
 // descriptions or title contain (a title hit counts an extra 0.5), best first,
 // ties by code. Entries matching all stems therefore sort first. Deduped by
-// code, at most `max`. Backs the "codes" lookups.
+// code, at most `max`. Backs the "codes" lookups. Codes of a synonym phrase
+// the words equal or contain (naics-synonyms.json) come first, in table order.
 export function lookupCodes(words: string[], max = 15): { code: string; title: string; description: string }[] {
   const stems = [...new Set(words.map(stem).filter(w => w.length > 0))];
   if (stems.length === 0) return [];
+  const phrase = words.join(" ").toLowerCase().replace(/-/g, " ").replace(/\s+/g, " ").trim();
+  const first = new Set<string>();
+  for (const syn of SYNONYMS) if (syn.re.test(phrase)) for (const code of syn.codes) first.add(code);
   // A stem counts only at a word start. Stems of 4+ letters keep the right side
   // open (stems are prefixes); a shorter stem must end the word, allowing only
   // s/es/ed/ing, so "bag" no longer reaches "bagels" or "bagasse".
@@ -83,7 +96,9 @@ export function lookupCodes(words: string[], max = 15): { code: string; title: s
     scored.push({ code, title, description: hits.length > 0 ? description : title, score });
   }
   scored.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
-  return scored.slice(0, max).map(({ code, title, description }) => ({ code, title, description }));
+  const found = scored.map(({ code, title, description }) => ({ code, title, description }));
+  const lead = [...first].map(code => ({ code, title: naicsLabel(code) ?? "", description: found.find(f => f.code === code)?.description ?? naicsLabel(code) ?? "" }));
+  return [...lead, ...found.filter(f => !first.has(f.code))].slice(0, max);
 }
 
 // A NAICS title as a plain sentence fragment for a call sheet: "Textile Bag

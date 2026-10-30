@@ -150,7 +150,15 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
     }
 
     if (method === "GET" && path === "/api/codes") {
-      const q = (url.searchParams.get("q") ?? "").slice(0, 100);
+      const q = url.searchParams.get("q") ?? "";
+      if (q.trim() === "") {
+        sendJson(res, 400, { error: "q is required" });
+        return;
+      }
+      if (q.length > 100) {
+        sendJson(res, 400, { error: "q must be at most 100 characters" });
+        return;
+      }
       sendJson(res, 200, lookupCodes(q.split(/\s+/).filter(Boolean)));
       return;
     }
@@ -287,7 +295,7 @@ export function createApp(deps: AppDeps): (req: IncomingMessage, res: ServerResp
         onEvent: event => {
           if (event.type === "fetched") fetchedBy.set(event.sourceId, { count: event.count, capped: event.capped, error: false });
           if (event.type === "source_error" && !fetchedBy.has(event.sourceId)) fetchedBy.set(event.sourceId, { count: 0, capped: false, error: true });
-          const line = translateEvent(event);
+          const line = translateEvent(event, params.region ?? defaultRegion(SOURCES));
           if (event.type === "map") mapLine = line;
           if (line !== null) write(line);
         },
@@ -527,6 +535,24 @@ function parseSearchParams(body: unknown): SearchParams {
     region = b["region"];
   }
 
+  // No state picked: the state the location names is the one searched. A
+  // place whose own name ends in a state word ("Port Washington") that
+  // resolves in a covered region is that region's, not the named state's.
+  if (region === undefined && near !== undefined) {
+    const nearState = locationState(near);
+    if (nearState !== undefined) {
+      const known = knownRegions(SOURCES);
+      const named = `US-${nearState}`;
+      const home = known.includes(named) ? named : known.find(r => resolveLocation(r, near) !== undefined);
+      if (home === undefined) {
+        const place = stateName(nearState) ?? nearState;
+        const covered = known.map(r => REGION_NAMES[r] ?? r.replace(/^US-/, "")).join(", ");
+        throw new BadRequest(`"${near}" is in ${place}, which isn't covered yet. Covered: ${covered}.`);
+      }
+      region = home;
+    }
+  }
+
   // A ZIP or town in another state would search nowhere useful: say so now.
   // A real town whose name ends in a state word ("North Washington") resolves
   // first and passes.
@@ -556,7 +582,7 @@ function parseSearchParams(body: unknown): SearchParams {
 
 // Engine events -> the shapes the browser needs. Raw MapResult/SourceSpec
 // objects (endpoints, field maps) stay on the server.
-function translateEvent(event: EngineEvent): Record<string, unknown> | null {
+function translateEvent(event: EngineEvent, region: string): Record<string, unknown> | null {
   switch (event.type) {
     case "map":
       return {
@@ -570,7 +596,8 @@ function translateEvent(event: EngineEvent): Record<string, unknown> | null {
         ...(event.map.llmError !== undefined ? { llmError: forPage(event.map.llmError) } : {}),
       };
     case "origin":
-      return { type: "origin", origin: event.origin };
+      // The region searched, after inference from `near`, so the page can name it.
+      return { type: "origin", origin: event.origin, region };
     case "routed":
       return { type: "routed", sources: event.sources.map(s => ({ id: s.id, name: s.name })) };
     case "fetched":

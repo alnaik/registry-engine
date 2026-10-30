@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.14 (v12, v1-readiness review)
+Version: 3.15 (v12, v1-readiness review)
 Last updated: 2026-10-30
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -143,6 +143,14 @@ cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`.
 - **PACA emails.** The committed PACA shards keep the filed phone and website
   and drop the filed email. About 665 of them were personal mailboxes, and a
   bulk file in a public repo is a harvest target.
+- **PPP names and addresses.** Some borrowers typed a mailbox into the name or
+  address field. The committed PPP shards have those email tokens stripped
+  (a record whose name was only an email is dropped), and the PACA shards'
+  `website` values that held an address are blank. Rule in
+  `scripts/data/build_ppp_shards.py` (`clean_name`, `clean_address`); the scan
+  test `tests/data/no-personal-emails.test.ts` fails on any consumer-provider
+  address (gmail, yahoo, aol, hotmail, outlook, msn, icloud, comcast, verizon,
+  optonline, att, sbcglobal) in `shards/` or `tests/fixtures/`.
 
 ---
 
@@ -316,3 +324,9 @@ credits is a target for other websites open in the same browser.
   backends; an abort is never retried; Threat 8, item 3). Socrata pages are cached
   for 15 minutes (Threat 4, item 3). `/api/search` accepts an empty query when `naics`
   holds a valid code (the query becomes the code titles).
+- v3.15 (2026-10-30, v12 Batch B): with no state picked, `/api/search` takes the region
+  from `near` (only a known region; a state we don't cover is a 400, and a covered
+  town whose name ends in a state word keeps its own region; Threat 8, item 3).
+  `/api/codes` rejects an empty or over-100-character `q` with 400. Email tokens are
+  stripped from PPP `name` and `address`, PACA `website` addresses are blank, and
+  a scan test covers `shards/` and `tests/fixtures/` (Threat 5).
