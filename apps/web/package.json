@@ -2,7 +2,7 @@
   "name": "@registry-engine/web",
   "version": "0.1.0",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "start": "vite-node src/main.ts"
