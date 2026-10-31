@@ -260,7 +260,4 @@ Threat model: [`SECURITY.md`](SECURITY.md). Decisions: [`docs/decisions/`](docs/
 README media is captured from the running app with
 [`scripts/docs/capture.mjs`](scripts/docs/capture.mjs).
 
-The core library, [`packages/registry-core`](packages/registry-core), is MIT.
-Everything else (the search engine in `packages/qualify` and the web app in
-`apps/web`) is proprietary: the source is public to read, but not licensed
-for reuse. See [`LICENSE`](LICENSE).
+MIT, see [`LICENSE`](LICENSE).
