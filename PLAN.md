@@ -1,3 +1,40 @@
+# v13 — PPP for Connecticut and New York
+
+Working branch: `v13-ppp-ct-ny`. Owner decision 2026-10-30: ship the CT and
+NY shards in the repo as-is; size and speed are a later, separate project
+(see "Later" below). Done by the orchestrator directly (data job plus two
+small fixes found while checking it).
+
+## P1 — CT and NY shards ✅ (2026-10-30)
+Built from the same 240930 SBA release as CO: CT 91,355 businesses (25 MB),
+NY 552,343 (148 MB, largest sector file 54.json at 21 MB). `ppp`
+`quirks.shardRegions` lists all three; route tests cover NY and CT.
+
+## P2 — HTML entities in PPP text ✅ (2026-10-30)
+~5,000 records (717 in CO) carried entities from the FOIA text ("D&AMP;R").
+`build_ppp_shards.py` decodes them, case-insensitively and repeatedly,
+before stripping email tokens. CO rebuilt: 163 records were the same
+borrower's second loan under an encoded name and now dedupe (153,082 →
+152,919).
+
+## P3 — a bare town picks its state ✅ (2026-10-30)
+With no state picked and no state in `near`, a place outside the default
+region is searched in the one covered state that has it ("Manhattan" → NY);
+in more than one ("Brooklyn": CT and NY) the server asks for the state (400).
+A place in the default region is unchanged.
+
+## Checked live
+Dentists near Brooklyn, NY; plumbers near Hartford, CT; hot-sauce buyers near
+New Haven, CT; auto repair near Buffalo, NY; accountants near Manhattan. One
+Buffalo run lost the NY registry check to a data.ny.gov timeout (reported as
+such); the retry matched 71. Shard read: 90 ms for NY 54.json, 264 ms for a
+four-sector NY search (35k records). CSV of a 9,593-lead sheet: 9.3 MB.
+
+## Later (owner's optimization project)
+Repo size (every rebuild adds a full copy to history), shard parse per search
+with no cache, splitting large sector files, and "Check all" over a big NY
+category (thousands of registry requests).
+
 # v12 — v1-readiness review fixes
 
 Working branch: `v12-v1-review`. Source: the v1 review of `5a13550`

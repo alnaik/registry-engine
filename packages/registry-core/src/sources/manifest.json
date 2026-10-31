@@ -147,7 +147,7 @@
       },
       "quirks": {
         "shardBy": "naics2",
-        "shardRegions": ["US-CO"],
+        "shardRegions": ["US-CO", "US-CT", "US-NY"],
         "evidenceFields": ["business_type", "business_age"]
       }
     },

@@ -13,6 +13,7 @@ Stdlib only.
 import argparse
 import csv
 import datetime
+import html
 import json
 import os
 import re
@@ -55,10 +56,30 @@ EMAIL_TOKEN = re.compile(r"<?[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>?")
 SPACED_EMAIL = re.compile(r"\S+@(?:gmail|yahoo|aol|hotmail|outlook|msn|icloud|comcast|verizon|optonline|att|sbcglobal)\s+(?:com|net)\b", re.I)
 
 
+# HTML entities left in the FOIA text, often uppercased with the name
+# ("D&AMP;R AUTOMOTIVE", "JOE&#39;S"). Unknown ones are kept as typed.
+ENTITY = re.compile(r"&(#\d+|#x[0-9a-f]+|[a-z]+);", re.I)
+
+
+def decode_entities(raw):
+    """The text with HTML entities decoded, matching names case-insensitively
+    and repeating for double-encoded text ("&AMP;AMP;")."""
+    def one(m):
+        entity = f"&{m.group(1).lower()};"
+        decoded = html.unescape(entity)
+        return m.group(0) if decoded == entity else decoded
+    for _ in range(3):
+        decoded = ENTITY.sub(one, raw)
+        if decoded == raw:
+            break
+        raw = decoded
+    return raw
+
+
 def strip_emails(raw):
     """The text with any email token removed and whitespace collapsed; text
     without one comes back unchanged."""
-    value = raw.strip()
+    value = decode_entities(raw).strip()
     if not EMAIL_TOKEN.search(value) and not SPACED_EMAIL.search(value):
         return value
     return " ".join(EMAIL_TOKEN.sub(" ", SPACED_EMAIL.sub(" ", value)).split())
@@ -105,7 +126,7 @@ def read_rows(paths, state):
                     "loan_number": (row.get("LoanNumber") or "").strip(),
                     "name": name,
                     "address": clean_address(row.get("BorrowerAddress") or ""),
-                    "city": (row.get("BorrowerCity") or "").strip(),
+                    "city": decode_entities(row.get("BorrowerCity") or "").strip(),
                     "state": state,
                     "zip": zip_code,
                     "naics": naics,
