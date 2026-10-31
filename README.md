@@ -107,7 +107,7 @@ in the browser.
 
 | Source | What it adds | Where | How fresh | Link |
 |---|---|---|---|---|
-| SBA Paycheck Protection Program loans | Industry code, address and job count for nearly every small business, including sole proprietors | Colorado (153,082 businesses) | 2020–21 snapshot, in `shards/ppp` | [data.sba.gov](https://data.sba.gov/dataset/ppp-foia) |
+| SBA Paycheck Protection Program loans | Industry code, address and job count for nearly every small business, including sole proprietors | CO 152,919 · CT 91,355 · NY 552,343 businesses | 2020–21 snapshot, in `shards/ppp` | [data.sba.gov](https://data.sba.gov/dataset/ppp-foia) |
 | EPA ECHO | Regulated facilities: industry code, last inspection | US | Live | [echo.epa.gov](https://echo.epa.gov/) |
 | Colorado farm-products financing statements | Growers, their crops and their lenders | Colorado | Live | [data.colorado.gov](https://data.colorado.gov/d/ej2c-jkvh) |
 | USDA PACA licenses | Produce dealers, with the phone and website they filed | CO 132 · CT 115 · NY 1,324 | Recorded July 2026, in `shards/paca` | [apps.mrp.usda.gov](https://apps.mrp.usda.gov/public_search) |
@@ -116,8 +116,8 @@ in the browser.
 | New York Department of State | Legal name, registered agent, filing date | New York | Live | [data.ny.gov](https://data.ny.gov/d/n9v6-gdp6) |
 
 Each search uses only the sources that cover its state and industries.
-Colorado has all of them; Connecticut and New York have their registry plus
-PACA; EPA ECHO covers every state.
+Colorado has all of them; Connecticut and New York have their registry, PPP
+and PACA; EPA ECHO covers every state.
 
 Bundled reference data: [NAICS 2017 codes and index](https://www.census.gov/naics/)
 (Census) and [ZIP and place centroids](https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html)

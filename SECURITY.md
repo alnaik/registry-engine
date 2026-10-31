@@ -1,6 +1,6 @@
 # Security Threat Model — Registry Engine
 
-Version: 3.16 (v12, v1-readiness review)
+Version: 3.17 (v13, PPP for CT and NY)
 Last updated: 2026-10-30
 
 The known threats, their mitigations, and where each mitigation lives in the
@@ -338,3 +338,9 @@ credits is a target for other websites open in the same browser.
   (415 without a JSON content type, 204 otherwise; Threat 8, item 6, which said there
   was no delete endpoint). The result's `sources` carry `dataAsOf` and each lead
   `displayName`; neither adds an input or a path.
+- v3.17 (2026-10-30, v13): PPP shards for CT and NY (`quirks.shardRegions`); shard
+  paths are still built only from `REGION_PATTERN` regions the manifest lists. The
+  build decodes HTML entities in names, addresses and cities before stripping email
+  tokens, so an encoded `@` can't hide a mailbox; the email scan test covers the new
+  shards (Threat 5). "Check all" over a large NY category sends proportionally more
+  registry requests (Threat 4, item 5); the per-search default cap is unchanged.

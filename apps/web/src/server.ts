@@ -586,6 +586,15 @@ function parseSearchParams(body: unknown): SearchParams {
         throw new BadRequest(`"${near}" is in ${place}, which isn't covered yet. Covered: ${covered}.`);
       }
       region = home;
+    } else if (resolveLocation(defaultRegion(SOURCES), near) === undefined) {
+      // A bare town outside the default region ("Manhattan") is searched in
+      // the one covered state that has it; in several, the state must be named.
+      const homes = knownRegions(SOURCES).filter(r => resolveLocation(r, near) !== undefined);
+      if (homes.length === 1) region = homes[0];
+      if (homes.length > 1) {
+        const names = homes.map(r => REGION_NAMES[r] ?? r.replace(/^US-/, "")).join(" and ");
+        throw new BadRequest(`"${near}" is a place in ${names}. Add the state, like "${near}, ${homes[homes.length - 1]!.replace(/^US-/, "")}".`);
+      }
     }
   }
 

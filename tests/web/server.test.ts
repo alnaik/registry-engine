@@ -282,6 +282,16 @@ describe("web app server", () => {
       expect(message).toContain("isn't covered");
       expect(message).toContain("Colorado, Connecticut, New York");
       expect(calls.length).toBe(before + 4);
+      // A bare town outside the default region: the one covered state that has it.
+      expect((await post({ query: "metal fabrication", near: "Manhattan" })).status).toBe(200);
+      expect(calls[before + 4]!.cfg.region).toBe("US-NY");
+      expect((await post({ query: "metal fabrication", near: "New Haven" })).status).toBe(200);
+      expect(calls[before + 5]!.cfg.region).toBe("US-CT");
+      // In two covered states: the state must be named.
+      const both = await post({ query: "metal fabrication", near: "Brooklyn" });
+      expect(both.status).toBe(400);
+      expect(String((JSON.parse(both.text) as Record<string, unknown>)["error"])).toContain("Connecticut and New York");
+      expect(calls.length).toBe(before + 6);
       // An explicit region keeps its rule.
       expect((await post({ query: "metal fabrication", near: "06103", region: "US-CO" })).status).toBe(400);
     });

@@ -11,7 +11,7 @@ export function route(intent: Intent, sources: SourceSpec[]): SourceSpec[] {
   );
 }
 
-// A sharded source that only ships some regions (PPP: CO) is not searched
+// A sharded source that only ships some regions (PPP: CO, CT, NY) is not searched
 // elsewhere — it would report 0 rather than "not covered".
 function shardRegionsCover(s: SourceSpec, region: string): boolean {
   const regions = s.quirks?.["shardRegions"];

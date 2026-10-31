@@ -41,7 +41,7 @@ Python 3 standard library only, always run with `-I`:
 
 ```bash
 python3 -I scripts/data/build_naics.py
-python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csvs…>
+python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csvs…>   # per state: CO, CT, NY
 python3 -I scripts/data/build_geo.py --states CO,CT,NY
 ```
 

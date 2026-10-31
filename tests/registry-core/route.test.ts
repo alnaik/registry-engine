@@ -52,9 +52,14 @@ describe("route over the shipped manifest", () => {
     expect(route(intent({ geo: { region: "US", cities: [] } }), [usOnly])).toEqual([]);
   });
 
-  it("produce query in NY routes to ny_dos, paca and epa_echo (PPP ships CO only)", () => {
+  it("produce query in NY routes to ny_dos, paca, ppp and epa_echo", () => {
     const picked = route(intent({ naics: ["424480"], geo: { region: "US-NY", cities: [] } }), SOURCES);
-    expect(picked.map(s => s.id).sort()).toEqual(["epa_echo", "ny_dos", "paca"]);
+    expect(picked.map(s => s.id).sort()).toEqual(["epa_echo", "ny_dos", "paca", "ppp"]);
+  });
+
+  it("dentist query in CT routes to ct_sos, ppp and epa_echo", () => {
+    const picked = route(intent({ naics: ["621210"], geo: { region: "US-CT", cities: [] } }), SOURCES);
+    expect(picked.map(s => s.id).sort()).toEqual(["ct_sos", "epa_echo", "ppp"]);
   });
 });
 

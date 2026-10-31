@@ -29,7 +29,7 @@ npm start
 
 # Data rebuilds (Python 3 stdlib, always run with -I)
 python3 -I scripts/data/build_naics.py
-python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csvs…>
+python3 -I scripts/data/build_ppp_shards.py --state CO --out shards/ppp <ppp csvs…>   # per state: CO, CT, NY
 ```
 
 The web app's Check all button sends `checkAll: true`, which the server
@@ -83,7 +83,7 @@ Package layout:
 packages/registry-core/   Entity, NAICS lookup (naics.ts + naics2017.json), drivers, manifest, route().
 packages/qualify/         LLM adapter (tiered), map/probe/brief verbs, engine.
 apps/web/                 Local web app: server.ts (localhost, Host check, NDJSON stream) + public/ vanilla UI.
-shards/                   ppp/US-CO/<sector>.json (153k businesses), paca/<region>.json.
+shards/                   ppp/US-{CO,CT,NY}/<sector>.json (797k businesses), paca/<region>.json.
 scripts/data/             Rebuild NAICS and PPP data from public sources.
 ```
 
@@ -100,7 +100,7 @@ changes required**, guaranteed by `tests/registry-core/zero-code-state.test.ts`.
 "naics2"`, `shardRegions`, `cities`.
 
 Sources: `co_sos`/`ct_sos`/`ny_dos` (existence: identity + standing),
-`ppp` (static_shard, CO, every industry, 2020–21 snapshot), `epa_echo`
+`ppp` (static_shard, CO/CT/NY, every industry, 2020–21 snapshot), `epa_echo`
 (live, US, regulated facilities + last inspection), `co_farm_products`
 (socrata, growers + crops + lenders), `paca` (static_shard, produce dealers
 with phones).
